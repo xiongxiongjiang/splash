@@ -1,4 +1,4 @@
 # Splash
 The monorepo for both frontend and backend code 
 
-# Local development guide
+see [quick demo](./backend/demo/README.md)

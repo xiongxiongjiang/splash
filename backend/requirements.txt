@@ -1,0 +1,8 @@
+# Production dependencies
+fastapi>=0.109.0
+fastmcp>=0.1.0
+uvicorn[standard]>=0.24.0
+
+# Development dependencies
+pytest>=7.4.3
+httpx>=0.26.0 
