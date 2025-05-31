@@ -2,6 +2,7 @@
 
 A demonstration of the FastAPI + FastMCP resume server functionality with streaming HTTP support.
 
+
 ## Testing the API
 
 ### FastAPI Endpoints
@@ -15,7 +16,7 @@ A demonstration of the FastAPI + FastMCP resume server functionality with stream
 2. Access the Swagger UI:
    - Open your browser and navigate to `http://localhost:8000/docs`
    - This provides an interactive interface to test all available endpoints
-
+   ![Swagger UI Demo](swagger.png)
 ### MCP Testing
 1. Install the MCP Inspector:
    ```bash
@@ -27,6 +28,7 @@ A demonstration of the FastAPI + FastMCP resume server functionality with stream
    npx @modelcontextprotocol/inspector
    ```
    - Connect to: `http://localhost:8001/mcp`
+   ![MCP Inspector Demo](mcp_inspect.png)
 
 ## Current Features
 
