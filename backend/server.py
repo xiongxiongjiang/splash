@@ -1,11 +1,8 @@
 from fastapi import FastAPI, Query, HTTPException
-from fastmcp import FastMCP
 from typing import List, Optional
 from pydantic import BaseModel
 import uvicorn
 import logging
-import sys
-import asyncio
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -101,22 +98,16 @@ def filter_resumes_by_experience(min_years: int) -> List[dict]:
     """Filter resumes by minimum experience years"""
     return [resume for resume in RESUMES if resume["experience_years"] >= min_years]
 
-# Create FastAPI app for REST API
+# Create FastAPI app
 app = FastAPI(
     title="Resume Management API", 
     description="REST API for managing and searching resumes",
     version="1.0.0"
 )
 
-# Create FastMCP server for MCP protocol
-mcp = FastMCP(
-    name="Resume Management Server", 
-    instructions="Server that provides resume data via MCP protocol. Use this to search, filter, and retrieve resume information."
-)
-
 # FastAPI REST endpoints
-@app.get("/resumes", response_model=dict)
-async def get_resumes_rest(
+@app.get("/resumes", response_model=dict, operation_id="search_all_resumes")
+async def get_resumes(
     limit: Optional[int] = Query(None, ge=1, description="Maximum number of resumes to return"),
     skill: Optional[str] = Query(None, description="Filter by skill"),
     min_experience: Optional[int] = Query(None, ge=0, description="Minimum years of experience")
@@ -150,7 +141,7 @@ async def get_resumes_rest(
         }
     }
 
-@app.get("/resumes/{resume_id}")
+@app.get("/resumes/{resume_id}", operation_id="get_resume_details")
 async def get_resume_by_id(resume_id: int):
     """
     Get a specific resume by ID.
@@ -163,7 +154,7 @@ async def get_resume_by_id(resume_id: int):
     
     return {"success": True, "resume": resume}
 
-@app.get("/resumes/search/skills")
+@app.get("/resumes/search/skills", operation_id="find_resumes_by_skill")
 async def search_by_skill(skill: str = Query(..., description="Skill to search for")):
     """
     Search resumes by skill.
@@ -177,7 +168,7 @@ async def search_by_skill(skill: str = Query(..., description="Skill to search f
         "count": len(matching_resumes)
     }
 
-@app.get("/stats")
+@app.get("/stats", operation_id="get_database_statistics")
 async def get_stats():
     """
     Get database statistics.
@@ -202,14 +193,14 @@ async def get_stats():
         "unique_skills": len(set(all_skills))
     }
 
-@app.get("/health")
+@app.get("/health", operation_id="check_server_health")
 async def health_check():
     """
     Health check endpoint.
     """
     return {"status": "healthy", "service": "Resume Management Server"}
 
-@app.get("/")
+@app.get("/", operation_id="get_server_info")
 async def root():
     """
     Root endpoint with information about available services.
@@ -232,146 +223,45 @@ async def root():
         }
     }
 
-# MCP Tools - using the same business logic as FastAPI
-@mcp.tool()
-def get_all_resumes(limit: Optional[int] = None) -> dict:
-    """
-    Get a list of all resumes with an optional limit parameter.
-    
-    Args:
-        limit: Maximum number of resumes to return (optional)
-    
-    Returns:
-        Dictionary containing resumes list and total count
-    """
-    resumes = RESUMES[:limit] if limit is not None else RESUMES
-    return {
-        "resumes": resumes,
-        "total": len(RESUMES),
-        "returned": len(resumes)
-    }
-
-@mcp.tool()
-def get_resume_by_id_mcp(resume_id: int) -> dict:
-    """
-    Get a specific resume by ID.
-    
-    Args:
-        resume_id: The ID of the resume to retrieve
-        
-    Returns:
-        Resume data or error message
-    """
-    resume = find_resume_by_id(resume_id)
-    if resume:
-        return {"success": True, "resume": resume}
-    return {"success": False, "error": f"Resume with ID {resume_id} not found"}
-
-@mcp.tool()
-def search_resumes_by_skill(skill: str) -> dict:
-    """
-    Search resumes by a specific skill (case-insensitive).
-    
-    Args:
-        skill: The skill to search for
-        
-    Returns:
-        Dictionary containing matching resumes and count
-    """
-    matching_resumes = filter_resumes_by_skill(skill)
-    return {
-        "skill_searched": skill,
-        "resumes": matching_resumes,
-        "count": len(matching_resumes)
-    }
-
-@mcp.tool()
-def search_resumes_by_experience(min_years: int) -> dict:
-    """
-    Search resumes by minimum years of experience.
-    
-    Args:
-        min_years: Minimum years of experience required
-        
-    Returns:
-        Dictionary containing matching resumes and count
-    """
-    matching_resumes = filter_resumes_by_experience(min_years)
-    return {
-        "min_experience_years": min_years,
-        "resumes": matching_resumes,
-        "count": len(matching_resumes)
-    }
-
-@mcp.tool()
-def get_resume_stats() -> dict:
-    """
-    Get statistics about the resume database.
-    
-    Returns:
-        Dictionary containing various statistics
-    """
-    all_skills = []
-    total_experience = 0
-    
-    for resume in RESUMES:
-        all_skills.extend(resume["skills"])
-        total_experience += resume["experience_years"]
-    
-    skill_counts = {}
-    for skill in all_skills:
-        skill_counts[skill] = skill_counts.get(skill, 0) + 1
-    
-    return {
-        "total_resumes": len(RESUMES),
-        "average_experience_years": round(total_experience / len(RESUMES), 1),
-        "most_common_skills": sorted(skill_counts.items(), key=lambda x: x[1], reverse=True)[:5],
-        "unique_skills": len(set(all_skills))
-    }
-
 if __name__ == "__main__":
-    import asyncio
+    print("""🚀 Starting Resume Management Server...
+📋 FastAPI REST API: http://localhost:8000
+📚 API Documentation: http://localhost:8000/docs
+💡 Health Check: http://localhost:8000/health
+
+📡 Available FastAPI endpoints:
+  • GET /resumes (with filtering)
+  • GET /resumes/{id}
+  • GET /resumes/search/skills
+  • GET /stats
+  • GET /health""")
     
-    print("🚀 Starting Resume Management Servers...")
-    print(f"📋 FastAPI REST API: http://localhost:8000")
-    print(f"📚 API Documentation: http://localhost:8000/docs")
-    print(f"🔧 MCP Server: http://localhost:8001/mcp")
-    print(f"💡 Health Check: http://localhost:8000/health")
-    print("\n📡 Available REST endpoints:")
-    print("  • GET /resumes (with filtering)")
-    print("  • GET /resumes/{id}")
-    print("  • GET /resumes/search/skills")
-    print("  • GET /stats")
-    print("  • GET /health")
-    print("\n🛠️  Available MCP tools:")
-    print("  • get_all_resumes")
-    print("  • get_resume_by_id_mcp")
-    print("  • search_resumes_by_skill")
-    print("  • search_resumes_by_experience")
-    print("  • get_resume_stats")
-    print("\n💡 For MCP Inspector: Use Streamable HTTP with http://localhost:8001/mcp")
-    
-    async def run_servers():
-        """Run both FastAPI and MCP servers concurrently"""
-        # Create MCP app
-        mcp_app = mcp.http_app(path="/mcp")
-        
-        # Create server configurations
-        fastapi_config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
-        mcp_config = uvicorn.Config(mcp_app, host="0.0.0.0", port=8001, log_level="info")
-        
-        # Create server instances
-        fastapi_server = uvicorn.Server(fastapi_config)
-        mcp_server = uvicorn.Server(mcp_config)
-        
-        # Run both servers concurrently
-        await asyncio.gather(
-            fastapi_server.serve(),
-            mcp_server.serve()
-        )
-    
-    # Run both servers
+    # Add MCP integration 
     try:
-        asyncio.run(run_servers())
-    except KeyboardInterrupt:
-        print("\n👋 Shutting down servers...")
+        from fastapi_mcp import FastApiMCP
+        
+        # Create MCP server - it will use operation_id from route decorators
+        mcp = FastApiMCP(
+            app,
+            name="Resume Management MCP Server",
+            description="Server that provides resume data via MCP protocol. Use this to search, filter, and retrieve resume information for candidates."
+        )
+        
+        mcp.mount()
+        
+        print("""🔧 MCP Server: http://localhost:8000/mcp
+
+🛠️ MCP Tools Available:
+  • search_all_resumes - Get all resumes with optional filtering
+  • get_resume_details - Get specific resume by ID
+  • find_resumes_by_skill - Search resumes by skill
+  • get_database_statistics - Get resume database stats
+  • check_server_health - Health check endpoint
+  • get_server_info - Get server information
+
+💡 For MCP Inspector: Use Streamable HTTP with http://localhost:8000/mcp""")
+        
+    except ImportError:
+        print("💡 Install fastapi-mcp for MCP support: pip install fastapi-mcp")
+    
+    uvicorn.run(app, host="0.0.0.0", port=8000)

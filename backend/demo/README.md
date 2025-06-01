@@ -18,6 +18,7 @@ A demonstration of the FastAPI + FastMCP resume server functionality with stream
    - This provides an interactive interface to test all available endpoints
    ![Swagger UI Demo](swagger.png)
 ### MCP Testing
+#### MCP Inspector
 1. Install the MCP Inspector:
    ```bash
    npm install -g @modelcontextprotocol/inspector
@@ -27,21 +28,24 @@ A demonstration of the FastAPI + FastMCP resume server functionality with stream
    ```bash
    npx @modelcontextprotocol/inspector
    ```
-   - Connect to: `http://localhost:8001/mcp`
+   - Connect to: `http://localhost:8000/mcp`
    ![MCP Inspector Demo](mcp_inspect.png)
 
-## Current Features
-
-- 🔄 Streaming HTTP support
-- 📝 Resume management endpoints
-- 🔍 MCP protocol integration
-- 📊 Swagger documentation
-
-## Technical Notes
-
-- The server runs on port 8000 for FastAPI endpoints
-- MCP endpoint is available on port 8001
-- Currently supports streaming HTTP responses only
-
+#### Curosr
+If you use cursor, simply add this mcp.json under your local root /.cursor
+```json
+{
+    "mcpServers": {
+      "tally-mcp": {
+        "url": "http://localhost:8000/mcp",
+        "env": {
+          "API_KEY": "value"
+        }
+      }
+    }
+  }
+  ```
+  ![cursor](cursor.png)
+   You will be able to interact with inside cursor chat
 ## Development
 TODO this should be dockerized. Stay tuned

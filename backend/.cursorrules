@@ -1,0 +1,96 @@
+# FastAPI Backend Development Rules
+
+## General Python Guidelines
+- Use Python 3.8+ features and type hints everywhere
+- Follow PEP 8 style guidelines strictly
+- Use descriptive variable and function names
+- Add docstrings to all functions, classes, and modules
+- Prefer f-strings over .format() or % formatting
+
+## FastAPI Specific Rules
+- Use dependency injection for database connections, authentication, etc.
+- Define Pydantic models for all request/response schemas
+- Use async/await for all route handlers and database operations
+- Group related endpoints using APIRouter with proper prefixes and tags
+- Always include proper HTTP status codes and response models
+- Use FastAPI's automatic validation - don't write manual validation
+- Implement proper error handling with HTTPException
+
+## Code Structure
+- Keep route handlers thin - move business logic to separate service modules
+- Use the repository pattern for data access
+- Separate concerns: routes, services, models, schemas, dependencies
+- Create reusable dependencies for common operations (auth, db sessions, etc.)
+- Use environment variables for configuration with pydantic Settings
+
+## Database & Models
+- Use SQLAlchemy with async support (asyncpg for PostgreSQL)
+- Define database models separately from Pydantic schemas
+- Use Alembic for database migrations
+- Always use connection pooling and proper session management
+- Include created_at and updated_at timestamps on models
+
+## Security
+- Always validate and sanitize input data
+- Use proper authentication (JWT tokens, OAuth2, etc.)
+- Implement rate limiting for public endpoints
+- Never log sensitive information (passwords, tokens, etc.)
+- Use HTTPS in production configurations
+
+## Testing
+- Write tests using pytest and httpx for async testing
+- Use dependency overrides for testing (test database, mock services)
+- Include both unit tests and integration tests
+- Test error cases and edge conditions
+- Aim for high test coverage on business logic
+
+## Documentation
+- Use FastAPI's automatic OpenAPI documentation features
+- Add descriptions to all endpoints, parameters, and models
+- Include example values in Pydantic models
+- Document any custom dependencies or middleware
+
+## Performance
+- Use async database operations
+- Implement proper caching strategies where appropriate
+- Use background tasks for non-critical operations
+- Monitor and log performance metrics
+- Use connection pooling and optimize database queries
+
+## Error Handling
+- Create custom exception classes for different error types
+- Use FastAPI's exception handlers for consistent error responses
+- Log errors with proper context and stack traces
+- Return meaningful error messages to clients (without exposing internals)
+
+## Code Examples to Follow:
+
+```python
+# Route with proper typing and dependency injection
+@router.post("/users/", response_model=UserResponse, status_code=201)
+async def create_user(
+    user_data: UserCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+) -> UserResponse:
+    """Create a new user account."""
+    return await user_service.create_user(db, user_data)
+
+# Pydantic model with validation
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8)
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "email": "user@example.com",
+                "username": "johndoe",
+                "password": "securepassword123"
+            }
+        }
+    )
+```
+
+When writing or refactoring code, always prioritize readability, maintainability, and following FastAPI best practices.
