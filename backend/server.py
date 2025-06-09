@@ -1,267 +1,368 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
-from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 import uvicorn
 import logging
+import asyncio
+from contextlib import asynccontextmanager
+
+# Import MCP integration
+from fastapi_mcp import FastApiMCP
+
+# Import our modules
+from database import (
+    init_db, seed_initial_data, get_session, get_all_resumes, get_resume_by_id,
+    get_resumes_by_email, create_resume, get_database_stats, get_user_by_email, 
+    engine, async_session
+)
+from auth import get_current_user, get_optional_user, get_admin_user
+from models import User, UserRead, Resume, ResumeCreate, ResumeRead
+from admin import create_admin
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Pydantic models for better validation and documentation
-class Resume(BaseModel):
-    id: int
-    name: str
-    email: str
-    phone: str
-    title: str
-    experience_years: int
-    skills: List[str]
-    education: str
-    summary: str
-
-class ResumeResponse(BaseModel):
-    resumes: List[Resume]
-    total: int
-
-RESUMES = [
-    {
-        "id": 1,
-        "name": "John Doe",
-        "email": "john.doe@email.com",
-        "phone": "(555) 123-4567",
-        "title": "Senior Software Engineer",
-        "experience_years": 8,
-        "skills": ["Python", "JavaScript", "React", "FastAPI", "PostgreSQL"],
-        "education": "BS Computer Science - Stanford University",
-        "summary": "Experienced full-stack developer with expertise in Python and modern web technologies."
-    },
-    {
-        "id": 2, 
-        "name": "Jane Smith",
-        "email": "jane.smith@email.com",
-        "phone": "(555) 987-6543", 
-        "title": "Product Manager",
-        "experience_years": 6,
-        "skills": ["Product Strategy", "Agile", "Data Analysis", "SQL", "Figma"],
-        "education": "MBA - Harvard Business School",
-        "summary": "Results-driven product manager with proven track record of launching successful products."
-    },
-    {
-        "id": 3,
-        "name": "Mike Johnson", 
-        "email": "mike.johnson@email.com",
-        "phone": "(555) 456-7890",
-        "title": "UX Designer",
-        "experience_years": 4,
-        "skills": ["UI/UX Design", "Figma", "Adobe Creative Suite", "User Research", "Prototyping"],
-        "education": "BFA Design - Art Center College of Design",
-        "summary": "Creative UX designer focused on user-centered design and accessibility."
-    },
-    {
-        "id": 4,
-        "name": "Sarah Wilson",
-        "email": "sarah.wilson@email.com", 
-        "phone": "(555) 321-9876",
-        "title": "Data Scientist",
-        "experience_years": 5,
-        "skills": ["Python", "Machine Learning", "TensorFlow", "SQL", "Statistics"],
-        "education": "PhD Statistics - MIT",
-        "summary": "Data scientist specializing in machine learning and predictive analytics."
-    },
-    {
-        "id": 5,
-        "name": "David Chen",
-        "email": "david.chen@email.com",
-        "phone": "(555) 654-3210", 
-        "title": "DevOps Engineer",
-        "experience_years": 7,
-        "skills": ["AWS", "Docker", "Kubernetes", "Terraform", "Python", "CI/CD"],
-        "education": "BS Computer Engineering - UC Berkeley",
-        "summary": "DevOps engineer with expertise in cloud infrastructure and automation."
-    }
+# Configuration constants
+MCP_MOUNT_PATH = "/mcp"
+ALLOWED_ORIGINS = [
+    "http://localhost:3000", 
+    "http://localhost:3001", 
+    "https://osugovugrrthcqelvagj.supabase.co"
+]
+MCP_OPERATIONS = [
+    "search_all_resumes",
+    "get_resume_details", 
+    "find_resumes_by_skill",
+    "get_database_statistics",
+    "check_server_health",
+    "get_server_info"
 ]
 
-# Helper functions
-def find_resume_by_id(resume_id: int) -> Optional[dict]:
-    """Find a resume by ID"""
-    return next((resume for resume in RESUMES if resume["id"] == resume_id), None)
+# Global state
+class AppState:
+    def __init__(self):
+        self.mcp_server = None
+        self.mcp_initialized = False
 
-def filter_resumes_by_skill(skill: str) -> List[dict]:
-    """Filter resumes by skill (case-insensitive)"""
-    return [
-        resume for resume in RESUMES 
-        if any(skill.lower() in s.lower() for s in resume["skills"])
-    ]
+app_state = AppState()
 
-def filter_resumes_by_experience(min_years: int) -> List[dict]:
-    """Filter resumes by minimum experience years"""
-    return [resume for resume in RESUMES if resume["experience_years"] >= min_years]
+
+async def initialize_mcp_server(app: FastAPI) -> None:
+    """Initialize and mount the MCP server."""
+    try:
+        logger.info("Initializing MCP Server...")
+        
+        app_state.mcp_server = FastApiMCP(
+            fastapi=app,
+            name="Resume Management MCP Server",
+            description="MCP server for Resume Management API - provides tools for managing users and resumes",
+            include_operations=MCP_OPERATIONS,
+            describe_full_response_schema=True,
+            describe_all_responses=True
+        )
+        
+        app_state.mcp_server.mount(app, mount_path=MCP_MOUNT_PATH)
+        await asyncio.sleep(0.5)  # Small delay after mounting
+        
+        app_state.mcp_initialized = True
+        
+        logger.info("🔗 MCP Server initialized and mounted at %s!", MCP_MOUNT_PATH)
+        logger.info("🤖 AI tools can now access Resume Management API via MCP")
+        logger.info("📋 Available MCP tools: %s", ", ".join(MCP_OPERATIONS))
+        logger.info("🌐 MCP endpoint: http://localhost:8000%s", MCP_MOUNT_PATH)
+        
+    except Exception as e:
+        logger.error("Failed to initialize MCP server: %s", e)
+        app_state.mcp_initialized = False
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application startup and shutdown."""
+    try:
+        # Startup
+        logger.info("Starting up...")
+        await init_db()
+        
+        async with async_session() as session:
+            await seed_initial_data(session)
+        
+        await asyncio.sleep(1)  # Ensure database is ready
+        await initialize_mcp_server(app)
+        
+    except Exception as e:
+        logger.error("Startup failed: %s", e)
+        raise
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down...")
+    app_state.mcp_initialized = False
+
 
 # Create FastAPI app
 app = FastAPI(
     title="Resume Management API", 
-    description="REST API for managing and searching resumes",
-    version="1.0.0"
+    description="REST API for managing and searching resumes with SQLModel and authentication",
+    version="2.0.0",
+    lifespan=lifespan
 )
 
-# FastAPI REST endpoints
-@app.get("/resumes", response_model=dict, operation_id="search_all_resumes")
-async def get_resumes(
-    limit: Optional[int] = Query(None, ge=1, description="Maximum number of resumes to return"),
-    skill: Optional[str] = Query(None, description="Filter by skill"),
-    min_experience: Optional[int] = Query(None, ge=0, description="Minimum years of experience")
-):
-    """
-    Get a list of resumes with optional filtering and limiting.
-    """
-    logger.info(f"GET /resumes - limit={limit}, skill={skill}, min_experience={min_experience}")
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize SQLAdmin
+admin = create_admin(app, engine)
+
+
+@app.middleware("http")
+async def check_mcp_ready(request, call_next):
+    """Check if MCP is ready for MCP requests."""
+    if request.url.path.startswith(MCP_MOUNT_PATH) and not app_state.mcp_initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="MCP server is still initializing, please try again in a moment"
+        )
     
-    resumes = RESUMES
-    
-    # Apply filters
-    if skill:
-        resumes = filter_resumes_by_skill(skill)
-    
-    if min_experience is not None:
-        resumes = filter_resumes_by_experience(min_experience)
-    
-    # Apply limit
-    if limit is not None:
-        resumes = resumes[:limit]
+    response = await call_next(request)
+    return response
+
+
+# ==================== PUBLIC ENDPOINTS ====================
+
+@app.get("/", operation_id="get_server_info")
+async def get_server_info():
+    """Get server information and status."""
+    return {
+        "message": "Resume Management API v2.0", 
+        "status": "running",
+        "features": [
+            "SQLModel", 
+            "Async SQLAlchemy", 
+            "Supabase authentication", 
+            "Protected endpoints", 
+            "Admin interface", 
+            "MCP server"
+        ],
+        "admin_url": "/admin",
+        "mcp_available": app_state.mcp_initialized,
+        "mcp_endpoint": MCP_MOUNT_PATH if app_state.mcp_initialized else None,
+        "mcp_tools": MCP_OPERATIONS if app_state.mcp_initialized else []
+    }
+
+
+@app.get("/health", operation_id="check_server_health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "mcp_ready": app_state.mcp_initialized
+    }
+
+
+@app.get("/mcp-info", operation_id="get_mcp_info")
+async def get_mcp_info():
+    """Get MCP server information and available tools."""
+    if not app_state.mcp_initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="MCP server is not yet initialized"
+        )
     
     return {
-        "resumes": resumes,
-        "total_in_db": len(RESUMES),
+        "mcp_server": "Resume Management MCP Server",
+        "mcp_endpoint": MCP_MOUNT_PATH,
+        "mcp_ready": app_state.mcp_initialized,
+        "available_tools": MCP_OPERATIONS,
+        "description": "MCP server for Resume Management API - provides tools for managing users and resumes"
+    }
+
+
+@app.get("/stats", operation_id="get_database_statistics")
+async def get_database_stats_endpoint(session: AsyncSession = Depends(get_session)):
+    """Get database statistics."""
+    logger.info("GET /stats")
+    return await get_database_stats(session)
+
+
+# ==================== RESUME ENDPOINTS ====================
+
+@app.get("/resumes", response_model=dict, operation_id="search_all_resumes")
+async def search_resumes(
+    limit: Optional[int] = Query(None, ge=1, description="Maximum number of resumes to return"),
+    skill: Optional[str] = Query(None, description="Filter by skill"),
+    min_experience: Optional[int] = Query(None, ge=0, description="Minimum years of experience"),
+    current_user: Optional[User] = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get a list of resumes with optional filtering and limiting."""
+    logger.info("GET /resumes - limit=%s, skill=%s, min_experience=%s", limit, skill, min_experience)
+    logger.info("User: %s", current_user.email if current_user else "Anonymous")
+    
+    resumes = await get_all_resumes(session, limit=limit, skill=skill, min_experience=min_experience)
+    stats = await get_database_stats(session)
+    
+    return {
+        "resumes": [ResumeRead.model_validate(resume) for resume in resumes],
+        "total_in_db": stats["total_resumes"],
         "returned": len(resumes),
         "filters_applied": {
             "skill": skill,
             "min_experience": min_experience,
             "limit": limit
-        }
+        },
+        "user_authenticated": current_user is not None
     }
+
 
 @app.get("/resumes/{resume_id}", operation_id="get_resume_details")
-async def get_resume_by_id(resume_id: int):
-    """
-    Get a specific resume by ID.
-    """
-    logger.info(f"GET /resumes/{resume_id}")
+async def get_resume_details(
+    resume_id: int,
+    current_user: Optional[User] = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get a specific resume by ID."""
+    logger.info("GET /resumes/%d", resume_id)
     
-    resume = find_resume_by_id(resume_id)
+    resume = await get_resume_by_id(session, resume_id)
     if not resume:
-        raise HTTPException(status_code=404, detail=f"Resume with ID {resume_id} not found")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Resume with ID {resume_id} not found"
+        )
     
-    return {"success": True, "resume": resume}
+    return {
+        "success": True, 
+        "resume": ResumeRead.model_validate(resume),
+        "user_authenticated": current_user is not None
+    }
+
 
 @app.get("/resumes/search/skills", operation_id="find_resumes_by_skill")
-async def search_by_skill(skill: str = Query(..., description="Skill to search for")):
-    """
-    Search resumes by skill.
-    """
-    logger.info(f"GET /resumes/search/skills - skill={skill}")
+async def find_resumes_by_skill(
+    skill: str = Query(..., description="Skill to search for"),
+    current_user: Optional[User] = Depends(get_optional_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Search resumes by skill."""
+    logger.info("GET /resumes/search/skills - skill=%s", skill)
     
-    matching_resumes = filter_resumes_by_skill(skill)
+    resumes = await get_all_resumes(session, skill=skill)
+    
     return {
         "skill_searched": skill,
-        "resumes": matching_resumes,
-        "count": len(matching_resumes)
+        "resumes": [ResumeRead.model_validate(resume) for resume in resumes],
+        "count": len(resumes),
+        "user_authenticated": current_user is not None
     }
 
-@app.get("/stats", operation_id="get_database_statistics")
-async def get_stats():
-    """
-    Get database statistics.
-    """
-    logger.info("GET /stats")
+
+# ==================== PROTECTED ENDPOINTS ====================
+
+@app.get("/me", response_model=dict, operation_id="get_current_user_info")
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current user information. Requires authentication."""
+    return {
+        "user": UserRead.model_validate(current_user),
+        "message": "You are successfully authenticated!"
+    }
+
+
+@app.get("/my-resumes", response_model=dict, operation_id="get_user_resumes")
+async def get_user_resumes(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get resumes belonging to the current user. Requires authentication."""
+    logger.info("GET /my-resumes for user: %s", current_user.email)
     
-    all_skills = []
-    total_experience = 0
-    
-    for resume in RESUMES:
-        all_skills.extend(resume["skills"])
-        total_experience += resume["experience_years"]
-    
-    skill_counts = {}
-    for skill in all_skills:
-        skill_counts[skill] = skill_counts.get(skill, 0) + 1
+    resumes = await get_resumes_by_email(session, current_user.email)
     
     return {
-        "total_resumes": len(RESUMES),
-        "average_experience_years": round(total_experience / len(RESUMES), 1),
-        "most_common_skills": sorted(skill_counts.items(), key=lambda x: x[1], reverse=True)[:5],
-        "unique_skills": len(set(all_skills))
+        "resumes": [ResumeRead.model_validate(resume) for resume in resumes],
+        "count": len(resumes),
+        "user_email": current_user.email
     }
 
-@app.get("/health", operation_id="check_server_health")
-async def health_check():
-    """
-    Health check endpoint.
-    """
-    return {"status": "healthy", "service": "Resume Management Server"}
 
-@app.get("/", operation_id="get_server_info")
-async def root():
-    """
-    Root endpoint with information about available services.
-    """
+@app.post("/resumes", response_model=dict, operation_id="create_resume")
+async def create_new_resume(
+    resume_data: ResumeCreate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Create a new resume. Requires authentication."""
+    logger.info("POST /resumes for user: %s", current_user.email)
+    
+    # Convert ResumeCreate to dict and add user_id
+    resume_dict = resume_data.model_dump()
+    resume_dict["user_id"] = current_user.id
+    
+    created_resume = await create_resume(session, resume_dict)
+    
     return {
-        "message": "Resume Management Server",
-        "version": "1.0.0",
-        "services": {
-            "rest_api": {
-                "base_url": "http://localhost:8000",
-                "endpoints": [
-                    "GET /resumes - Get all resumes (with optional filters)",
-                    "GET /resumes/{id} - Get resume by ID",
-                    "GET /resumes/search/skills?skill={skill} - Search by skill",
-                    "GET /stats - Get database statistics",
-                    "GET /health - Health check"
-                ],
-                "documentation": "/docs"
-            }
-        }
+        "success": True,
+        "resume": ResumeRead.model_validate(created_resume),
+        "message": "Resume created successfully"
     }
+
+
+@app.get("/users/by-email/{email}", operation_id="get_user_by_email")
+async def get_user_by_email_endpoint(
+    email: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get user information by email. Requires authentication."""
+    # Security check: users can only access their own data, admins can access anyone's
+    if current_user.email != email and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only access your own user information"
+        )
+    
+    user = await get_user_by_email(session, email)
+    if not user:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"User with email {email} not found"
+        )
+    
+    resumes = await get_resumes_by_email(session, email)
+    
+    return {
+        "user": UserRead.model_validate(user),
+        "resumes": [ResumeRead.model_validate(resume) for resume in resumes],
+        "resume_count": len(resumes)
+    }
+
+
+# ==================== ADMIN ENDPOINTS ====================
+
+@app.get("/admin/users", operation_id="get_all_users")
+async def get_all_users_admin(
+    admin_user: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get all users (admin only)."""
+    logger.info("GET /admin/users by admin: %s", admin_user.email)
+    
+    # TODO: Implement get_all_users function in database module
+    return {
+        "message": "Admin endpoint - would return all users",
+        "admin_user": admin_user.email,
+        "note": "This endpoint needs implementation in the database module"
+    }
+
 
 if __name__ == "__main__":
-    print("""🚀 Starting Resume Management Server...
-📋 FastAPI REST API: http://localhost:8000
-📚 API Documentation: http://localhost:8000/docs
-💡 Health Check: http://localhost:8000/health
-
-📡 Available FastAPI endpoints:
-  • GET /resumes (with filtering)
-  • GET /resumes/{id}
-  • GET /resumes/search/skills
-  • GET /stats
-  • GET /health""")
-    
-    # Add MCP integration 
-    try:
-        from fastapi_mcp import FastApiMCP
-        
-        # Create MCP server - it will use operation_id from route decorators
-        mcp = FastApiMCP(
-            app,
-            name="Resume Management MCP Server",
-            description="Server that provides resume data via MCP protocol. Use this to search, filter, and retrieve resume information for candidates."
-        )
-        
-        mcp.mount()
-        
-        print("""🔧 MCP Server: http://localhost:8000/mcp
-
-🛠️ MCP Tools Available:
-  • search_all_resumes - Get all resumes with optional filtering
-  • get_resume_details - Get specific resume by ID
-  • find_resumes_by_skill - Search resumes by skill
-  • get_database_statistics - Get resume database stats
-  • check_server_health - Health check endpoint
-  • get_server_info - Get server information
-
-💡 For MCP Inspector: Use Streamable HTTP with http://localhost:8000/mcp""")
-        
-    except ImportError:
-        print("💡 Install fastapi-mcp for MCP support: pip install fastapi-mcp")
-    
     uvicorn.run(app, host="0.0.0.0", port=8000)

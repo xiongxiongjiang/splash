@@ -3,7 +3,16 @@ fastapi>=0.68.0
 uvicorn>=0.15.0
 pydantic>=1.8.0
 fastapi-mcp>=0.1.0
+sqlmodel>=0.0.8
+sqlalchemy[asyncio]>=2.0.0
+aiosqlite>=0.19.0
+asyncpg>=0.28.0  # For PostgreSQL support
+alembic>=1.12.0  # For migrations
+sqladmin[full]>=0.20.0  # Admin interface
+passlib[bcrypt]>=1.7.4  # For admin password hashing
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.6
+httpx>=0.24.0
 
 # Development dependencies
-pytest>=7.0.0
-httpx>=0.24.0  # Required for TestClient 
+pytest>=7.0.0 
