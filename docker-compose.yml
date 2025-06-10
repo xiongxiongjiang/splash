@@ -1,0 +1,50 @@
+# Remove the version field as it's obsolete
+# version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: splash-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/resume_db.sqlite
+      - PYTHONPATH=/app
+    networks:
+      - splash-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: splash-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000 # Use service name for internal communication
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - splash-network
+
+volumes:
+  backend-data:
+
+networks:
+  splash-network:
+    driver: bridge

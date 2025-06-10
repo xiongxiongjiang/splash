@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Splash Frontend - Next.js Application
 
-## Getting Started
+This is the frontend service for Splash, built with Next.js 14+ and TypeScript.
 
-First, run the development server:
+## 🚀 Development
 
+### Using Docker Compose (Recommended)
+From the **root** directory:
+```bash
+docker-compose up
+```
+
+The frontend will be available at: http://localhost:3000
+
+### Manual Setup (Without Docker)
+<details>
+<summary>Click to expand manual setup instructions</summary>
+
+#### 1. Install Dependencies
+```bash
+npm install
+```
+
+#### 2. Environment Variables
+Create a `.env.local` file:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+#### 3. Run the Development Server
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+</details>
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📝 Development Notes
 
-## Learn More
+### Available Scripts
+```bash
+# With Docker
+docker-compose exec frontend npm run dev    # Development server
+docker-compose exec frontend npm run build  # Production build
+docker-compose exec frontend npm run lint   # Run linter
 
-To learn more about Next.js, take a look at the following resources:
+# Testing (when tests are added)
+docker-compose exec frontend npm test
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Key Features
+- **Authentication**: Supabase integration
+- **API Integration**: Connects to FastAPI backend
+- **TypeScript**: Full type safety
+- **Tailwind CSS**: Utility-first styling
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🌐 Environment Variables
 
-## Deploy on Vercel
+| Variable | Description | Default (Docker) |
+|----------|-------------|-----------------|
+| `NEXT_PUBLIC_API_URL` | Backend API URL | http://backend:8000 |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Required |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Required |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🚢 Deployment (Vercel)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push code to GitHub
+
+2. Import project in Vercel:
+   - Connect GitHub repository
+   - Set root directory to `frontend`
+   - Configure environment variables
+
+3. Environment variables in Vercel:
+   ```
+   NEXT_PUBLIC_API_URL=https://your-backend.herokuapp.com
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+## 🐛 Troubleshooting
+
+- **Port 3000 in use**: `docker-compose down && docker-compose up`
+- **API connection failed**: Check if backend is running
+- **Build errors**: `docker-compose exec frontend rm -rf .next && npm run build`
+- **Module not found**: Rebuild image `docker-compose build frontend`
