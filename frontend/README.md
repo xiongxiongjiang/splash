@@ -22,7 +22,12 @@ npm install
 ```
 
 #### 2. Environment Variables
-Create a `.env.local` file:
+Copy `.env.template` to `.env.local` and fill in your values:
+```bash
+cp .env.template .env.local
+```
+
+Then edit `.env.local` with your Supabase credentials:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url

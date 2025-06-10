@@ -19,6 +19,16 @@ Docker Compose is a tool for defining and running multi-container Docker applica
 - Each service (frontend/backend) runs in its own container
 - Containers communicate via internal Docker network
 
+### Environment Setup
+The frontend requires environment variables for Supabase configuration:
+```bash
+# Copy the environment template
+cd frontend
+cp .env.template .env.local
+# Edit .env.local with your Supabase credentials
+cd ..
+```
+
 ### Run Everything
 ```bash
 # Start all services
