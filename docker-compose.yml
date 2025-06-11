@@ -36,11 +36,34 @@ services:
       - /app/.next
     environment:
       - NEXT_PUBLIC_API_URL=http://backend:8000 # Use service name for internal communication
+      - NEXT_PUBLIC_LITELLM_URL=http://localhost:4000 # Browser accesses via localhost
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
+      - litellm
     networks:
       - splash-network
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: splash-litellm
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm_config.yaml:/app/config.yaml
+    environment:
+      - LITELLM_MASTER_KEY=sk-splash-master-key-1234
+      - GEMINI_API_KEY=AIzaSyD1WlO2hJMzDZx2jqlNOzee4J7yuccvYUs
+      - LITELLM_MODE=DEVELOPMENT
+      - UI_USERNAME=admin
+      - UI_PASSWORD=admin
+    command: --config /app/config.yaml --port 4000
+    networks:
+      - splash-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   backend-data:

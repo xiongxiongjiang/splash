@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { syncUserWithBackend, getUserResumes, apiClient, User, Resume } from '@/lib/api'
+import Chat from '@/components/Chat'
 
 interface DashboardState {
   supabaseUser: any | null
@@ -291,6 +292,19 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Chat Assistant */}
+        <div className="mt-8">
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">AI Assistant</h2>
+              <p className="text-sm text-gray-600 mt-1">Ask questions about resumes or get help with your job search</p>
+            </div>
+            <div className="p-6">
+              <Chat />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

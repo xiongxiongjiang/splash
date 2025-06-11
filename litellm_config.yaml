@@ -1,0 +1,74 @@
+model_list:
+  - model_name: gemini-pro-tools
+    litellm_params:
+      model: gemini/gemini-1.5-flash
+      api_key: AIzaSyD1WlO2hJMzDZx2jqlNOzee4J7yuccvYUs
+      tools:
+        - type: function
+          function:
+            name: search_resumes
+            description: Search for resumes in the database with optional filters
+            parameters:
+              type: object
+              properties:
+                skill:
+                  type: string
+                  description: Filter by specific skill (e.g., Python, JavaScript)
+                min_experience:
+                  type: integer
+                  description: Minimum years of experience required
+                limit:
+                  type: integer
+                  description: Maximum number of resumes to return
+              required: []
+            
+        - type: function
+          function:
+            name: get_resume_details
+            description: Get detailed information about a specific resume by ID
+            parameters:
+              type: object
+              properties:
+                resume_id:
+                  type: integer
+                  description: The ID of the resume to retrieve
+              required: ["resume_id"]
+            
+        - type: function
+          function:
+            name: get_database_stats
+            description: Get statistics about the resume database
+            parameters:
+              type: object
+              properties: {}
+              required: []
+
+general_settings:
+  completion_model: gemini-pro-tools
+  drop_params: true
+  
+litellm_settings:
+  telemetry: false
+  success_callback: ["langfuse"]
+  failure_callback: ["langfuse"]
+  service_callback: ["langfuse"]
+  
+  # Tool execution settings
+  function_calling: true
+  execute_function: true
+  function_endpoints:
+    search_resumes:
+      url: "http://backend:8000/resumes"
+      method: "GET"
+      headers:
+        Content-Type: "application/json"
+    get_resume_details:
+      url: "http://backend:8000/resumes/{resume_id}"
+      method: "GET"
+      headers:
+        Content-Type: "application/json"
+    get_database_stats:
+      url: "http://backend:8000/stats"
+      method: "GET"
+      headers:
+        Content-Type: "application/json"
