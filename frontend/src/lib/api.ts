@@ -74,7 +74,7 @@ class ApiClient {
 
     // Add auth header if token is available
     if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`
     }
 
     try {
@@ -99,7 +99,7 @@ class ApiClient {
    * Sync user data with backend after OAuth login
    * This will create or update the user in the backend database
    */
-  async syncUser(supabaseUser: any): Promise<User> {
+  async syncUser(supabaseUser: Record<string, any>): Promise<User> {
     console.log('🔄 Syncing user with backend:', supabaseUser.email)
     
     try {
@@ -107,9 +107,10 @@ class ApiClient {
       const existingUser = await this.request<{ user: User }>(`/users/by-email/${supabaseUser.email}`)
       console.log('✅ Found existing user:', existingUser.user.email)
       return existingUser.user
-    } catch (error) {
+    } catch (error: any) {
       // User doesn't exist, this is expected for new users
       console.log('👤 New user detected, will be created on first authenticated request')
+      console.log('Sync error:', error)
       
       // The backend will automatically create the user when they make their first authenticated request
       // due to the get_current_user dependency injection
@@ -217,7 +218,7 @@ class ApiClient {
 export const apiClient = new ApiClient()
 
 // Helper function to sync user after Supabase auth
-export async function syncUserWithBackend(supabaseUser: any, accessToken: string): Promise<User> {
+export async function syncUserWithBackend(supabaseUser: Record<string, any>, accessToken: string): Promise<User> {
   apiClient.setToken(accessToken)
   return await apiClient.syncUser(supabaseUser)
 }

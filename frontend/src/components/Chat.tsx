@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   MainContainer,
   ChatContainer,
@@ -22,7 +22,7 @@ interface ChatMessage {
 export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isTyping, setIsTyping] = useState(false)
-  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [, setConversationId] = useState<string | null>(null)
   
   const litellmUrl = process.env.NEXT_PUBLIC_LITELLM_URL || 'http://localhost:4000'
 

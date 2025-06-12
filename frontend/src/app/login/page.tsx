@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
   const signInWithLinkedIn = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
@@ -18,7 +18,7 @@ export default function LoginPage() {
   }
 
   const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
@@ -138,7 +138,7 @@ export default function LoginPage() {
               Forgot your password?
             </a>
             <div className="text-sm text-gray-600">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <a href="#" className="text-blue-600 hover:text-blue-500">
                 Sign up
               </a>

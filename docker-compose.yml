@@ -1,6 +1,3 @@
-# Remove the version field as it's obsolete
-# version: '3.8'
-
 services:
   backend:
     build:
@@ -35,8 +32,8 @@ services:
       - /app/node_modules
       - /app/.next
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000 # Use service name for internal communication
-      - NEXT_PUBLIC_LITELLM_URL=http://localhost:4000 # Browser accesses via localhost
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_LITELLM_URL=http://localhost:4000
     depends_on:
       - backend
       - litellm
@@ -56,7 +53,12 @@ services:
       - LITELLM_MODE=DEVELOPMENT
       - UI_USERNAME=admin
       - UI_PASSWORD=admin
+      - DATABASE_URL=postgresql://litellm:litellm@postgres:5432/litellm
+      - LITELLM_SALT_KEY=sk-12345678
+      - STORE_MODEL_IN_DB=True
     command: --config /app/config.yaml --port 4000
+    depends_on:
+      - postgres
     networks:
       - splash-network
     healthcheck:
@@ -65,8 +67,27 @@ services:
       timeout: 10s
       retries: 3
 
+  postgres:
+    image: postgres:15-alpine  # Using specific version for better caching
+    container_name: splash-postgres
+    environment:
+      - POSTGRES_USER=litellm
+      - POSTGRES_PASSWORD=litellm
+      - POSTGRES_DB=litellm
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - splash-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   backend-data:
+  postgres_data:
 
 networks:
   splash-network:

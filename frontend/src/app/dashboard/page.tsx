@@ -7,7 +7,7 @@ import { syncUserWithBackend, getUserResumes, apiClient, User, Resume } from '@/
 import Chat from '@/components/Chat'
 
 interface DashboardState {
-  supabaseUser: any | null
+  supabaseUser: Record<string, any> | null
   backendUser: User | null
   resumes: Resume[]
   isLoading: boolean
@@ -65,8 +65,9 @@ export default function DashboardPage() {
             isLoading: false 
           }))
           console.log(`✅ Found ${resumesData.resumes.length} resumes for user`)
-        } catch (resumeError) {
+        } catch (resumeError: any) {
           console.log('ℹ️ No resumes found or user not yet in backend database')
+          console.log('Resume error:', resumeError)
           setState(prev => ({ 
             ...prev, 
             resumes: [],
