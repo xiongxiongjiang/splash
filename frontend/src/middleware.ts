@@ -1,26 +1,11 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import createMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
 
-export async function middleware(request: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res })
-
-  // Refresh session if expired - required for Server Components
-  await supabase.auth.getSession()
-
-  return res
-}
+export default createMiddleware(routing);
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
-  ],
-} 
+  // Match all pathnames except for
+  // - … if they start with `/api`, `/trpc`, `/_next` or `/_vercel`
+  // - … the ones containing a dot (e.g. `favicon.ico`)
+  matcher: '/((?!api|trpc|_next|_vercel|.*\\..*).*)',
+};

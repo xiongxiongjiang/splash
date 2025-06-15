@@ -1,0 +1,48 @@
+{
+    "HomePage": {
+        "appName": "Tally AI",
+        "addNewJob": "New Job",
+        "coach": "Coach",
+        "myJobs": "MyJobs",
+        "chatInputPlaceholder": "Send messege  to Tally"
+    },
+    "Auth": {
+        "hero": {
+            "title": "Your next job is just one ask away",
+            "poweredBy": "powered by AI that actually gets you there.",
+            "subtitle": "Get tailored advice and referral tips for jobs at your faovrite companies"
+        },
+        "authForm": {
+            "loginTitle": "Say it. Get hired.",
+            "loginSubtitle": "Log in to your account",
+            "continueWithGoogle": "Continue with Google",
+            "continueWithLinkedIn": "Continue with Linkedin",
+            "separator": "OR",
+            "emailPlaceholder": "Email",
+            "passwordPlaceholder": "Password",
+            "firstNamePlaceholder": "First Name",
+            "lastNamePlaceholder": "Last Name",
+            "loginSubmitButton": "LOG IN",
+            "forgotPasswordLink": "Forgot Password?",
+            "loginBottomText": "Don't have an account?",
+            "registerText": "Register",
+            "loginText": "LOG IN",
+            "loginBottomSubText": "Log In",
+            "registerTitle": "Create an account",
+            "alreadyHaveAccount": "Already have an account?",
+            "passwordError": "Password length must be at least 8 characters.",
+            "emailError": "Please enter a valid email address.",
+            "firstNameError": "The name must be at least 2 characters long.",
+            "lastNameError": "The last name needs to be at least 2 characters long.",
+            "isRequired": " is required."
+        },
+        "registration": {
+            "verifyEmail": {
+                "standard": "Registration successful! Please check your email to verify your account."
+            }
+        },
+        "login": {
+            "success": "Welcome back, "
+        }
+    }
+}
