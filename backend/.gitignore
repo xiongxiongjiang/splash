@@ -1,0 +1,21 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.env
+.venv/
+venv/
+
+# Testing (pytest)
+.pytest_cache/
+
+# Code formatting (black)
+.mypy_cache/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store 
