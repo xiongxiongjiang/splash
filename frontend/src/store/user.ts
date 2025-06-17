@@ -2,33 +2,15 @@ import { produce } from 'immer';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface UserMetadata {
-  email: string;
-  email_verified: boolean;
-  first_name: string;
-  last_name: string;
-  full_name?: string;
-  phone_verified: boolean;
-  sub: string;
-}
+import type { User } from '@supabase/auth-js';
 
-interface UserInfo {
-  id: string;
-  email: string;
-  role: string;
-  last_sign_in_at: string;
-  created_at: string;
-  updated_at: string;
-  is_anonymous: boolean;
-  user_metadata: UserMetadata;
-}
 
 interface UserState {
-  userInfo: UserInfo | null;
+  userInfo: User | null;
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
-  updateUserInfo: (userInfo: UserInfo) => void;
+  updateUserInfo: (userInfo: User) => void;
   updateToken: (token: { access_token: string; refresh_token: string; expires_at: number }) => void;
   clearUser: () => void;
 }

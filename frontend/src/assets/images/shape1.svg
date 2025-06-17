@@ -1,0 +1,18 @@
+<svg width="1009" height="1021" viewBox="0 0 1009 1021" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g style="mix-blend-mode:hard-light" filter="url(#filter0_f_324_74)">
+        <path
+            d="M148.385 468.278C54.1668 596.642 262.748 612.09 339.506 692.461C416.264 772.832 368.428 892.36 488.619 896.368C638.859 901.377 514.529 723.779 613.499 686.6C676.201 663.045 779.752 806.105 856.603 708.023C968.229 565.559 712.013 541.181 668.627 453.009C625.242 364.837 740.883 345.831 738.756 203.873C736.629 61.9157 530.836 138.11 423.092 217.469C315.348 296.827 462.703 342.639 428.745 418.794C394.786 494.95 234.581 350.845 148.385 468.278Z"
+            fill="#FFFB91" />
+    </g>
+    <defs>
+        <filter id="filter0_f_324_74" x="0.403076" y="0.45874" width="1008.12" height="1020.01"
+            filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+            <feFlood flood-opacity="0" result="BackgroundImageFix" />
+            <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+            <feGaussianBlur stdDeviation="62" result="effect1_foregroundBlur_324_74" />
+            <feColorMatrix type="hueRotate" values="0">
+                <animate attributeName="values" from="0" to="360" dur="120s" repeatCount="indefinite" />
+            </feColorMatrix>
+        </filter>
+    </defs>
+</svg>

@@ -1,10 +1,13 @@
+import { Inter } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
+
+import AntdClientProvider from '../antdClientProvider';
+
 import { routing } from '@/i18n/routing';
-import { Inter } from 'next/font/google';
+
 const inter = Inter({ subsets: ['latin'] });
 import '../globals.css';
-import AntdClientProvider from '../antdClientProvider';
 
 export default async function LocaleLayout({
   children,

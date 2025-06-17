@@ -1,5 +1,7 @@
-import { createServerActionClient } from '@/lib/ServerActionClient';
 import { NextResponse } from 'next/server';
+
+import { createServerActionClient } from '@/lib/ServerActionClient';
+
 import type { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -15,7 +17,7 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         console.error('OAuth callback error:', error);
-        return NextResponse.redirect(new URL('/en/login?error=auth_failed', request.url));
+        return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
       }
 
       // If we have a user and session, sync with backend
@@ -28,10 +30,11 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       console.error('Unexpected error in OAuth callback:', error);
-      return NextResponse.redirect(new URL('/en/login?error=unexpected', request.url));
+      return NextResponse.redirect(new URL('/login?error=unexpected', request.url));
     }
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/en/dashboard', request.url));
+  // return NextResponse.redirect(new URL('/en/dashboard', request.url))
+  return NextResponse.redirect(new URL('/en', request.url));
 }

@@ -1,6 +1,7 @@
 {
     "HomePage": {
         "appName": "Tally AI",
+        "join": "JOIN",
         "addNewJob": "New Job",
         "coach": "Coach",
         "myJobs": "MyJobs",

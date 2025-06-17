@@ -1,13 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+
 import { Tabs, ConfigProvider } from 'antd';
-import type { TabsProps } from 'antd';
+import Image from 'next/image';
+
+import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Image from 'next/image';
+
 import IconFiles from '@/assets/images/icon_files.png';
 import IconLink from '@/assets/images/icon_link.png';
+
+import type { TabsProps } from 'antd';
 
 export default function WelcomePage() {
   const [linkedinUrl, setLinkedinUrl] = useState('https://linkedin.com/in/');
@@ -43,50 +48,55 @@ export default function WelcomePage() {
   ];
 
   return (
-    <div className="relative bg-pink-100 min-h-screen w-full flex flex-col items-center justify-center p-4">
-      {/* todo 背景 & 上传简历或者linkedin */}
-      <div className="max-w-md w-full flex flex-col items-center">
-        <div className="text-[20px] text-[rgba(0,0,0,0.8)] flex flex-col gap-6">
-          <p className="font-bold">Welcome</p>
-          <p>I&apos;m Tally. Let&apos;s find your dream job together.</p>
-          <p className="font-bold">Start by sharing your LinkedIn or resume.</p>
+    <div className="relative welcome-bg min-h-screen ">
+      <div className="welcome-content w-full flex flex-col items-center">
+        <div className="w-full">
+          <Header />
         </div>
+        {/* todo 背景 & 上传简历或者linkedin */}
+        <div className="max-w-md  w-full flex flex-col items-center">
+          <div className="text-[20px] text-[rgba(0,0,0,0.8)] flex flex-col gap-6">
+            <p className="font-bold">Welcome</p>
+            <p>I&apos;m Tally. Let&apos;s find your dream job together.</p>
+            <p className="font-bold">Start by sharing your LinkedIn or resume.</p>
+          </div>
 
-        <div className="rounded-3xl bg-white mt-13 p-9 w-full shadow-sm">
-          <ConfigProvider
-            theme={{
-              components: {
-                Tabs: {
-                  itemColor: 'rgba(0,0,0,0.3)',
-                  titleFontSize: 22,
-                  itemHoverColor: 'black',
-                  itemActiveColor: 'black',
-                  itemSelectedColor: 'black',
-                  inkBarColor: 'black',
+          <div className="rounded-3xl bg-white mt-13 p-9 w-full shadow-sm">
+            <ConfigProvider
+              theme={{
+                components: {
+                  Tabs: {
+                    itemColor: 'rgba(0,0,0,0.3)',
+                    titleFontSize: 22,
+                    itemHoverColor: 'black',
+                    itemActiveColor: 'black',
+                    itemSelectedColor: 'black',
+                    inkBarColor: 'black',
+                  },
                 },
-              },
-            }}
-          >
-            <style jsx global>{`
-              .ant-tabs-top > .ant-tabs-nav::before {
-                border-bottom: none !important;
-              }
-              .ant-tabs-ink-bar {
-                height: 4px !important;
-                border-radius: 4px !important;
-              }
-            `}</style>
-            <Tabs
-              defaultActiveKey="resume"
-              indicator={{ size: 40 }}
-              className="font-semibold !border-none"
-              items={items}
-              centered
-            />
-          </ConfigProvider>
+              }}
+            >
+              <style jsx global>{`
+                .ant-tabs-top > .ant-tabs-nav::before {
+                  border-bottom: none !important;
+                }
+                .ant-tabs-ink-bar {
+                  height: 4px !important;
+                  border-radius: 4px !important;
+                }
+              `}</style>
+              <Tabs
+                defaultActiveKey="resume"
+                indicator={{ size: 40 }}
+                className="font-semibold !border-none"
+                items={items}
+                centered
+              />
+            </ConfigProvider>
 
-          <div className="flex justify-center mt-4">
-            <Button>CONTINUE</Button>
+            <div className="flex justify-center mt-4">
+              <Button>CONTINUE</Button>
+            </div>
           </div>
         </div>
       </div>

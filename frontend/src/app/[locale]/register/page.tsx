@@ -4,8 +4,9 @@ import React from 'react';
 import Image, { StaticImageData } from 'next/image';
 
 import AuthForm from '@/components/AuthForm';
+import LandingPageBg from '@/components/LandingPageBg';
 
-import bgRegister from '@/assets/images/bg_register.png';
+// import bgRegister from '@/assets/images/bg_register.png';
 interface CompanyLogoProps {
   logo: StaticImageData | string;
   alt?: string;
@@ -52,10 +53,8 @@ const RegisterPage: React.FC = () => {
 
   return (
     // bg-gradient-to-br from-green-100 via-blue-50 to-purple-100
-    <div
-      className="min-h-screen gap-6 p-10 flex justify-around bg-no-repeat bg-cover bg-center"
-      style={{ backgroundImage: `url(${bgRegister.src})` }}
-    >
+    <div className="min-h-screen gap-6 p-10 flex justify-around bg-no-repeat bg-cover bg-center">
+      <LandingPageBg />
       {/* Left Side - Marketing Content */}
       <div className="flex justify-center items-center">
         <div className="max-w-3xl">

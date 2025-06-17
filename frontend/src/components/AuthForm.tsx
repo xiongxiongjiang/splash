@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { message } from 'antd';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { z } from 'zod';
 
@@ -14,6 +15,15 @@ import { Input } from '@/components/ui/input';
 
 import { supabase } from '@/lib/supabase';
 import useUserStore from '@/store/user';
+
+import type { Session } from '@supabase/auth-js';
+
+// 定义错误类型
+interface AuthError {
+  message: string;
+  status?: number;
+  name?: string;
+}
 
 const AuthForm: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -103,16 +113,21 @@ const AuthForm: React.FC = () => {
     try {
       const {
         data: { session },
-      } = (await supabase.auth.getSession()) as any;
-
-      updateUserInfo(session?.user);
+      } = (await supabase.auth.getSession()) as { data: { session: Session | null } };
+      if (!session) {
+        throw new Error('No session found');
+      }
+      updateUserInfo(session.user);
 
       updateToken({
         access_token: session.access_token,
         refresh_token: session.refresh_token,
-        expires_at: session.expires_at,
+        expires_at: session.expires_at as number,
       });
-    } catch (error) {}
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      message.error(authError.message || '保存用户信息失败');
+    }
   };
   const onLoginSubmit = async (param: z.infer<typeof LoginSchema>) => {
     try {
@@ -123,10 +138,11 @@ const AuthForm: React.FC = () => {
       });
       if (error) throw error;
       savaUserInfo();
-      message.success(t('login.success') + data.user.user_metadata.first_name);
+      message.success(t('login.success') + (data.user?.user_metadata?.first_name || ''));
       router.push('/');
-    } catch (error: any) {
-      message.error(error.message);
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      message.error(authError.message || '登录失败');
     } finally {
       setIsLoading(false);
     }
@@ -148,8 +164,9 @@ const AuthForm: React.FC = () => {
 
       if (error) throw error;
       message.success(t('registration.verifyEmail.standard'));
-    } catch (error: any) {
-      message.error(error.message);
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      message.error(authError.message || '注册失败');
     } finally {
       setIsLoading(false);
     }
@@ -166,8 +183,9 @@ const AuthForm: React.FC = () => {
       });
 
       if (error) throw error;
-    } catch (error: any) {
-      message.error(error.message);
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      message.error(authError.message || 'Google 登录失败');
     } finally {
       setIsLoading(false);
     }
@@ -184,8 +202,9 @@ const AuthForm: React.FC = () => {
         },
       });
       if (error) throw error;
-    } catch (error: any) {
-      message.error(error.message || 'LinkedIn 登录失败');
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      message.error(authError.message || 'LinkedIn 登录失败');
     } finally {
       setIsLoading(false);
     }

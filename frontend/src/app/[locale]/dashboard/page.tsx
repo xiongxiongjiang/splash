@@ -1,104 +1,112 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { syncUserWithBackend, getUserResumes, apiClient, User, Resume } from '@/lib/api'
-import Chat from '@/components/Chat'
+import { useEffect, useState } from 'react';
+
+import { useRouter } from 'next/navigation';
+
+import Chat from '@/components/Chat';
+
+import { syncUserWithBackend, getUserResumes, apiClient, User, Resume } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 interface DashboardState {
-  supabaseUser: Record<string, any> | null
-  backendUser: User | null
-  resumes: Resume[]
-  isLoading: boolean
-  error: string | null
-  syncStatus: 'idle' | 'syncing' | 'success' | 'error'
+  supabaseUser: Record<string, any> | null;
+  backendUser: User | null;
+  resumes: Resume[];
+  isLoading: boolean;
+  error: string | null;
+  syncStatus: 'idle' | 'syncing' | 'success' | 'error';
 }
 
 export default function DashboardPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [state, setState] = useState<DashboardState>({
     supabaseUser: null,
     backendUser: null,
     resumes: [],
     isLoading: true,
     error: null,
-    syncStatus: 'idle'
-  })
+    syncStatus: 'idle',
+  });
 
   useEffect(() => {
     const initializeDashboard = async () => {
       try {
         // Get Supabase user and session
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
         if (userError || sessionError || !user || !session) {
-          console.log('No authenticated user, redirecting to login')
-          router.push('/login')
-          return
+          console.log('No authenticated user, redirecting to login');
+          router.push('/login');
+          return;
         }
 
-        setState(prev => ({ 
-          ...prev, 
-          supabaseUser: user, 
-          syncStatus: 'syncing' 
-        }))
+        setState((prev) => ({
+          ...prev,
+          supabaseUser: user,
+          syncStatus: 'syncing',
+        }));
 
         // Sync user with backend
-        console.log('🔄 Starting backend sync for:', user.email)
-        const backendUser = await syncUserWithBackend(user, session.access_token)
-        
-        setState(prev => ({ 
-          ...prev, 
-          backendUser, 
-          syncStatus: 'success' 
-        }))
+        console.log('🔄 Starting backend sync for:', user.email);
+        const backendUser = await syncUserWithBackend(user, session.access_token);
+
+        setState((prev) => ({
+          ...prev,
+          backendUser,
+          syncStatus: 'success',
+        }));
 
         // Fetch user's resumes
-        console.log('📄 Fetching user resumes...')
+        console.log('📄 Fetching user resumes...');
         try {
-          const resumesData = await getUserResumes(session.access_token)
-          setState(prev => ({ 
-            ...prev, 
+          const resumesData = await getUserResumes(session.access_token);
+          setState((prev) => ({
+            ...prev,
             resumes: resumesData.resumes,
-            isLoading: false 
-          }))
-          console.log(`✅ Found ${resumesData.resumes.length} resumes for user`)
+            isLoading: false,
+          }));
+          console.log(`✅ Found ${resumesData.resumes.length} resumes for user`);
         } catch (resumeError: any) {
-          console.log('ℹ️ No resumes found or user not yet in backend database')
-          console.log('Resume error:', resumeError)
-          setState(prev => ({ 
-            ...prev, 
+          console.log('ℹ️ No resumes found or user not yet in backend database');
+          console.log('Resume error:', resumeError);
+          setState((prev) => ({
+            ...prev,
             resumes: [],
-            isLoading: false 
-          }))
+            isLoading: false,
+          }));
         }
-
       } catch (error) {
-        console.error('Dashboard initialization error:', error)
-        setState(prev => ({ 
-          ...prev, 
+        console.error('Dashboard initialization error:', error);
+        setState((prev) => ({
+          ...prev,
           error: 'Failed to load dashboard data',
           isLoading: false,
-          syncStatus: 'error'
-        }))
+          syncStatus: 'error',
+        }));
       }
-    }
+    };
 
-    initializeDashboard()
-  }, [router])
+    initializeDashboard();
+  }, [router]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    apiClient.clearToken()
-    router.push('/login')
-  }
+    await supabase.auth.signOut();
+    apiClient.clearToken();
+    router.push('/login');
+  };
 
   const handleCreateResume = () => {
     // TODO: Navigate to resume creation page
-    console.log('Create resume clicked - to be implemented')
-  }
+    console.log('Create resume clicked - to be implemented');
+  };
 
   if (state.isLoading) {
     return (
@@ -106,12 +114,10 @@ export default function DashboardPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your dashboard...</p>
-          {state.syncStatus === 'syncing' && (
-            <p className="text-sm text-blue-600 mt-2">Syncing with backend...</p>
-          )}
+          {state.syncStatus === 'syncing' && <p className="text-sm text-blue-600 mt-2">Syncing with backend...</p>}
         </div>
       </div>
-    )
+    );
   }
 
   if (state.error) {
@@ -129,7 +135,7 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -143,9 +149,7 @@ export default function DashboardPage() {
                 Welcome back, {state.backendUser?.name || state.supabaseUser?.email}!
               </h1>
               <div className="flex items-center space-x-4 mt-2">
-                <span className="text-sm text-gray-500">
-                  {state.supabaseUser?.email}
-                </span>
+                <span className="text-sm text-gray-500">{state.supabaseUser?.email}</span>
                 {state.syncStatus === 'success' && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     ✓ Synced
@@ -178,15 +182,13 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-          
+
           <div className="p-6">
             {state.resumes.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-gray-400 text-6xl mb-4">📄</div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No resumes yet</h3>
-                <p className="text-gray-500 mb-6">
-                  Create your first resume to get started with your job search.
-                </p>
+                <p className="text-gray-500 mb-6">Create your first resume to get started with your job search.</p>
                 <button
                   onClick={handleCreateResume}
                   className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
@@ -205,7 +207,7 @@ export default function DashboardPage() {
                       <h3 className="text-lg font-semibold text-gray-900">{resume.name}</h3>
                       <span className="text-sm text-gray-500">#{resume.id}</span>
                     </div>
-                    
+
                     <div className="space-y-2 mb-4">
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Title:</span> {resume.title}
@@ -241,9 +243,7 @@ export default function DashboardPage() {
 
                     <div className="flex justify-between items-center text-sm text-gray-500">
                       <span>Created: {new Date(resume.created_at).toLocaleDateString()}</span>
-                      <button className="text-blue-600 hover:text-blue-800 font-medium">
-                        View →
-                      </button>
+                      <button className="text-blue-600 hover:text-blue-800 font-medium">View →</button>
                     </div>
                   </div>
                 ))}
@@ -264,29 +264,29 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="text-green-500 text-2xl mr-3">⭐</div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Avg Experience</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {state.resumes.length > 0 
+                    {state.resumes.length > 0
                       ? Math.round(state.resumes.reduce((sum, r) => sum + r.experience_years, 0) / state.resumes.length)
-                      : 0
-                    } years
+                      : 0}{' '}
+                    years
                   </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="text-purple-500 text-2xl mr-3">🛠️</div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Unique Skills</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {new Set(state.resumes.flatMap(r => r.skills || [])).size}
+                    {new Set(state.resumes.flatMap((r) => r.skills || [])).size}
                   </p>
                 </div>
               </div>
@@ -308,5 +308,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

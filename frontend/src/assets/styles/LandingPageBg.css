@@ -1,411 +1,115 @@
 /* 弥散渐变背景样式 */
+.bg-gradient-mesh-top{
+  position: absolute;
+  /* overflow: hidden; */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, #FFFFFF 0%, #EBEBEB 70%);
+  filter: blur(20px);
+  z-index: -1;
+}
 .bg-gradient-mesh {
-    overflow: hidden; /* 限制内部弥散球体溢出 */
+    overflow: hidden;
+  min-height: 100%;
+
+    z-index: -3;
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(248, 250, 252, 0.95) 25%,
-    rgba(241, 245, 249, 0.9) 50%,
-    rgba(236, 240, 244, 0.95) 75%,
-    rgba(226, 232, 240, 0.9) 100%
+    -135deg,
+    rgba(239, 88, 88, 0.3) 0%,
+    rgba(64, 85, 244, 0.3) 35%,
+    rgba(109, 201, 244, 0.3) 63%,
+    rgba(249, 240, 68, 0.3) 100%
   );
 }
-
+.bg-gradient-mesh::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 98%;
+  height: 96%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(to bottom, #FFFFFF 0%, rgba(235, 235, 235, 0.7) 77%);
+  filter: blur(20px);
+  pointer-events: none;
+  z-index: -2;
+}
 .gradient-orb {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.8; /* 从0.7提升到0.8 */
+  filter: blur(20px);
   will-change: transform, background;
 }
 
 .gradient-orb-1 {
   width: 450px;
   height: 450px;
-  background: radial-gradient(circle, var(--orb-color-1) 0%, transparent 70%);
-  animation: float-chaotic-1 18s ease-in-out infinite, color-shift-1 14s ease-in-out infinite; /* 从25s/20s改为18s/14s */
-  top: -200px;
-  left: -200px;
+  background: url('../../assets/images/shape1.svg') no-repeat center center;
+  background-size: contain;
+  z-index: -2;
+  animation: float-chaotic-1 120s ease-in-out infinite; 
 }
-
 .gradient-orb-2 {
   width: 550px;
   height: 550px;
-  background: radial-gradient(circle, var(--orb-color-2) 0%, transparent 70%);
-  animation: float-chaotic-2 21s ease-in-out infinite, color-shift-2 17s ease-in-out infinite; /* 从30s/25s改为21s/17s */
-  top: -150px;
-  right: -250px;
+  background: url('../../assets/images/shape2.svg') no-repeat center center;
+  background-size: contain;
+  animation: float-chaotic-2 120s ease-in-out infinite; /* 从25s/20s改为18s/14s */
+  z-index: -2;
 }
 
-.gradient-orb-3 {
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, var(--orb-color-3) 0%, transparent 70%);
-  animation: float-chaotic-3 24s ease-in-out infinite, color-shift-3 13s ease-in-out infinite; /* 从35s/18s改为24s/13s */
-  bottom: -150px;
-  left: -100px;
+:root {
+  --shape1-width: 450px;
+  --shape1-height: 450px; 
+  --shape2-width: 550px;
+  --shape2-height: 550px;
 }
-
-.gradient-orb-4 {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, var(--orb-color-4) 0%, transparent 70%);
-  animation: float-chaotic-4 20s ease-in-out infinite, color-shift-4 15s ease-in-out infinite; /* 从28s/22s改为20s/15s */
-  top: 40%;
-  right: -200px;
-}
-
-.gradient-orb-5 {
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, var(--orb-color-5) 0%, transparent 70%);
-  animation: float-chaotic-5 22s ease-in-out infinite, color-shift-5 19s ease-in-out infinite; /* 从32s/27s改为22s/19s */
-  bottom: -100px;
-  right: 20%;
-}
-
 /* 无规则移动动画 */
 @keyframes float-chaotic-1 {
   0% {
-    transform: translate(0px, 0px) scale(1) rotate(0deg);
+    /* 左上角，元素左侧和上侧各有一半在屏幕外 */
+    transform: translate(calc(var(--shape1-width) * -0.5), calc(var(--shape1-height) * -0.5));
   }
-  15% {
-    transform: translate(-80px, 120px) scale(1.2) rotate(45deg);
+  25% {
+    /* 左下角，元素左侧一半在屏幕外，底部一半在屏幕外（即元素顶部在屏幕底部中心） */
+    transform: translate(calc(var(--shape1-width) * -0.5), calc(100vh - (var(--shape1-height) * 0.5)));
   }
-  30% {
-    transform: translate(150px, -50px) scale(0.8) rotate(90deg);
-  }
-  45% {
-    transform: translate(-120px, -80px) scale(1.1) rotate(135deg);
-  }
-  60% {
-    transform: translate(200px, 100px) scale(0.9) rotate(180deg);
+  50% {
+    /* 右下角，元素右侧一半在屏幕外，底部一半在屏幕外 */
+    transform: translate(calc(100vw - (var(--shape1-width) * 0.5)), calc(100vh - (var(--shape1-height) * 0.5)));
   }
   75% {
-    transform: translate(-50px, 150px) scale(1.3) rotate(225deg);
-  }
-  90% {
-    transform: translate(100px, -120px) scale(0.7) rotate(270deg);
+    /* 右上角，元素右侧一半在屏幕外，顶部一半在屏幕外 */
+    transform: translate(calc(100vw - (var(--shape1-width) * 0.5)), calc(var(--shape1-height) * -0.5));
   }
   100% {
-    transform: translate(0px, 0px) scale(1) rotate(360deg);
+    /* 回到左上角 */
+    transform: translate(calc(var(--shape1-width) * -0.5), calc(var(--shape1-height) * -0.5));
   }
 }
 
 @keyframes float-chaotic-2 {
   0% {
-    transform: translate(0px, 0px) scale(1) rotate(0deg);
-  }
-  12% {
-    transform: translate(120px, -100px) scale(0.9) rotate(-30deg);
+    /* 起点：左下角。元素左侧一半在屏幕外，底部一半在屏幕外。 */
+    transform: translate(calc(var(--shape2-width) * -0.5), calc(100vh - (var(--shape2-height) * 0.5)));
   }
   25% {
-    transform: translate(-80px, 180px) scale(1.1) rotate(-60deg);
-  }
-  40% {
-    transform: translate(180px, 80px) scale(1.3) rotate(-90deg);
-  }
-  55% {
-    transform: translate(-150px, -120px) scale(0.8) rotate(-120deg);
-  }
-  70% {
-    transform: translate(100px, 200px) scale(1.2) rotate(-150deg);
-  }
-  85% {
-    transform: translate(-200px, 50px) scale(0.9) rotate(-180deg);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1) rotate(-360deg);
-  }
-}
-
-@keyframes float-chaotic-3 {
-  0% {
-    transform: translate(0px, 0px) scale(1) rotate(0deg);
-  }
-  18% {
-    transform: translate(150px, -150px) scale(1.1) rotate(60deg);
-  }
-  35% {
-    transform: translate(-100px, 100px) scale(0.9) rotate(120deg);
+    /* 路径点1：右下角。元素右侧一半在屏幕外，底部一半在屏幕外。 */
+    transform: translate(calc(100vw - (var(--shape2-width) * 0.5)), calc(100vh - (var(--shape2-height) * 0.5)));
   }
   50% {
-    transform: translate(200px, -80px) scale(1.2) rotate(180deg);
-  }
-  65% {
-    transform: translate(-180px, 150px) scale(0.8) rotate(240deg);
-  }
-  80% {
-    transform: translate(80px, -200px) scale(1.3) rotate(300deg);
-  }
-  95% {
-    transform: translate(-120px, -50px) scale(1.0) rotate(330deg);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1) rotate(360deg);
-  }
-}
-
-@keyframes float-chaotic-4 {
-  0% {
-    transform: translate(0px, 0px) scale(1) rotate(0deg);
-  }
-  20% {
-    transform: translate(-120px, 80px) scale(0.8) rotate(-45deg);
-  }
-  40% {
-    transform: translate(100px, -150px) scale(1.2) rotate(-90deg);
-  }
-  60% {
-    transform: translate(-200px, 120px) scale(1.1) rotate(-135deg);
-  }
-  80% {
-    transform: translate(150px, 100px) scale(0.9) rotate(-180deg);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1) rotate(-360deg);
-  }
-}
-
-@keyframes float-chaotic-5 {
-  0% {
-    transform: translate(0px, 0px) scale(1) rotate(0deg);
-  }
-  25% {
-    transform: translate(180px, -100px) scale(1.3) rotate(90deg);
-  }
-  50% {
-    transform: translate(-150px, 180px) scale(0.7) rotate(180deg);
+    /* 路径点2：右上角。元素右侧一半在屏幕外，顶部一半在屏幕外。 */
+    transform: translate(calc(100vw - (var(--shape2-width) * 0.5)), calc(var(--shape2-height) * -0.5));
   }
   75% {
-    transform: translate(120px, -180px) scale(1.1) rotate(270deg);
+    /* 路径点3：左上角。元素左侧一半在屏幕外，顶部一半在屏幕外。 */
+    transform: translate(calc(var(--shape2-width) * -0.5), calc(var(--shape2-height) * -0.5));
   }
   100% {
-    transform: translate(0px, 0px) scale(1) rotate(360deg);
+    /* 终点：回到左下角，与起点相同。 */
+    transform: translate(calc(var(--shape2-width) * -0.5), calc(100vh - (var(--shape2-height) * 0.5)));
   }
-}
-
-/* 颜色渐变动画 */
-@keyframes color-shift-1 {
-  0% {
-    --orb-color-1: rgba(255, 182, 193, 0.6);
-  }
-  25% {
-    --orb-color-1: rgba(255, 218, 185, 0.6);
-  }
-  50% {
-    --orb-color-1: rgba(255, 192, 203, 0.6);
-  }
-  75% {
-    --orb-color-1: rgba(255, 160, 122, 0.6);
-  }
-  100% {
-    --orb-color-1: rgba(255, 182, 193, 0.6);
-  }
-}
-
-@keyframes color-shift-2 {
-  0% {
-    --orb-color-2: rgba(173, 216, 230, 0.5);
-  }
-  20% {
-    --orb-color-2: rgba(135, 206, 235, 0.5);
-  }
-  40% {
-    --orb-color-2: rgba(176, 196, 222, 0.5);
-  }
-  60% {
-    --orb-color-2: rgba(152, 251, 152, 0.5);
-  }
-  80% {
-    --orb-color-2: rgba(175, 238, 238, 0.5);
-  }
-  100% {
-    --orb-color-2: rgba(173, 216, 230, 0.5);
-  }
-}
-
-@keyframes color-shift-3 {
-  0% {
-    --orb-color-3: rgba(221, 160, 221, 0.5);
-  }
-  30% {
-    --orb-color-3: rgba(218, 112, 214, 0.5);
-  }
-  60% {
-    --orb-color-3: rgba(186, 85, 211, 0.5);
-  }
-  100% {
-    --orb-color-3: rgba(221, 160, 221, 0.5);
-  }
-}
-
-@keyframes color-shift-4 {
-  0% {
-    --orb-color-4: rgba(255, 228, 181, 0.6);
-  }
-  25% {
-    --orb-color-4: rgba(255, 218, 185, 0.6);
-  }
-  50% {
-    --orb-color-4: rgba(255, 239, 213, 0.6);
-  }
-  75% {
-    --orb-color-4: rgba(255, 228, 196, 0.6);
-  }
-  100% {
-    --orb-color-4: rgba(255, 228, 181, 0.6);
-  }
-}
-
-@keyframes color-shift-5 {
-  0% {
-    --orb-color-5: rgba(152, 251, 152, 0.5);
-  }
-  33% {
-    --orb-color-5: rgba(144, 238, 144, 0.5);
-  }
-  66% {
-    --orb-color-5: rgba(173, 255, 47, 0.5);
-  }
-  100% {
-    --orb-color-5: rgba(152, 251, 152, 0.5);
-  }
-}
-
-/* CSS变量初始化 */
-:root {
-  --orb-color-1: rgba(255, 182, 193, 0.6); /* 从0.4提升到0.6 */
-  --orb-color-2: rgba(173, 216, 230, 0.5); /* 从0.3提升到0.5 */
-  --orb-color-3: rgba(221, 160, 221, 0.5); /* 从0.3提升到0.5 */
-  --orb-color-4: rgba(255, 228, 181, 0.6); /* 从0.4提升到0.6 */
-  --orb-color-5: rgba(152, 251, 152, 0.5); /* 从0.3提升到0.5 */
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .gradient-orb {
-    filter: blur(50px);
-  }
-
-  .gradient-orb-1 {
-    width: 300px;
-    height: 300px;
-  }
-
-  .gradient-orb-2 {
-    width: 350px;
-    height: 350px;
-  }
-
-  .gradient-orb-3 {
-    width: 250px;
-    height: 250px;
-  }
-
-  .gradient-orb-4 {
-    width: 320px;
-    height: 320px;
-  }
-
-  .gradient-orb-5 {
-    width: 220px;
-    height: 220px;
-  }
-
-  /* 移动端减少移动范围 */
-  @keyframes float-chaotic-1 {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    25% {
-      transform: translate(-40px, 60px) scale(1.1);
-    }
-    50% {
-      transform: translate(60px, -30px) scale(0.9);
-    }
-    75% {
-      transform: translate(-30px, 40px) scale(1.2);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
-    }
-  }
-
-  @keyframes float-chaotic-2 {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    25% {
-      transform: translate(50px, -40px) scale(0.9);
-    }
-    50% {
-      transform: translate(-40px, 70px) scale(1.1);
-    }
-    75% {
-      transform: translate(40px, 30px) scale(1.2);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
-    }
-  }
-
-  @keyframes float-chaotic-3 {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    25% {
-      transform: translate(60px, -60px) scale(1.1);
-    }
-    50% {
-      transform: translate(-50px, 50px) scale(0.9);
-    }
-    75% {
-      transform: translate(30px, -40px) scale(1.2);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
-    }
-  }
-
-  @keyframes float-chaotic-4 {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    25% {
-      transform: translate(-50px, 40px) scale(0.8);
-    }
-    50% {
-      transform: translate(40px, -60px) scale(1.2);
-    }
-    75% {
-      transform: translate(60px, 50px) scale(0.9);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
-    }
-  }
-
-  @keyframes float-chaotic-5 {
-    0% {
-      transform: translate(0px, 0px) scale(1);
-    }
-    25% {
-      transform: translate(70px, -50px) scale(1.3);
-    }
-    50% {
-      transform: translate(-60px, 70px) scale(0.7);
-    }
-    75% {
-      transform: translate(50px, -70px) scale(1.1);
-    }
-    100% {
-      transform: translate(0px, 0px) scale(1);
-    }
-  }
-}
-
-/* 玻璃态效果 */
-.backdrop-blur-sm {
-  backdrop-filter: blur(8px);
 }
