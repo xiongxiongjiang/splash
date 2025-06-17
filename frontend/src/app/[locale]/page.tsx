@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CountUp from 'react-countup';
+import { useRouter } from 'next/navigation';
 
 import { gsap } from 'gsap';
 import { TextPlugin } from 'gsap/TextPlugin';
@@ -11,6 +12,7 @@ import InfiniteLogoScroller from '@/components/InfiniteLogoScroller';
 import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import LandingPageBg from '@/components/LandingPageBg';
+import WaitlistDropdown from '@/components/WaitlistDropdown';
 
 import BgCopilot from '@/assets/images/bg_copilot.svg';
 import { supabase } from '@/lib/supabase';
@@ -53,6 +55,8 @@ const jobQuestions = [
 ];
 
 export default function TallyAILanding() {
+  const router = useRouter();
+  const [showWaitlistDropdown, setShowWaitlistDropdown] = useState(false);
   const textRef = useRef<HTMLHeadingElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLDivElement>(null);
@@ -161,7 +165,7 @@ export default function TallyAILanding() {
     <div className="min-h-screen bg-gradient-to-b from-white to-[rgba(235,235,235,0.7)]">
       <LandingPageBg />
       {/* Header */}
-      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
+      <header className="container mx-auto px-4 py-6 flex justify-between items-center relative z-10">
         <div ref={logoRef} className="flex items-center gap-2 opacity-0 -translate-x-5">
           <div className="grid grid-cols-2 gap-0.5">
             {[...Array(4)].map((_, i) => (
@@ -170,8 +174,11 @@ export default function TallyAILanding() {
           </div>
           <span className="font-bold text-xl">Tally AI</span>
         </div>
-        <button className="border border-gray-300 hover:bg-gray-50 rounded-full px-8 py-2 font-medium transition-colors">
-          JOIN
+        <button 
+          onClick={() => router.push('/en/login')}
+          className="bg-black text-white hover:bg-gray-800 rounded-full px-8 py-2 font-medium transition-colors relative z-20 cursor-pointer"
+        >
+          LOGIN
         </button>
       </header>
 
@@ -255,7 +262,10 @@ export default function TallyAILanding() {
           </h2>
 
           <div className="pt-4">
-            <Button className="bg-black  rounded-[16px] px-10 py-6 text-lg font-medium transition-colors">
+            <Button 
+              onClick={() => setShowWaitlistDropdown(true)}
+              className="bg-black  rounded-[16px] px-10 py-6 text-lg font-medium transition-colors"
+            >
               JOIN WAITLIST
             </Button>
           </div>
@@ -275,6 +285,12 @@ export default function TallyAILanding() {
         </div>
         <InfiniteLogoScroller />
       </main>
+      
+      {/* Waitlist Dropdown */}
+      <WaitlistDropdown 
+        isOpen={showWaitlistDropdown}
+        onClose={() => setShowWaitlistDropdown(false)}
+      />
     </div>
   );
 }
