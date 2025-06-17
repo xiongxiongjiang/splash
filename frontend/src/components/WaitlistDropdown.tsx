@@ -31,7 +31,7 @@ export default function WaitlistDropdown({ isOpen, onClose }: WaitlistDropdownPr
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setStatus('success');
-      setMessage('🎉 You\'re on the list! We\'ll notify you when we launch.');
+      setMessage('🎉 You&apos;re on the list! We&apos;ll notify you when we launch.');
       setEmail('');
       
       // Close after 3 seconds on success
@@ -112,7 +112,7 @@ export default function WaitlistDropdown({ isOpen, onClose }: WaitlistDropdownPr
                 Joining...
               </span>
             ) : status === 'success' ? (
-              '✓ You\'re on the list!'
+              '✓ You&apos;re on the list!'
             ) : (
               'Join Waitlist'
             )}
@@ -120,7 +120,7 @@ export default function WaitlistDropdown({ isOpen, onClose }: WaitlistDropdownPr
         </form>
         
         <p className="text-xs text-gray-500 text-center mt-4">
-          We respect your privacy and won't spam you. Unsubscribe anytime.
+          We respect your privacy and won&apos;t spam you. Unsubscribe anytime.
         </p>
       </div>
     </div>
