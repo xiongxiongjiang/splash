@@ -2,3 +2,6 @@
 .claude/
 .env.local
 .todo.md
+
+__pycache__/
+*.pyc
