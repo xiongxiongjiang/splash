@@ -248,27 +248,6 @@ body {
   }
 }
 
-/* 核心渐变样式 - 可复用 */
-.chroma-gradient {
-  background-image: linear-gradient(
-    90deg,
-    #000000 0,
-    #000000 33.33%,
-    #c679c4 40%,
-    #fa3d1d 45%,
-    #ffb005 50%,
-    #e1e1fe 55%,
-    #0358f7 60%,
-    transparent 66.67%,
-    transparent
-  );
-  background-size: 400% 100%;
-  background-position: 100% 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
 /* 核心渐变样式 */
 .chroma-gradient {
   background-image: linear-gradient(

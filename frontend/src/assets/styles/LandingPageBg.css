@@ -1,7 +1,7 @@
 /* 弥散渐变背景样式 */
+
 .bg-gradient-mesh-top{
   position: absolute;
-  /* overflow: hidden; */
   position: fixed;
   top: 0;
   left: 0;
@@ -12,11 +12,11 @@
   filter: blur(20px);
   z-index: -1;
 }
-.bg-gradient-mesh {
-    overflow: hidden;
-  min-height: 100%;
 
-    z-index: -3;
+.bg-gradient-mesh {
+  overflow: hidden;
+  min-height: 100%;
+  z-index: -3;
   background: linear-gradient(
     -135deg,
     rgba(239, 88, 88, 0.3) 0%,
@@ -25,6 +25,7 @@
     rgba(249, 240, 68, 0.3) 100%
   );
 }
+
 .bg-gradient-mesh::after {
   content: "";
   position: absolute;
@@ -34,13 +35,13 @@
   height: 96%;
   transform: translate(-50%, -50%);
   background: linear-gradient(to bottom, #FFFFFF 0%, rgba(235, 235, 235, 0.7) 77%);
-  filter: blur(20px);
+  filter: blur(40px) ;
   pointer-events: none;
   z-index: -2;
 }
 .gradient-orb {
   position: absolute;
-  filter: blur(20px);
+  /* filter: blur(20px); */
   will-change: transform, background;
 }
 
@@ -50,14 +51,16 @@
   background: url('../../assets/images/shape1.svg') no-repeat center center;
   background-size: contain;
   z-index: -2;
-  animation: float-chaotic-1 120s ease-in-out infinite; 
+  opacity: 0.55;
+  animation: float-chaotic-1 180s ease-in-out infinite; 
 }
 .gradient-orb-2 {
   width: 550px;
   height: 550px;
   background: url('../../assets/images/shape2.svg') no-repeat center center;
   background-size: contain;
-  animation: float-chaotic-2 120s ease-in-out infinite; /* 从25s/20s改为18s/14s */
+  animation: float-chaotic-2 180s ease-in-out infinite;
+  opacity: 0.55;
   z-index: -2;
 }
 

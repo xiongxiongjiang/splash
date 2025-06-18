@@ -139,47 +139,55 @@ export default function TallyAILanding() {
     },
   ];
   const toSurvey = () => {
-    router.push('/survey/step1');
+    router.push('/survey');
   };
   return (
     <>
       <LandingPageBg />
-      <div className="min-h-screen transparent">
+      <div className="min-h-screen transparent flex flex-col">
         {/* Header */}
         <Header />
         {/* Hero Section */}
-        <main ref={heroRef} className="w-full max-w-full flex justify-center flex-col z-[20]">
-          <div className="w-full text-center space-y-8 px-4">
+        <main ref={heroRef} className="w-full max-w-full flex-1 flex flex-col justify-center z-[20]">
+          <div className="w-full flex-1 text-center space-y-8 px-4">
             <div className="space-y-4 mt-8">
-              <div className="text-6xl font-semibold tracking-tight">
-                <span className="relative inline-block mr-12">
-                  <Image
-                    height={200}
-                    src={BgBubble}
-                    className="absolute top-[-20px] right-2 z-10 scale-[2.2]"
-                    alt="Hello"
-                  />
-                  <div className="relative z-0 align-middle">
-                    <span className="chroma-text chroma-gradient chroma-hidden chroma-reveal">Hello,</span>
+              <div className="md:text-[60px] text-[28px] font-semibold tracking-tight">
+                <div className="relative flex items-center justify-center md:flex-row flex-col">
+                  <div className="relative flex items-center justify-center">
+                    <span className="absolute md:left-[-30px] left-[-10px]">
+                      <Image
+                        src={BgBubble}
+                        alt="Hello"
+                        width={200} // 你可以用固定宽度或 max-w
+                        height={0} // 这里给 0，让 height 用自动撑开
+                        objectFit="cover"
+                        style={{ height: '100%', objectFit: 'cover' }}
+                        className="block z-10 scale-190"
+                      />
+                    </span>
+                    <span className="chroma-text chroma-hidden chroma-gradient  chroma-reveal">Hello,</span>
                   </div>
-                </span>
-                Career Wingman
+                  <span className="md:ml-8">Career Wingman</span>
+                </div>
               </div>
-              <p className="text-[32px] pt-4  text-[rgba(0,0,0,0.35)]">
+
+              <p className="text-[14px] md:text-[32px] pt-4 text-[rgba(0,0,0,0.35)]">
                 Tally answers your questions, tailors your résumés, and gets you referrals.
               </p>
             </div>
 
-            <h2 ref={textRef} className="text-3xl md:text-4xl lg:text-5xl font-bold min-h-[60px]">
+            <h2 ref={textRef} className="text-[18px] md:text-[40px] font-bold min-h-[60px]">
               How Do I Get A PM Job At Meta?
             </h2>
 
             <div className="pt-4">
               <Button
                 onClick={toSurvey}
-                className="bg-black rounded-[16px] px-10 py-6 text-lg font-medium transition-colors"
+                className="bg-black rounded-[16px] px-10 py-6 text-lg font-medium transition-colors
+                hover:bg-[rgba(0,0,0,0.8)]
+                "
               >
-                JOIN WAITLIST
+                SIGN UP FOR FREE
               </Button>
             </div>
 
@@ -196,7 +204,9 @@ export default function TallyAILanding() {
               </p>
             </div>
           </div>
-          <InfiniteLogoScroller />
+          <div className="w-full pb-10">
+            <InfiniteLogoScroller />
+          </div>
         </main>
       </div>
     </>

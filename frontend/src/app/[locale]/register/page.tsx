@@ -2,52 +2,61 @@
 import React from 'react';
 
 import Image, { StaticImageData } from 'next/image';
+import { useTranslations } from 'next-intl';
 
 import AuthForm from '@/components/AuthForm';
 import LandingPageBg from '@/components/LandingPageBg';
 
-// import bgRegister from '@/assets/images/bg_register.png';
+import Airbnb from '@/assets/logos/Airbnb.svg';
+import Google from '@/assets/logos/Google.svg';
+import Microsoft from '@/assets/logos/Microsoft.svg';
+import Netflix from '@/assets/logos/Netflix.svg';
+import Slack from '@/assets/logos/Slack.svg';
+import Spotify from '@/assets/logos/Spotify.svg';
+import logo from '@/assets/logos/tally_logo.svg';
 interface CompanyLogoProps {
   logo: StaticImageData | string;
   alt?: string;
 }
+
 const RegisterPage: React.FC = () => {
+  const t = useTranslations('HomePage');
   // 定义数据源
   const logos = [
     {
       id: 1,
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images/logos/logo_airnb.png',
+      src: Airbnb,
       alt: 'Airbnb Logo',
     },
     {
       id: 2,
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images/logos/logo_goole.png',
+      src: Google,
       alt: 'Google Logo',
     },
     {
       id: 3,
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images/logos/logo_microsoft.png',
+      src: Microsoft,
       alt: 'Microsoft Logo',
     },
     {
       id: 4,
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images/logos/logo_netflix.png',
+      src: Netflix,
       alt: 'Netflix Logo',
     },
     {
       id: 5,
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images/logos/logo_slack.png',
+      src: Slack,
       alt: 'Slack Logo',
     },
     {
       id: 6,
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images/logos/logo_spotify.png',
+      src: Spotify,
       alt: 'Spotify Logo',
     },
   ];
   const CompanyLogo = ({ logo, alt = 'Company Logo' }: CompanyLogoProps) => (
-    <div className="bg-white rounded-xl flex justify-center p-6 shadow-sm items-center gap-3 min-w-[160px]">
-      <Image src={logo} width={128} height={48} alt={alt} />
+    <div className="bg-white rounded-[16px] flex justify-center shadow-sm items-center gap-3 min-w-[160px]">
+      <Image src={logo} width={190} height={80} alt={alt} />
     </div>
   );
 
@@ -60,12 +69,8 @@ const RegisterPage: React.FC = () => {
         <div className="max-w-3xl">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-            </div>
-            <span className="text-[42px] font-bold text-black">Tally AI</span>
+            <Image src={logo} alt={t('appName')} width={32} height={32} />
+            <span className="text-[42px] font-bold text-black">{t('appName')}</span>
           </div>
 
           {/* Main Content */}

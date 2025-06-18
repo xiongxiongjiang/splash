@@ -5,36 +5,36 @@ import { useState } from 'react';
 import Image from 'next/image';
 
 // 静态导入所有 logo 的彩色和灰色图
-import Adobe from '@/assets/logos/Adobe.png';
-import AdobeGray from '@/assets/logos/Adobe_gray.png';
-import Airbnb from '@/assets/logos/Airbnb.png';
-import AirbnbGray from '@/assets/logos/Airbnb_gray.png';
-import Canva from '@/assets/logos/Canva.png';
-import CanvaGray from '@/assets/logos/Canva_gray.png';
-import Coinbase from '@/assets/logos/Coinbase.png';
-import CoinbaseGray from '@/assets/logos/Coinbase_gray.png';
-import Descript from '@/assets/logos/Descript.png';
-import DescriptGray from '@/assets/logos/Descript_gray.png';
-import Framer from '@/assets/logos/Framer.png';
-import FramerGray from '@/assets/logos/Framer_gray.png';
-import GitHub from '@/assets/logos/GitHub.png';
-import GitHubGray from '@/assets/logos/GitHub_gray.png';
-import Google from '@/assets/logos/Google.png';
-import GoogleGray from '@/assets/logos/Google_gray.png';
-import Microsoft from '@/assets/logos/Microsoft.png';
-import MicrosoftGray from '@/assets/logos/Microsoft_gray.png';
-import Netflix from '@/assets/logos/Netflix.png';
-import NetflixGray from '@/assets/logos/Netflix_gray.png';
-import Slack from '@/assets/logos/Slack.png';
-import SlackGray from '@/assets/logos/Slack_gray.png';
-import Spotify from '@/assets/logos/Spotify.png';
-import SpotifyGray from '@/assets/logos/Spotify_gray.png';
-import Tinder from '@/assets/logos/Tinder.png';
-import TinderGray from '@/assets/logos/Tinder_gray.png';
-import Twitch from '@/assets/logos/Twitch.png';
-import TwitchGray from '@/assets/logos/Twitch_gray.png';
-import Zoom from '@/assets/logos/Zoom.png';
-import ZoomGray from '@/assets/logos/Zoom_gray.png';
+import Adobe from '@/assets/logos/Adobe.svg';
+import AdobeGray from '@/assets/logos/Adobe_gray.svg';
+import Airbnb from '@/assets/logos/Airbnb.svg';
+import AirbnbGray from '@/assets/logos/Airbnb_gray.svg';
+import Canva from '@/assets/logos/Canva.svg';
+import CanvaGray from '@/assets/logos/Canva_gray.svg';
+import Coinbase from '@/assets/logos/Coinbase.svg';
+import CoinbaseGray from '@/assets/logos/Coinbase_gray.svg';
+import Descript from '@/assets/logos/Descript.svg';
+import DescriptGray from '@/assets/logos/Descript_gray.svg';
+import Framer from '@/assets/logos/Framer.svg';
+import FramerGray from '@/assets/logos/Framer_gray.svg';
+import GitHub from '@/assets/logos/GitHub.svg';
+import GitHubGray from '@/assets/logos/GitHub_gray.svg';
+import Google from '@/assets/logos/Google.svg';
+import GoogleGray from '@/assets/logos/Google_gray.svg';
+import Microsoft from '@/assets/logos/Microsoft.svg';
+import MicrosoftGray from '@/assets/logos/Microsoft_gray.svg';
+import Netflix from '@/assets/logos/Netflix.svg';
+import NetflixGray from '@/assets/logos/Netflix_gray.svg';
+import Slack from '@/assets/logos/Slack.svg';
+import SlackGray from '@/assets/logos/Slack_gray.svg';
+import Spotify from '@/assets/logos/Spotify.svg';
+import SpotifyGray from '@/assets/logos/Spotify_gray.svg';
+import Tinder from '@/assets/logos/Tinder.svg';
+import TinderGray from '@/assets/logos/Tinder_gray.svg';
+import Twitch from '@/assets/logos/Twitch.svg';
+import TwitchGray from '@/assets/logos/Twitch_gray.svg';
+import Zoom from '@/assets/logos/Zoom.svg';
+import ZoomGray from '@/assets/logos/Zoom_gray.svg';
 
 import type { StaticImageData } from 'next/image';
 
@@ -62,8 +62,6 @@ const logos: Logo[] = [
   { name: 'Twitch', color: Twitch, gray: TwitchGray },
 ];
 
-const IMG_WIDTH = 230;
-const IMG_HEIGHT = 80;
 
 function HoverLogo({ name, gray, color }: { name: string; gray: StaticImageData; color: StaticImageData }) {
   const [src, setSrc] = useState<StaticImageData>(gray);
@@ -72,11 +70,9 @@ function HoverLogo({ name, gray, color }: { name: string; gray: StaticImageData;
     <Image
       src={src}
       alt={`${name} logo`}
-      width={IMG_WIDTH}
-      height={IMG_HEIGHT}
       onMouseEnter={() => setSrc(color)}
       onMouseLeave={() => setSrc(gray)}
-      className="cursor-pointer transition duration-300"
+      className="cursor-pointer transition duration-300 w-[100px] md:w-[190px]"
     />
   );
 }
@@ -86,16 +82,16 @@ export default function LogoWall() {
   const secondRow = logos.slice(7);
 
   return (
-    <div className="py-6 z-10 overflow-hidden">
+    <div className="py-2 z-10 overflow-hidden">
       {/* 第一行 */}
-      <p className="inline-flex gap-x-8 translate-x-[50px]">
+      <p className="w-full justify-between flex translate-x-[25px] md:translate-x-[50px]">
         {firstRow.map((logo) => (
           <HoverLogo key={logo.name} {...logo} />
         ))}
       </p>
 
       {/* 第二行 */}
-      <p className="inline-flex gap-x-[0.5px] translate-x-[-80px] mt-4">
+      <p className="w-full justify-between flex translate-x-[25px] md:translate-x-[-50px]">
         {secondRow.map((logo) => (
           <HoverLogo key={logo.name} {...logo} />
         ))}
