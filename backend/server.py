@@ -6,6 +6,10 @@ import uvicorn
 import logging
 import asyncio
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+# Load environment variables from .env.local in development
+load_dotenv(".env.local")
 
 # Import MCP integration
 from fastapi_mcp import FastApiMCP
@@ -14,11 +18,13 @@ from fastapi_mcp import FastApiMCP
 from database import (
     init_db, seed_initial_data, get_session, get_all_resumes, get_resume_by_id,
     get_resumes_by_email, create_resume, get_database_stats, get_user_by_email, 
+    add_to_waitlist, update_waitlist_info,
     engine, async_session
 )
 from auth import get_current_user, get_optional_user, get_admin_user
-from models import User, UserRead, Resume, ResumeCreate, ResumeRead
+from models import User, UserRead, Resume, ResumeCreate, ResumeRead, Waitlist, WaitlistCreate, WaitlistUpdate, WaitlistRead
 from admin import create_admin
+from klaviyo_integration import subscribe_to_klaviyo_from_waitlist
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -192,6 +198,54 @@ async def get_database_stats_endpoint(session: AsyncSession = Depends(get_sessio
     """Get database statistics."""
     logger.info("GET /stats")
     return await get_database_stats(session)
+
+
+@app.post("/waitlist", response_model=WaitlistRead, operation_id="add_to_waitlist")
+async def add_to_waitlist_endpoint(
+    waitlist_data: WaitlistCreate,
+    session: AsyncSession = Depends(get_session)
+):
+    """Add an email to the waitlist and automatically subscribe to Klaviyo."""
+    logger.info("POST /waitlist - email=%s", waitlist_data.email)
+    
+    # Add to waitlist
+    waitlist_entry = await add_to_waitlist(
+        session, 
+        email=waitlist_data.email, 
+        info=waitlist_data.info or {}
+    )
+    
+    # Automatically subscribe to Klaviyo (non-blocking)
+    await subscribe_to_klaviyo_from_waitlist(
+        email=waitlist_data.email,
+        info=waitlist_data.info or {}
+    )
+    
+    return WaitlistRead.model_validate(waitlist_entry)
+
+
+@app.patch("/waitlist/{email}", response_model=WaitlistRead, operation_id="update_waitlist_info")
+async def update_waitlist_info_endpoint(
+    email: str,
+    update_data: WaitlistUpdate,
+    session: AsyncSession = Depends(get_session)
+):
+    """Update waitlist info for an email (merges with existing info)."""
+    logger.info("PATCH /waitlist/%s", email)
+    
+    waitlist_entry = await update_waitlist_info(
+        session,
+        email=email,
+        new_info=update_data.info
+    )
+    
+    if not waitlist_entry:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Email {email} not found in waitlist"
+        )
+    
+    return WaitlistRead.model_validate(waitlist_entry)
 
 
 # ==================== RESUME ENDPOINTS ====================

@@ -5,7 +5,7 @@ Clean production-ready version
 
 from sqladmin import Admin, ModelView
 from sqlalchemy.ext.asyncio import AsyncEngine
-from models import User, Resume
+from models import User, Resume, Waitlist
 from admin_auth import AdminAuthBackend
 from starlette.middleware.sessions import SessionMiddleware
 import secrets
@@ -63,6 +63,31 @@ class ResumeAdmin(ModelView, model=Resume):
     name_plural = "Resumes" 
     icon = "fa-solid fa-file-text"
 
+class WaitlistAdmin(ModelView, model=Waitlist):
+    """Admin interface for Waitlist model"""
+    
+    column_list = [Waitlist.email, Waitlist.info, Waitlist.created_at, Waitlist.updated_at]
+    column_searchable_list = [Waitlist.email]
+    column_filters = [Waitlist.created_at, Waitlist.updated_at]
+    column_sortable_list = [Waitlist.email, Waitlist.created_at, Waitlist.updated_at]
+    column_default_sort = [(Waitlist.created_at, True)]
+    
+    form_columns = [Waitlist.email, Waitlist.info]
+    column_details_list = [Waitlist.email, Waitlist.info, Waitlist.created_at, Waitlist.updated_at]
+    
+    page_size = 25
+    page_size_options = [25, 50, 100]
+    
+    can_create = True
+    can_edit = True
+    can_delete = True
+    can_view_details = True
+    can_export = True
+    
+    name = "Waitlist Entry"
+    name_plural = "Waitlist Entries"
+    icon = "fa-solid fa-clock"
+
 def create_admin(app, engine: AsyncEngine) -> Admin:
     """Create SQLAdmin interface with authentication"""
     
@@ -84,6 +109,7 @@ def create_admin(app, engine: AsyncEngine) -> Admin:
     # Add model views
     admin.add_view(UserAdmin)
     admin.add_view(ResumeAdmin)
+    admin.add_view(WaitlistAdmin)
     
     logger.info("✅ SQLAdmin interface configured!")
     logger.info("🔐 Admin interface: http://localhost:8000/admin")

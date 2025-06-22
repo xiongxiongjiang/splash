@@ -138,6 +138,51 @@ async def create_resume(session: AsyncSession, resume_data: dict) -> "Resume":
     await session.refresh(resume)
     return resume
 
+# Waitlist CRUD operations
+async def add_to_waitlist(session: AsyncSession, email: str, info: dict = None) -> "Waitlist":
+    """Add email to waitlist"""
+    from models import Waitlist
+    from sqlalchemy.exc import IntegrityError
+    
+    # Check if email already exists
+    statement = select(Waitlist).where(Waitlist.email == email)
+    result = await session.exec(statement)
+    existing_entry = result.first()
+    
+    if existing_entry:
+        return existing_entry
+    
+    # Create new entry
+    waitlist_entry = Waitlist(
+        email=email,
+        info=info or {}
+    )
+    
+    session.add(waitlist_entry)
+    await session.commit()
+    await session.refresh(waitlist_entry)
+    return waitlist_entry
+
+async def update_waitlist_info(session: AsyncSession, email: str, new_info: dict) -> Optional["Waitlist"]:
+    """Update waitlist info, merging with existing info"""
+    from models import Waitlist
+    
+    statement = select(Waitlist).where(Waitlist.email == email)
+    result = await session.exec(statement)
+    waitlist_entry = result.first()
+    
+    if not waitlist_entry:
+        return None
+    
+    # Merge the new info with existing info
+    merged_info = {**waitlist_entry.info, **new_info}
+    waitlist_entry.info = merged_info
+    
+    session.add(waitlist_entry)
+    await session.commit()
+    await session.refresh(waitlist_entry)
+    return waitlist_entry
+
 # Statistics
 async def get_database_stats(session: AsyncSession) -> dict:
     """Get database statistics"""
