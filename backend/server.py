@@ -32,11 +32,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration constants
 MCP_MOUNT_PATH = "/mcp"
-ALLOWED_ORIGINS = [
-    "http://localhost:3000", 
-    "http://localhost:3001", 
-    "https://osugovugrrthcqelvagj.supabase.co"
-]
+ALLOWED_ORIGINS = ["*"]  # Allow all origins for now
 MCP_OPERATIONS = [
     "search_all_resumes",
     "get_resume_details", 
