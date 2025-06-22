@@ -76,10 +76,12 @@ export default function SurveyPage() {
     submitLinkedin,
     handleStepTransition,
     storeEmail,
+    reset,
   } = useSurvey();
 
   // Handle exit functionality
   const handleExit = () => {
+    reset();
     router.back();
   };
 

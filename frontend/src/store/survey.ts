@@ -62,6 +62,8 @@ export const useSurveyStore = create<SurveyState>()(
             state.isCompleted = false;
           }),
         );
+        // 清除 localStorage 中的持久化数据
+        localStorage.removeItem('survey-storage');
       },
 
       getProgress: () => {

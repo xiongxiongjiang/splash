@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { useSurveyStore } from '@/store/survey';
+import { apiClient } from '@/lib/api';
 
 const emailFormSchema = z.object({
   email: z
@@ -84,18 +85,11 @@ export const useSurvey = () => {
         setIsSubmitting(true);
         setError(null);
 
-        const res = await fetch('/api/add-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: values.email }),
+        // Call the waitlist API with email and initial info
+        await apiClient.addToWaitlist(values.email, {
+          source: 'frontend_form',
+          step: 'email_collection'
         });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.error || '提交失败');
-        }
 
         setEmail(values.email);
         handleStepTransition(2);
@@ -114,18 +108,16 @@ export const useSurvey = () => {
         setIsSubmitting(true);
         setError(null);
 
-        const res = await fetch('/api/add-linkedin', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ linkedin: values.linkedin }),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.error || '提交失败');
+        // Update waitlist info with LinkedIn profile
+        if (!storeEmail) {
+          throw new Error('Email is required');
         }
+
+        await apiClient.updateWaitlistInfo(storeEmail, {
+          linkedin_profile: values.linkedin,
+          step: 'linkedin_collection',
+          completed_at: new Date().toISOString()
+        });
 
         setLinkedin(values.linkedin);
         markAsCompleted();
@@ -136,7 +128,7 @@ export const useSurvey = () => {
         setIsSubmitting(false);
       }
     },
-    [setLinkedin, markAsCompleted, handleStepTransition, reset, handleApiError],
+    [storeEmail, setLinkedin, markAsCompleted, handleStepTransition, handleApiError],
   );
 
   const clearError = useCallback(() => {

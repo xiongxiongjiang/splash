@@ -212,6 +212,36 @@ class ApiClient {
   async healthCheck(): Promise<{ status: string }> {
     return this.request('/health')
   }
+
+  /**
+   * Add email to waitlist
+   */
+  async addToWaitlist(email: string, info?: Record<string, any>): Promise<{
+    email: string
+    info: Record<string, any>
+    created_at: string | null
+    updated_at: string | null
+  }> {
+    return this.request('/waitlist', {
+      method: 'POST',
+      body: JSON.stringify({ email, info: info || {} })
+    })
+  }
+
+  /**
+   * Update waitlist info for an email
+   */
+  async updateWaitlistInfo(email: string, info: Record<string, any>): Promise<{
+    email: string
+    info: Record<string, any>
+    created_at: string | null
+    updated_at: string | null
+  }> {
+    return this.request(`/waitlist/${encodeURIComponent(email)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ info })
+    })
+  }
 }
 
 // Export singleton instance

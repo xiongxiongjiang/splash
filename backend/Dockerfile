@@ -11,9 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only necessary application files
-COPY server.py database.py auth.py admin.py admin_auth.py ./
-COPY models ./models/
+# Copy application files
+COPY . .
 
 # Create volume for SQLite database
 VOLUME ["/app/data"]
