@@ -1,38 +1,29 @@
-/*
- * GSAP 版本的 CSS 文件
- */
 .scrollerContainer {
-  /* 遮罩效果保持不变 */
-  -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
-  mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+  position: relative;
+  width: 100%;
   overflow: hidden;
-  margin: 0;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
 
 .scroller {
-  padding: 1rem 0;
+  width: 100%;
+  padding: 1.5rem 0;
 }
 
 .scrollerInner {
   display: flex;
   flex-wrap: nowrap;
-  /* ✅ 需求 1: 增大间距 */
-  gap: 5rem; /* 例如，从 2.5rem 增加到 5rem */
+  gap: 2rem;
   width: max-content;
+  animation: scroll-x 180s linear infinite;
 }
 
-/* 灰度和悬停变色的逻辑保持不变 */
-.logoItem {
-  height: 40px;
-  filter: grayscale(100%);
-  opacity: 0.7;
-  transition:
-    filter 0.3s ease,
-    opacity 0.3s ease;
-}
-
-.logoItem:hover {
-  filter: grayscale(0%);
-  cursor: pointer;
-  opacity: 1;
+@keyframes scroll-x {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }

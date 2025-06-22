@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import CountUp from 'react-countup';
 
 import { gsap } from 'gsap';
 import { TextPlugin } from 'gsap/TextPlugin';
@@ -11,10 +10,9 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import InfiniteLogoScroller from '@/components/InfiniteLogoScroller';
 import LandingPageBg from '@/components/LandingPageBg';
-import { Avatar, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 
-import BgBubble from '@/assets/images/bg_bubble.svg';
+import BgBubble from '@/assets/images/bg_copilot.svg';
+import TallyLogo from '@/assets/logos/tally_logo.svg';
 import { supabase } from '@/lib/supabase';
 
 if (typeof window !== 'undefined') {
@@ -37,7 +35,6 @@ const jobQuestions = [
 export default function TallyAILanding() {
   const textRef = useRef<HTMLHeadingElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
-  const waitlistRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const hasAnimated = useRef(false); // 防止动画重复执行
 
@@ -60,21 +57,6 @@ export default function TallyAILanding() {
         ease: 'power3.out',
       });
 
-      // gsap.to(logoRef.current, {
-      //   opacity: 1,
-      //   x: 0,
-      //   duration: 1,
-      //   ease: 'power3.out',
-      // });
-
-      gsap.to(waitlistRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 1,
-        delay: 0.5,
-        ease: 'power3.out',
-      });
-
       // 打字动画循环
       const textTimeline = gsap.timeline({ repeat: -1 });
       jobQuestions.forEach((question) => {
@@ -94,50 +76,13 @@ export default function TallyAILanding() {
             opacity: 1,
           })
           .to(textRef.current, {
-            duration: 2,
+            duration: 5,
             opacity: 1,
           });
       });
-
-      // Copilot 文字扫描动画 (保持不变)
-      const copilotScanTl = gsap.timeline({
-        delay: 0.5,
-      });
-
-      copilotScanTl.fromTo(
-        '#copilot-mask-rect',
-        { attr: { x: -30 } },
-        {
-          duration: 0.8,
-          attr: { x: 450 },
-          ease: 'none',
-        },
-      );
     });
   }, []);
 
-  const avatarData = [
-    {
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images//jimmy-fermin-bqe0J0b26RQ-unsplash.jpg',
-      alt: '@1',
-    },
-    {
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images//slav-romanov-BrEAp01_m5w-unsplash.jpg',
-      alt: '@2',
-    },
-    {
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images//jack-finnigan-rriAI0nhcbc-unsplash.jpg',
-      alt: '@3',
-    },
-    {
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images//jeffery-erhunse-vp9mRauo68c-unsplash.jpg',
-      alt: '@4',
-    },
-    {
-      src: 'https://wwtyksrhuycqxxbyvqml.supabase.co/storage/v1/object/public/images//aiony-haust-owp8uQgoK8U-unsplash.jpg',
-      alt: '@5',
-    },
-  ];
   const toSurvey = () => {
     router.push('/survey');
   };
@@ -148,16 +93,17 @@ export default function TallyAILanding() {
         {/* Header */}
         <Header />
         {/* Hero Section */}
-        <main ref={heroRef} className="w-full max-w-full flex-1 flex flex-col justify-center z-[20]">
-          <div className="w-full flex-1 text-center space-y-8 px-4">
-            <div className="space-y-4 mt-8">
-              <div className="md:text-[60px] text-[28px] font-semibold tracking-tight">
-                <div className="relative flex items-center justify-center md:flex-row flex-col">
+        <main ref={heroRef} className="w-full max-w-full flex-1 flex flex-col justify-center z-[20] mobile:py-[50px] tablet:p-0">
+          <div className="w-full flex-1 text-center  px-[44px]">
+            <div className="mt-8">
+              <div className="text-[28px] font-semibold tablet:text-[60px] web:text-[60px] tracking-tight">
+                <div className="relative flex items-center justify-center">
+                  <span className="mr-5 tablet:mr-10">Your career</span>
                   <div className="relative flex items-center justify-center">
-                    <span className="absolute md:left-[-30px] left-[-10px]">
+                    <span className="absolute tablet:left-[10px]">
                       <Image
                         src={BgBubble}
-                        alt="Hello"
+                        alt="copilot"
                         width={200} // 你可以用固定宽度或 max-w
                         height={0} // 这里给 0，让 height 用自动撑开
                         objectFit="cover"
@@ -165,47 +111,36 @@ export default function TallyAILanding() {
                         className="block z-10 scale-190"
                       />
                     </span>
-                    <span className="chroma-text chroma-hidden chroma-gradient  chroma-reveal">Hello,</span>
+                    <span className="chroma-text chroma-hidden chroma-gradient chroma-reveal">Copilot.</span>
                   </div>
-                  <span className="md:ml-8">Career Wingman</span>
                 </div>
               </div>
 
-              <p className="text-[14px] md:text-[32px] pt-4 text-[rgba(0,0,0,0.35)]">
-                Tally answers your questions, tailors your résumés, and gets you referrals.
+              <p className="text-[21px] font-medium tablet:text-[32px] pt-4 text-[rgba(0,0,0,0.35)] mt-4 tablet:mt-6 web:mt-6">
+                Precision guidance from résumé to referral.
               </p>
             </div>
 
-            <h2 ref={textRef} className="text-[18px] md:text-[40px] font-bold min-h-[60px]">
-              How Do I Get A PM Job At Meta?
-            </h2>
-
-            <div className="pt-4">
-              <Button
+            <div className="my-[76px] web:my-12">
+              <button
                 onClick={toSurvey}
-                className="bg-black rounded-[16px] px-10 py-6 text-lg font-medium transition-colors
+                className="text-sm rounded-[16px] text-white !font-heavy bg-black px-12 py-4 tablet:px-20 table:py-5 tablet:text-xl web:px-20 web:py-5 web:text-[16px] active:bg-black transition-colors
                 hover:bg-[rgba(0,0,0,0.8)]
                 "
               >
-                SIGN UP FOR FREE
-              </Button>
+                JOIN WAITLIST
+              </button>
             </div>
 
-            <div ref={waitlistRef} className="flex flex-col items-center space-y-3 opacity-0 translate-y-5">
-              <div className="*:data-[slot=avatar]:ring-background -space-x-2 *:data-[slot=avatar]:ring-2 hidden md:flex">
-                {avatarData.map(({ src, alt }, index) => (
-                  <Avatar key={index}>
-                    <AvatarImage src={src} alt={alt} />
-                  </Avatar>
-                ))}
-              </div>
-              <p className="text-gray-600 hidden md:flex">
-                Join <CountUp start={0} end={12200} duration={2.5} separator="," />+ others on the waitlist
-              </p>
-            </div>
+            <h2 ref={textRef} className="text-[18px] font-medium h-15 tablet:h-30 tablet:text-[40px] min-h-[60px] max-w-[305px] tablet:max-w-[720px] mx-auto">
+              How Do I Get A PM Job At Meta?
+            </h2>
           </div>
-          <div className="w-full pb-10">
+          <div className="w-full">
             <InfiniteLogoScroller />
+          </div>
+          <div className="w-full flex justify-center items-center">
+            <Image src={TallyLogo} alt="tally logo" className='hidden tablet:block opacity-40 pb-7' width={24} height={24} />
           </div>
         </main>
       </div>

@@ -4,98 +4,90 @@ import { useState } from 'react';
 
 import Image from 'next/image';
 
-// 静态导入所有 logo 的彩色和灰色图
-import Adobe from '@/assets/logos/Adobe.svg';
+// 静态导入所有 logo 的灰色图
+import styles from './index.module.scss';
+
 import AdobeGray from '@/assets/logos/Adobe_gray.svg';
-import Airbnb from '@/assets/logos/Airbnb.svg';
 import AirbnbGray from '@/assets/logos/Airbnb_gray.svg';
-import Canva from '@/assets/logos/Canva.svg';
 import CanvaGray from '@/assets/logos/Canva_gray.svg';
-import Coinbase from '@/assets/logos/Coinbase.svg';
 import CoinbaseGray from '@/assets/logos/Coinbase_gray.svg';
-import Descript from '@/assets/logos/Descript.svg';
 import DescriptGray from '@/assets/logos/Descript_gray.svg';
-import Framer from '@/assets/logos/Framer.svg';
 import FramerGray from '@/assets/logos/Framer_gray.svg';
-import GitHub from '@/assets/logos/GitHub.svg';
 import GitHubGray from '@/assets/logos/GitHub_gray.svg';
-import Google from '@/assets/logos/Google.svg';
 import GoogleGray from '@/assets/logos/Google_gray.svg';
-import Microsoft from '@/assets/logos/Microsoft.svg';
+import MazeGray from '@/assets/logos/Maze_gray.svg';
+import MediumGray from '@/assets/logos/Medium_gray.svg';
 import MicrosoftGray from '@/assets/logos/Microsoft_gray.svg';
-import Netflix from '@/assets/logos/Netflix.svg';
 import NetflixGray from '@/assets/logos/Netflix_gray.svg';
-import Slack from '@/assets/logos/Slack.svg';
+import PendoGray from '@/assets/logos/Pendo_gray.svg';
 import SlackGray from '@/assets/logos/Slack_gray.svg';
-import Spotify from '@/assets/logos/Spotify.svg';
 import SpotifyGray from '@/assets/logos/Spotify_gray.svg';
-import Tinder from '@/assets/logos/Tinder.svg';
+import TelloGray from '@/assets/logos/Tello_gray.svg';
 import TinderGray from '@/assets/logos/Tinder_gray.svg';
-import Twitch from '@/assets/logos/Twitch.svg';
 import TwitchGray from '@/assets/logos/Twitch_gray.svg';
-import Zoom from '@/assets/logos/Zoom.svg';
 import ZoomGray from '@/assets/logos/Zoom_gray.svg';
 
 import type { StaticImageData } from 'next/image';
 
 interface Logo {
   name: string;
-  color: StaticImageData;
   gray: StaticImageData;
 }
 
 const logos: Logo[] = [
-  { name: 'Netflix', color: Netflix, gray: NetflixGray },
-  { name: 'Spotify', color: Spotify, gray: SpotifyGray },
-  { name: 'Microsoft', color: Microsoft, gray: MicrosoftGray },
-  { name: 'Slack', color: Slack, gray: SlackGray },
-  { name: 'Google', color: Google, gray: GoogleGray },
-  { name: 'Coinbase', color: Coinbase, gray: CoinbaseGray },
-  { name: 'Descript', color: Descript, gray: DescriptGray },
-  { name: 'Airbnb', color: Airbnb, gray: AirbnbGray },
-  { name: 'Canva', color: Canva, gray: CanvaGray },
-  { name: 'Tinder', color: Tinder, gray: TinderGray },
-  { name: 'Adobe', color: Adobe, gray: AdobeGray },
-  { name: 'Framer', color: Framer, gray: FramerGray },
-  { name: 'Zoom', color: Zoom, gray: ZoomGray },
-  { name: 'GitHub', color: GitHub, gray: GitHubGray },
-  { name: 'Twitch', color: Twitch, gray: TwitchGray },
+  { name: 'Netflix', gray: NetflixGray },
+  { name: 'Spotify', gray: SpotifyGray },
+  { name: 'Microsoft', gray: MicrosoftGray },
+  { name: 'Slack', gray: SlackGray },
+  { name: 'Google', gray: GoogleGray },
+  { name: 'Coinbase', gray: CoinbaseGray },
+  { name: 'Airbnb', gray: AirbnbGray },
+  { name: 'Descript', gray: DescriptGray },
+  { name: 'Medium', gray: MediumGray },
+  { name: 'Pendo', gray: PendoGray },
+  { name: 'Canva', gray: CanvaGray },
+  { name: 'Tinder', gray: TinderGray },
+  { name: 'Adobe', gray: AdobeGray },
+  { name: 'Framer', gray: FramerGray },
+  { name: 'Zoom', gray: ZoomGray },
+  { name: 'GitHub', gray: GitHubGray },
+  { name: 'Twitch', gray: TwitchGray },
+  { name: 'Tello', gray: TelloGray },
+  { name: 'Maze', gray: MazeGray },
+  { name: 'Airbnb', gray: AirbnbGray },
 ];
 
-
-function HoverLogo({ name, gray, color }: { name: string; gray: StaticImageData; color: StaticImageData }) {
-  const [src, setSrc] = useState<StaticImageData>(gray);
-
+function LogoImage({ name, gray }: { name: string; gray: StaticImageData }) {
   return (
-    <Image
-      src={src}
-      alt={`${name} logo`}
-      onMouseEnter={() => setSrc(color)}
-      onMouseLeave={() => setSrc(gray)}
-      className="cursor-pointer transition duration-300 w-[100px] md:w-[190px]"
-    />
+    <Image src={gray} alt={`${name} logo`} className="w-[100px] web:w-[160px]" />
   );
 }
 
-export default function LogoWall() {
-  const firstRow = logos.slice(0, 7);
-  const secondRow = logos.slice(7);
+export default function InfiniteLogoScroller() {
+  // 平均分成两组
+  const mid = Math.ceil(logos.length / 2);
+  const firstRow = logos.slice(0, mid);
+  const secondRow = logos.slice(mid);
+  // 每行都拼接两遍实现无缝滚动
+  const firstRowList = [...firstRow, ...firstRow];
+  const secondRowList = [...secondRow, ...secondRow];
 
   return (
-    <div className="py-2 z-10 overflow-hidden">
-      {/* 第一行 */}
-      <p className="w-full justify-between flex translate-x-[25px] md:translate-x-[50px]">
-        {firstRow.map((logo) => (
-          <HoverLogo key={logo.name} {...logo} />
-        ))}
-      </p>
-
-      {/* 第二行 */}
-      <p className="w-full justify-between flex translate-x-[25px] md:translate-x-[-50px]">
-        {secondRow.map((logo) => (
-          <HoverLogo key={logo.name} {...logo} />
-        ))}
-      </p>
+    <div className={styles.scrollerContainer}>
+      <div className={styles.scroller}>
+        <div className={`${styles.scrollerInner} mobile:!gap-0 tablet:!gap-[2em]`}>
+          {firstRowList.map((logo, idx) => (
+            <LogoImage key={logo.name + idx + 'row1'} gray={logo.gray} name={`${logo.name} logo`} />
+          ))}
+          <div className="w-[40px] web:w-[80px]"></div>
+        </div>
+        <div className={`${styles.scrollerInner} mobile:!gap-0 tablet:!gap-[2em]`}>
+          <div className="w-[40px] web:w-[80px]"></div>
+          {secondRowList.map((logo, idx) => (
+            <LogoImage key={logo.name + idx + 'row2'} gray={logo.gray} name={`${logo.name} logo`} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

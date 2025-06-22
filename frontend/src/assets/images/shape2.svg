@@ -1,18 +1,21 @@
 <svg width="972" height="941" viewBox="0 0 972 941" fill="none" xmlns="http://www.w3.org/2000/svg">
     <style>
-        .rotate-scale {
-            animation:
-                rotate 30s linear infinite,
-                scaleAnim 30s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+        .rotate {
+            animation: rotate 30s linear infinite;
+            transform-origin: 50% 50%;
+        }
+
+        .scale {
+            animation: scaleAnim 15s cubic-bezier(0.42, 0, 0.58, 1) infinite;
             transform-origin: 50% 50%;
         }
 
         @keyframes rotate {
-            from {
+            0% {
                 transform: rotate(0deg);
             }
 
-            to {
+            100% {
                 transform: rotate(360deg);
             }
         }
@@ -21,27 +24,27 @@
 
             0%,
             100% {
-                transform: scale(0.7);
+                transform: scale(0.5);
             }
 
             50% {
-                transform: scale(1.1);
+                transform: scale(1.5);
             }
         }
     </style>
-
-    <g class="rotate-scale" style="mix-blend-mode:hard-light" filter="url(#filter0_f_324_70)">
-        <path
-            d="M623.32 160.968C519.772 44.0536 457.252 236.962 361.519 291.522C265.786 346.082 160.284 274.764 129.024 387.002C89.9497 527.299 291.185 449.356 304.861 550.682C313.525 614.876 150.65 680.861 228.665 774.768C341.982 911.168 424.039 675.391 519.772 653.956C615.505 632.522 607.69 745.539 746.406 774.768C885.121 803.996 857.769 593.55 805.018 474.688C752.267 355.825 674.117 484.431 607.69 435.716C541.263 387.002 718.051 267.927 623.32 160.968Z"
-            fill="#D86EE6" />
+    <g class="rotate">
+        <g class="scale" style="mix-blend-mode:hard-light" filter="url(#filter0_f_324_70)">
+            <path
+                d="M623.32 160.968C519.772 44.0536 457.252 236.962 361.519 291.522C265.786 346.082 160.284 274.764 129.024 387.002C89.9497 527.299 291.185 449.356 304.861 550.682C313.525 614.876 150.65 680.861 228.665 774.768C341.982 911.168 424.039 675.391 519.772 653.956C615.505 632.522 607.69 745.539 746.406 774.768C885.121 803.996 857.769 593.55 805.018 474.688C752.267 355.825 674.117 484.431 607.69 435.716C541.263 387.002 718.051 267.927 623.32 160.968Z"
+                fill="#D86EE6" />
+        </g>
     </g>
-
     <defs>
         <filter id="filter0_f_324_70" x="0" y="0" width="972" height="941" filterUnits="userSpaceOnUse"
             color-interpolation-filters="sRGB">
             <feFlood flood-opacity="0" result="BackgroundImageFix" />
             <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-            <feGaussianBlur stdDeviation="62" result="effect1_foregroundBlur_324_70" />
+            <feGaussianBlur stdDeviation="80" result="effect1_foregroundBlur_324_70" />
             <feColorMatrix type="hueRotate" values="0">
                 <animate attributeName="values" from="0" to="360" dur="180s" repeatCount="indefinite" />
             </feColorMatrix>
