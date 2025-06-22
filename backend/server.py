@@ -24,7 +24,7 @@ from database import (
 from auth import get_current_user, get_optional_user, get_admin_user
 from models import User, UserRead, Resume, ResumeCreate, ResumeRead, Waitlist, WaitlistCreate, WaitlistUpdate, WaitlistRead
 from admin import create_admin
-from klaviyo_integration import subscribe_to_klaviyo_from_waitlist
+from klaviyo_integration import subscribe_to_klaviyo_from_waitlist, update_klaviyo_from_waitlist
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -230,7 +230,7 @@ async def update_waitlist_info_endpoint(
     update_data: WaitlistUpdate,
     session: AsyncSession = Depends(get_session)
 ):
-    """Update waitlist info for an email (merges with existing info)."""
+    """Update waitlist info for an email (merges with existing info) and sync to Klaviyo."""
     logger.info("PATCH /waitlist/%s", email)
     
     waitlist_entry = await update_waitlist_info(
@@ -244,6 +244,12 @@ async def update_waitlist_info_endpoint(
             status_code=404,
             detail=f"Email {email} not found in waitlist"
         )
+    
+    # Automatically update Klaviyo profile properties (non-blocking)
+    await update_klaviyo_from_waitlist(
+        email=email,
+        updated_info=update_data.info
+    )
     
     return WaitlistRead.model_validate(waitlist_entry)
 

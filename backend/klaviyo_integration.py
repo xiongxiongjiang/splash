@@ -47,10 +47,11 @@ async def create_klaviyo_profile(
     email: str,
     first_name: str,
     last_name: str,
+    properties: dict,
     client: httpx.AsyncClient
 ) -> str:
     """
-    Create a profile in Klaviyo
+    Create a profile in Klaviyo with custom properties
     Returns the profile ID if successful
     """
     url = f"{KLAVIYO_BASE_URL}/api/profiles"
@@ -61,14 +62,21 @@ async def create_klaviyo_profile(
         "revision": KLAVIYO_API_REVISION
     }
     
+    # Build attributes with email and names
+    attributes = {
+        "email": email,
+        "first_name": first_name,
+        "last_name": last_name
+    }
+    
+    # Add custom properties if provided
+    if properties:
+        attributes["properties"] = properties
+    
     payload = {
         "data": {
             "type": "profile",
-            "attributes": {
-                "email": email,
-                "first_name": first_name,
-                "last_name": last_name
-            }
+            "attributes": attributes
         }
     }
     
@@ -136,6 +144,76 @@ async def add_profile_to_list(
         raise Exception(f"Network error: {str(e)}")
 
 
+async def update_klaviyo_profile_properties(
+    email: str,
+    properties: dict,
+    client: httpx.AsyncClient
+) -> bool:
+    """
+    Update profile properties in Klaviyo by email
+    Returns True if successful
+    """
+    # First, get the profile by email to get the profile ID
+    url = f"{KLAVIYO_BASE_URL}/api/profiles"
+    
+    headers = {
+        "Authorization": f"Klaviyo-API-Key {KLAVIYO_PRIVATE_KEY}",
+        "Content-Type": "application/json",
+        "revision": KLAVIYO_API_REVISION
+    }
+    
+    # Search for profile by email
+    params = {"filter": f'equals(email,"{email}")'}
+    
+    try:
+        # Get profile
+        response = await client.get(url, headers=headers, params=params, timeout=30.0)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data["data"]:
+                profile_id = data["data"][0]["id"]
+                
+                # Update profile properties
+                update_url = f"{KLAVIYO_BASE_URL}/api/profiles/{profile_id}"
+                
+                # Get existing properties and merge with new ones
+                existing_properties = data["data"][0]["attributes"].get("properties", {})
+                merged_properties = {**existing_properties, **properties}
+                
+                update_payload = {
+                    "data": {
+                        "type": "profile",
+                        "id": profile_id,
+                        "attributes": {
+                            "properties": merged_properties
+                        }
+                    }
+                }
+                
+                update_response = await client.patch(update_url, json=update_payload, headers=headers, timeout=30.0)
+                
+                if update_response.status_code in [200, 201, 204]:
+                    logger.info(f"Successfully updated Klaviyo profile properties for {email}")
+                    return True
+                else:
+                    logger.error(f"Failed to update Klaviyo profile properties. Status: {update_response.status_code}, Response: {update_response.text}")
+                    raise Exception(f"Failed to update profile properties: Status {update_response.status_code}")
+            else:
+                logger.warning(f"No Klaviyo profile found for email {email}")
+                return False
+        else:
+            logger.error(f"Failed to find Klaviyo profile. Status: {response.status_code}, Response: {response.text}")
+            raise Exception(f"Failed to find profile: Status {response.status_code}")
+            
+    except httpx.TimeoutException:
+        logger.error(f"Timeout while updating Klaviyo profile properties for {email}")
+        raise Exception("Request to Klaviyo timed out")
+    except httpx.RequestError as e:
+        logger.error(f"Network error while updating Klaviyo profile properties: {str(e)}")
+        raise Exception(f"Network error: {str(e)}")
+
+
 async def subscribe_to_klaviyo_from_waitlist(
     email: str,
     info: dict
@@ -164,13 +242,17 @@ async def subscribe_to_klaviyo_from_waitlist(
             first_name = email.split("@")[0].capitalize()
             last_name = ""
     
+    # Prepare properties (exclude first_name and last_name as they're top-level attributes)
+    properties = {k: v for k, v in info.items() if k not in ["first_name", "firstName", "last_name", "lastName"]}
+    
     async with httpx.AsyncClient() as client:
         try:
-            # Step 1: Create profile
+            # Step 1: Create profile with properties
             profile_id = await create_klaviyo_profile(
                 email=email,
                 first_name=first_name,
                 last_name=last_name,
+                properties=properties,
                 client=client
             )
             
@@ -186,6 +268,41 @@ async def subscribe_to_klaviyo_from_waitlist(
         except Exception as e:
             # Log error but don't block the request
             logger.error(f"Failed to subscribe {email} to Klaviyo from waitlist: {str(e)}")
+
+
+async def update_klaviyo_from_waitlist(
+    email: str,
+    updated_info: dict
+) -> None:
+    """
+    Update Klaviyo profile properties when waitlist info is updated
+    This is non-blocking - failures are logged but don't raise exceptions
+    """
+    # Check if API key is set
+    if not KLAVIYO_PRIVATE_KEY:
+        logger.warning("KLAVIYO_PRIVATE_KEY environment variable is not set - skipping Klaviyo property update")
+        return
+    
+    # Prepare properties (exclude first_name and last_name as they're top-level attributes)
+    properties = {k: v for k, v in updated_info.items() if k not in ["first_name", "firstName", "last_name", "lastName"]}
+    
+    if not properties:
+        logger.info(f"No properties to update for {email} in Klaviyo")
+        return
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            await update_klaviyo_profile_properties(
+                email=email,
+                properties=properties,
+                client=client
+            )
+            
+            logger.info(f"Successfully updated Klaviyo profile properties for {email}")
+            
+        except Exception as e:
+            # Log error but don't block the request
+            logger.error(f"Failed to update Klaviyo profile properties for {email}: {str(e)}")
 
 
 async def subscribe_to_klaviyo(
