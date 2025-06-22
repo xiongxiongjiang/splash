@@ -10,8 +10,10 @@ services:
       - ./backend:/app
       - backend-data:/app/data
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:///./data/resume_db.sqlite
+      - DATABASE_URL=postgresql+asyncpg://splash:splash@postgres:5432/splash
       - PYTHONPATH=/app
+      - RELOAD_FLAG=--reload
+      - LOG_LEVEL=debug
     networks:
       - splash-network
     healthcheck:
@@ -76,15 +78,15 @@ services:
     image: postgres:15-alpine  # Using specific version for better caching
     container_name: splash-postgres
     environment:
-      - POSTGRES_USER=litellm
-      - POSTGRES_PASSWORD=litellm
-      - POSTGRES_DB=litellm
+      - POSTGRES_USER=splash
+      - POSTGRES_PASSWORD=splash
+      - POSTGRES_DB=splash
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - splash-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U litellm"]
+      test: ["CMD-SHELL", "pg_isready -U splash"]
       interval: 10s
       timeout: 5s
       retries: 5

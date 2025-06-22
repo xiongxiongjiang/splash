@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
@@ -11,8 +11,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
-COPY . .
+# Copy only necessary application files
+COPY server.py database.py auth.py admin.py admin_auth.py ./
+COPY models ./models/
 
 # Create volume for SQLite database
 VOLUME ["/app/data"]
@@ -21,4 +22,4 @@ VOLUME ["/app/data"]
 EXPOSE 8000
 
 # Run the application
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port 8000 --log-level ${LOG_LEVEL:-info} ${RELOAD_FLAG}"]

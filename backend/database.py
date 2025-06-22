@@ -11,13 +11,12 @@ from sqlalchemy import text
 logger = logging.getLogger(__name__)
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./resume_db.sqlite")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://splash:splash@localhost:5432/splash")
 
 # Create async engine
 engine = create_async_engine(
     DATABASE_URL,
-    echo=False,  # Set to False to reduce noise
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    echo=False  # Set to False to reduce noise
 )
 
 # Create async session maker
@@ -96,9 +95,9 @@ async def get_all_resumes(
     
     # Apply filters
     if skill:
-        # Use SQLite's json_each to search within the JSON array
+        # PostgreSQL JSON search
         statement = statement.where(
-            text("EXISTS (SELECT 1 FROM json_each(skills) WHERE lower(value) LIKE lower(:skill))")
+            text("EXISTS (SELECT 1 FROM jsonb_array_elements_text(skills::jsonb) AS elem WHERE lower(elem) LIKE lower(:skill))")
             .bindparams(skill=f"%{skill}%")
         )
     

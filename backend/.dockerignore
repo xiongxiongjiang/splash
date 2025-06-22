@@ -26,3 +26,12 @@ ENV/
 .DS_Store
 demo/
 resume_db.sqlite
+*.sqlite
+*.sqlite3
+data/
+test_*.py
+README.md
+DEPLOYMENT.md
+*.example
+apprunner.yaml
+Dockerfile.*

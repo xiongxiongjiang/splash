@@ -1,0 +1,21 @@
+version: 1.0
+runtime: docker
+build:
+  commands:
+    build:
+      - echo "No build commands"
+run:
+  runtime-version: latest
+  command: sh -c "uvicorn server:app --host 0.0.0.0 --port 8000 --log-level ${LOG_LEVEL:-info} ${RELOAD_FLAG}"
+  network:
+    port: 8000
+    env: PORT
+  env:
+    - name: DATABASE_URL
+      value: "postgresql://postgres:YOUR_PASSWORD@splash-db.xxxxx.us-east-1.rds.amazonaws.com:5432/splash"
+    - name: ADMIN_USERNAME
+      value: "admin"
+    - name: ADMIN_PASSWORD
+      value: "CHANGE_IN_CONSOLE"
+    - name: LOG_LEVEL
+      value: "info"
