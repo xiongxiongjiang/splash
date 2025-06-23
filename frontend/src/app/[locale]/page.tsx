@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { gsap } from 'gsap';
 import { TextPlugin } from 'gsap/TextPlugin';
@@ -14,6 +14,7 @@ import LandingPageBg from '@/components/LandingPageBg';
 import BgBubble from '@/assets/images/bg_copilot.svg';
 import TallyLogo from '@/assets/logos/tally_logo.svg';
 import { supabase } from '@/lib/supabase';
+import { useSurveyStore } from '@/store/survey';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(TextPlugin);
@@ -37,6 +38,8 @@ export default function TallyAILanding() {
   const heroRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const hasAnimated = useRef(false); // 防止动画重复执行
+  const [hasClickedSignUp, setHasClickedSignUp] = useState(false);
+  const { isCompleted } = useSurveyStore();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -84,17 +87,26 @@ export default function TallyAILanding() {
   }, []);
 
   const toSurvey = () => {
-    router.push('/survey');
+    // 设置点击状态为 true
+    setHasClickedSignUp(true);
+
+    // 延迟1秒
+    setTimeout(() => {
+      router.push('/survey');
+    }, 1000);
   };
   return (
     <>
-      <LandingPageBg />
+      <LandingPageBg animationSpeed={hasClickedSignUp ? 'fast' : 'slow'} />
       <div className="min-h-screen transparent flex flex-col">
         {/* Header */}
         <Header />
         {/* Hero Section */}
-        <main ref={heroRef} className="w-full max-w-full flex-1 flex flex-col justify-center z-[20] mobile:py-[50px] tablet:p-0">
-          <div className="w-full flex-1 text-center  px-[44px]">
+        <main
+          ref={heroRef}
+          className="w-full max-w-full flex-1 flex flex-col justify-center z-[20] mobile:py-[50px] tablet:p-0"
+        >
+          <div className="w-full flex-1 flex flex-col justify-center text-center px-[44px]">
             <div className="mt-8">
               <div className="text-[28px] font-semibold tablet:text-[60px] web:text-[60px] tracking-tight">
                 <div className="relative flex items-center justify-center">
@@ -124,15 +136,27 @@ export default function TallyAILanding() {
             <div className="my-[76px] web:my-12">
               <button
                 onClick={toSurvey}
-                className="text-sm rounded-[16px] text-white !font-heavy bg-black px-12 py-4 tablet:px-20 table:py-5 tablet:text-xl web:px-20 web:py-5 web:text-[16px] active:bg-black transition-colors
-                hover:bg-[rgba(0,0,0,0.8)]
+                disabled={isCompleted}
+                className="
+                  text-sm rounded-[16px] !font-heavy px-12 py-4 tablet:px-20 table:py-5 tablet:text-xl web:px-20 web:py-5 web:text-[16px] transition-colors
+                  bg-black text-white
+                  hover:bg-[rgba(0,0,0,0.8)]
+                  active:bg-black
+                  disabled:bg-[rgba(0,0,0,0.05)]
+                  disabled:text-[rgba(0,0,0,0.6)]
+                  disabled:cursor-not-allowed
+                  disabled:hover:bg-[rgba(0,0,0,0.05)]
+                  disabled:active:bg-[rgba(0,0,0,0.05)]
                 "
               >
-                JOIN WAITLIST
+                {isCompleted ? `WE'LL BE IN TOUCH` : 'SIGN UP FOR EARLY ACCESS'}
               </button>
             </div>
 
-            <h2 ref={textRef} className="text-[18px] font-medium h-15 tablet:h-30 tablet:text-[40px] min-h-[60px] max-w-[305px] tablet:max-w-[720px] mx-auto">
+            <h2
+              ref={textRef}
+              className="text-[18px] typing-text font-medium h-15 tablet:h-30 tablet:text-[40px] min-h-[60px] max-w-[305px] tablet:max-w-[720px] mx-auto"
+            >
               How Do I Get A PM Job At Meta?
             </h2>
           </div>
@@ -140,7 +164,13 @@ export default function TallyAILanding() {
             <InfiniteLogoScroller />
           </div>
           <div className="w-full flex justify-center items-center">
-            <Image src={TallyLogo} alt="tally logo" className='hidden tablet:block opacity-40 pb-7' width={24} height={24} />
+            <Image
+              src={TallyLogo}
+              alt="tally logo"
+              className="hidden tablet:block opacity-40 pb-7"
+              width={24}
+              height={24}
+            />
           </div>
         </main>
       </div>

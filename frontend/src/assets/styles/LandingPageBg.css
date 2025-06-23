@@ -25,7 +25,22 @@
     rgba(249, 240, 68, 0.3) 100%
   );
 }
+/* 色相改变动画 */
+@keyframes hue-rotate-animation {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
 
+.hue-rotate-animation-slow {
+  animation: hue-rotate-animation 180s linear infinite;
+}
+.hue-rotate-animation-fast {
+  animation: hue-rotate-animation 1s linear infinite;
+}
 .bg-gradient-mesh::after {
   content: "";
   position: absolute;
