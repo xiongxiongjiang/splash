@@ -93,7 +93,16 @@ def create_admin(app, engine: AsyncEngine) -> Admin:
     
     # Add session middleware (required for authentication)
     secret_key = secrets.token_urlsafe(32)
-    app.add_middleware(SessionMiddleware, secret_key=secret_key)
+    
+    # Session middleware configuration
+    # In production (behind HTTPS proxy), we'll detect this from the X-Forwarded-Proto header
+    # For now, use permissive settings that work in both dev and prod
+    app.add_middleware(
+        SessionMiddleware, 
+        secret_key=secret_key,
+        https_only=False,  # Allow both HTTP and HTTPS
+        same_site="lax"  # Protect against CSRF while allowing the admin to work
+    )
     
     # Create authentication backend
     authentication_backend = AdminAuthBackend(secret_key=secret_key)

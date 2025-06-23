@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Query, HTTPException, Depends, status
+from fastapi import FastAPI, Query, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 import uvicorn
 import logging
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
@@ -32,7 +34,16 @@ logger = logging.getLogger(__name__)
 
 # Configuration constants
 MCP_MOUNT_PATH = "/mcp"
-ALLOWED_ORIGINS = ["*"]  # Allow all origins for now
+
+# CORS configuration - simplified
+# Always allow localhost origins
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:8000", 
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000"
+]
+
 MCP_OPERATIONS = [
     "search_all_resumes",
     "get_resume_details", 
@@ -114,16 +125,55 @@ app = FastAPI(
 )
 
 # Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Custom CORS middleware to handle dynamic Vercel URLs
+@app.middleware("http")
+async def custom_cors_middleware(request, call_next):
+    origin = request.headers.get("origin")
+    
+    # Allow any localhost or Vercel origin
+    allowed = False
+    if origin:
+        # Check localhost origins
+        if origin in ALLOWED_ORIGINS:
+            allowed = True
+        # Allow all Vercel domains (both .vercel.app and custom domains)
+        elif origin.startswith("https://") and ".vercel.app" in origin:
+            allowed = True
+    
+    # Handle preflight requests
+    if request.method == "OPTIONS":
+        response = Response()
+        if allowed and origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+    
+    response = await call_next(request)
+    
+    if allowed and origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    
+    return response
 
 # Initialize SQLAdmin
 admin = create_admin(app, engine)
+
+# Middleware to handle HTTPS behind proxy (AWS App Runner)
+@app.middleware("http")
+async def https_redirect_middleware(request: Request, call_next):
+    # Check if we're behind a proxy that handles HTTPS
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    if forwarded_proto == "https":
+        # Tell the app it's HTTPS even though the internal connection is HTTP
+        request.scope["scheme"] = "https"
+    
+    response = await call_next(request)
+    return response
 
 
 @app.middleware("http")
