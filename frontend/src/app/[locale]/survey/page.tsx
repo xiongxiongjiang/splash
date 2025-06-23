@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
+import { Alert, ConfigProvider } from 'antd';
 import { ChevronDownIcon, ChevronUpIcon, X } from 'lucide-react';
+import { CircleCheck } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 import Header from '@/components/Header';
@@ -11,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
+import ErrorIcon from '@/assets/images/icon_erro_info.svg';
+import TallyLogo from '@/assets/logos/tally_logo.svg';
 import { useSurvey } from '@/hooks/useSurvey';
 
 // 内部组件定义
@@ -78,6 +83,8 @@ export default function SurveyPage() {
     storeEmail,
     reset,
   } = useSurvey();
+  const [loading, setLoading] = useState(true);
+  // 创建 message 实例
 
   // Handle exit functionality
   const handleExit = () => {
@@ -103,8 +110,26 @@ export default function SurveyPage() {
     if (storeEmail) {
       emailForm.reset({ email: storeEmail });
     }
+    // 无论是否有 storeEmail，都等待一帧后设置为 false
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 1000); // 给个轻微 delay，确保用户体验流畅
+    return () => clearTimeout(timeout);
   }, [storeEmail, emailForm]);
 
+  if (loading) {
+    return (
+      <>
+        <LandingPageBg />
+        <div className="min-h-screen w-full flex items-center justify-center gap-2">
+          <Image src={TallyLogo} alt="Tally Logo" width={24} height={24} />
+          <span className="font-bold text-[28px] chroma-text chroma-hidden chroma-gradient chroma-reveal">
+            Tally AI
+          </span>
+        </div>
+      </>
+    );
+  }
   // 通用步骤渲染函数
   const renderStep = (config: StepConfig) => (
     <div
@@ -122,7 +147,7 @@ export default function SurveyPage() {
           </p>
         </div>
 
-        {config.showError && config.error && <div className="text-red-500 text-sm mt-2">{config.error}</div>}
+        {/* {config.showError && config.error && <div className="text-red-500 text-sm mt-2">{config.error}</div>} */}
 
         <Form {...config.form} key={`${config.fieldName}-form`}>
           <form onSubmit={config.form.handleSubmit(config.onSubmit)} className=" flex flex-col justify-center">
@@ -181,8 +206,8 @@ export default function SurveyPage() {
 
   const renderStep1 = () => {
     const step1Config: StepConfig = {
-      title: 'What Is Your Email Address?',
-      description: 'When The Product Is Launched, We Will Push It To Your Email Address As Soon As Possible',
+      title: 'What Is Your Email?',
+      description: 'We’re rolling out early access. You will receive an email notification.',
       placeholder: 'name@example.com',
       fieldName: 'email',
       inputType: 'email',
@@ -198,8 +223,8 @@ export default function SurveyPage() {
 
   const renderStep2 = () => {
     const step2Config: StepConfig = {
-      title: 'Import your Linkedin URL.',
-      description: 'Get A Unique Analytics Experience In The Future.',
+      title: `What's your LinkedIn?`,
+      description: 'Optional. We’ll use this information to tailor your career guidance.',
       placeholder: 'https://linkedin.com/in/',
       fieldName: 'linkedin',
       inputType: 'url',
@@ -220,14 +245,18 @@ export default function SurveyPage() {
       }`}
     >
       <div className="space-y-2 flex flex-col items-center">
-        <h2 className="text-[24px] font-semibold text-[rgba(0,0,0,0.8)] tablet:text-[32px]">
-          <span className="tablet:hidden">{`Thank You For Your Attention.`}</span>
-          <span className="mobile:hidden tablet:block">{`You're All Set.`}</span>
+        <h2 className="text-[24px] font-semibold text-[rgba(0,0,0,0.8)] tablet:text-[32px] flex items-center gap-2">
+          <CircleCheck size={32} color="#00b900" />
+          <span>{`You're All Set.`}</span>
         </h2>
         <p className="text-[rgba(0,0,0,0.4)] text-base font-medium tablet:text-[20px] tablet:font-normal">
-          <span className="tablet:hidden">{`We'll Be In Touch As Soon As We're Ready.`}</span>
-          <span className="mobile:hidden tablet:block">{`We'll Let You Know Once You Have Access.Stay Tuned.`}</span>
+          <span>{`Check your email for a confirmation.`}</span>
         </p>
+      </div>
+      <div className="flex justify-center items-center mt-8">
+        <SurveySubmitButton onClick={() => router.push('/')} className="!px-5">
+          <span>{`DONE`}</span>
+        </SurveySubmitButton>
       </div>
     </div>
   );
@@ -248,7 +277,6 @@ export default function SurveyPage() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center transparent">
       <LandingPageBg />
-      
       {/* Exit button - top left */}
       <button
         onClick={handleExit}
@@ -261,6 +289,27 @@ export default function SurveyPage() {
       <div className="w-full">
         <Header />
       </div>
+      <div className="absolute top-4 backdrop-blur-sm z-50">
+        {error && (
+          <ConfigProvider
+            theme={{
+              components: {
+                Alert: {
+                  colorText: '#FF6767',
+                  colorErrorBg: 'rgba(255,103,103,0.2)',
+                  colorErrorBorder: 'rgba(255,103,103,0.4)',
+                  colorIcon: '#FF6767',
+                  lineWidth: 2,
+                  fontWeightStrong: 600,
+                },
+              },
+            }}
+          >
+            <Alert message={error} type="error" closable showIcon icon={<Image src={ErrorIcon} alt="error" />} />
+          </ConfigProvider>
+        )}
+      </div>
+
       <div className="w-full flex-1 flex flex-col justify-center max-w-xl p-[38.5px]">{renderCurrentStep()}</div>
     </div>
   );

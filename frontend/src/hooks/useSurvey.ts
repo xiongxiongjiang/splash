@@ -51,7 +51,7 @@ export const useSurvey = () => {
     defaultValues: {
       email: storeEmail || '',
     },
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   const linkedinForm = useForm<z.infer<typeof linkedinFormSchema>>({
@@ -59,7 +59,7 @@ export const useSurvey = () => {
     defaultValues: {
       linkedin: linkedin || '',
     },
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   const handleStepTransition = useCallback(
