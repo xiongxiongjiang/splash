@@ -71,7 +71,7 @@ echo "6️⃣ Updating App Runner service..."
 SERVICE_NAME="tally"
 
 # Check if service exists
-SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='${SERVICE_NAME}'].ServiceArn | [0]" --output text 2>/dev/null)
+SERVICE_ARN=$(aws apprunner list-services --region $AWS_REGION --query "ServiceSummaryList[?ServiceName=='${SERVICE_NAME}'].ServiceArn | [0]" --output text 2>/dev/null)
 
 if [ "$SERVICE_ARN" != "None" ] && [ -n "$SERVICE_ARN" ] && [ "$SERVICE_ARN" != "null" ]; then
     echo "   Found existing App Runner service"
@@ -80,6 +80,7 @@ if [ "$SERVICE_ARN" != "None" ] && [ -n "$SERVICE_ARN" ] && [ "$SERVICE_ARN" != 
     # Update the service with the new image
     aws apprunner update-service \
         --service-arn $SERVICE_ARN \
+        --region $AWS_REGION \
         --source-configuration '{
             "ImageRepository": {
                 "ImageIdentifier": "'$ECR_URI':latest",
@@ -93,12 +94,17 @@ if [ "$SERVICE_ARN" != "None" ] && [ -n "$SERVICE_ARN" ] && [ "$SERVICE_ARN" != 
         --output text > /dev/null
     
     echo "   ✅ Service update initiated"
+    
+    # Also trigger a deployment to ensure the new image is deployed
+    echo "   Starting deployment..."
+    OPERATION_ID=$(aws apprunner start-deployment --service-arn $SERVICE_ARN --region $AWS_REGION --query OperationId --output text)
+    echo "   ✅ Deployment started with Operation ID: $OPERATION_ID"
     echo ""
     echo "   📊 Monitor deployment progress at:"
     echo "   https://console.aws.amazon.com/apprunner/home?region=$AWS_REGION#/services/$SERVICE_NAME"
     
     # Get the service URL
-    SERVICE_URL=$(aws apprunner describe-service --service-arn $SERVICE_ARN --query "Service.ServiceUrl" --output text)
+    SERVICE_URL=$(aws apprunner describe-service --service-arn $SERVICE_ARN --region $AWS_REGION --query "Service.ServiceUrl" --output text)
     if [ -n "$SERVICE_URL" ] && [ "$SERVICE_URL" != "None" ]; then
         echo ""
         echo "   🌐 Service URL: https://$SERVICE_URL"
