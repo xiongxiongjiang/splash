@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 import { Alert, ConfigProvider } from 'antd';
-import { ChevronDownIcon, ChevronUpIcon, X } from 'lucide-react';
+import gsap from 'gsap';
+import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { CircleCheck } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -81,30 +82,13 @@ export default function SurveyPage() {
     submitLinkedin,
     handleStepTransition,
     storeEmail,
-    reset,
   } = useSurvey();
   const [loading, setLoading] = useState(true);
-  // 创建 message 实例
+  const errorRef = useRef<HTMLDivElement>(null);
 
-  // Handle exit functionality
-  const handleExit = () => {
-    reset();
-    router.back();
-  };
+  
 
-  // ESC key handler
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        handleExit();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
+ 
   // 初始化表单数据
   React.useEffect(() => {
     if (storeEmail) {
@@ -116,6 +100,21 @@ export default function SurveyPage() {
     }, 1000); // 给个轻微 delay，确保用户体验流畅
     return () => clearTimeout(timeout);
   }, [storeEmail, emailForm]);
+  // 错误信息动画
+  useEffect(() => {
+    if (error && errorRef.current) {
+      // 下滑进入
+      gsap.fromTo(errorRef.current, { y: -80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' });
+    } else if (!error && errorRef.current) {
+      // 上滑离开
+      gsap.to(errorRef.current, {
+        y: -80,
+        opacity: 0,
+        duration: 0.6,
+        ease: 'power2.in',
+      });
+    }
+  }, [error]);
 
   if (loading) {
     return (
@@ -123,9 +122,7 @@ export default function SurveyPage() {
         <LandingPageBg />
         <div className="min-h-screen w-full flex items-center justify-center gap-2">
           <Image src={TallyLogo} alt="Tally Logo" width={24} height={24} />
-          <span className="font-bold text-[28px] chroma-text chroma-hidden chroma-gradient chroma-reveal">
-            Tally AI
-          </span>
+          <span className="font-bold text-[28px] chroma-animate-once">Tally AI</span>
         </div>
       </>
     );
@@ -133,11 +130,17 @@ export default function SurveyPage() {
   // 通用步骤渲染函数
   const renderStep = (config: StepConfig) => (
     <div
-      className={`transition-all flex-1 h-full duration-300 flex flex-col justify-center ${
-        isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
-      }`}
+      className={`transition-all transform-gpu flex-1 h-full duration-500 ease-in-out flex flex-col justify-center
+      ${
+        isTransitioning
+          ? config.fieldName === 'email'
+            ? 'opacity-0 -translate-y-20'
+            : 'opacity-0 translate-y-20'
+          : 'opacity-100 translate-y-0'
+      }
+    `}
     >
-      <div className="flex-1 justify-center tablet:justify-end tablet:pb-[50px] flex flex-col gap-[50px]">
+      <div className="flex-1 justify-start mobile:pt-[32%] tablet:pt-0 tablet:justify-end tablet:pb-[50px] flex flex-col gap-[50px]">
         <div className="space-y-4">
           <h2 className="tablet:text-[32px] text-[24px] font-medium tablet:font-semibold text-[rgba(0,0,0,0.8)]">
             {config.title}
@@ -160,7 +163,7 @@ export default function SurveyPage() {
                     <Input
                       type={config.inputType}
                       placeholder={config.placeholder}
-                      className="border-0 border-b-2 !border-b-[rgba(0,0,0,0.2)] px-0
+                      className="shadow-none border-0 border-b-2 !border-b-[rgba(0,0,0,0.2)] px-0
                                 !text-semibold !text-[18px] tablet:!text-2xl
                                 focus:!border-b-[rgba(0,0,0,0.8)]
                                 focus:outline-none focus:shadow-none
@@ -170,7 +173,7 @@ export default function SurveyPage() {
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-[#FF6767] font-medium !text-base" />
                 </FormItem>
               )}
             />
@@ -194,9 +197,9 @@ export default function SurveyPage() {
             className="tablet:px-10 bg-[rgba(255,255,255,0.6)]"
           >
             {config.fieldName === 'email' ? (
-              <ChevronDownIcon color="rgba(0,0,0,0.2)" />
+              <ChevronDownIcon strokeWidth={3} color="rgba(0,0,0,0.6)" />
             ) : (
-              <ChevronUpIcon color="rgba(0,0,0,0.2)" />
+              <ChevronUpIcon strokeWidth={3} color="rgba(0,0,0,0.6)" />
             )}
           </Button>
         )}
@@ -207,7 +210,7 @@ export default function SurveyPage() {
   const renderStep1 = () => {
     const step1Config: StepConfig = {
       title: 'What Is Your Email?',
-      description: 'We’re rolling out early access. You will receive an email notification.',
+      description: "We're rolling out early access. You will receive an email notification.",
       placeholder: 'name@example.com',
       fieldName: 'email',
       inputType: 'email',
@@ -223,8 +226,8 @@ export default function SurveyPage() {
 
   const renderStep2 = () => {
     const step2Config: StepConfig = {
-      title: `What's your LinkedIn?`,
-      description: 'Optional. We’ll use this information to tailor your career guidance.',
+      title: "What's your LinkedIn?",
+      description: "Optional. We'll use this information to tailor your career guidance.",
       placeholder: 'https://linkedin.com/in/',
       fieldName: 'linkedin',
       inputType: 'url',
@@ -277,40 +280,36 @@ export default function SurveyPage() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center transparent">
       <LandingPageBg />
-      {/* Exit button - top left */}
-      <button
-        onClick={handleExit}
-        className="absolute top-4 left-4 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm"
-        aria-label="Exit survey"
-      >
-        <X size={24} className="text-gray-700" />
-      </button>
 
       <div className="w-full">
-        <Header />
+        <Header showBackButton={true} />
       </div>
-      <div className="absolute top-4 backdrop-blur-sm z-50">
+      <div className="absolute top-4  backdrop-blur-sm z-50 ">
         {error && (
-          <ConfigProvider
-            theme={{
-              components: {
-                Alert: {
-                  colorText: '#FF6767',
-                  colorErrorBg: 'rgba(255,103,103,0.2)',
-                  colorErrorBorder: 'rgba(255,103,103,0.4)',
-                  colorIcon: '#FF6767',
-                  lineWidth: 2,
-                  fontWeightStrong: 600,
+          <div ref={errorRef}>
+            <ConfigProvider
+              theme={{
+                components: {
+                  Alert: {
+                    colorText: '#FF6767',
+                    colorErrorBg: 'rgba(255,103,103,0.2)',
+                    colorErrorBorder: 'rgba(255,103,103,0.4)',
+                    colorIcon: '#FF6767',
+                    lineWidth: 2,
+                    fontWeightStrong: 600,
+                  },
                 },
-              },
-            }}
-          >
-            <Alert message={error} type="error" closable showIcon icon={<Image src={ErrorIcon} alt="error" />} />
-          </ConfigProvider>
+              }}
+            >
+              <Alert message={error} type="error" closable showIcon icon={<Image src={ErrorIcon} alt="error" />} />
+            </ConfigProvider>
+          </div>
         )}
       </div>
 
-      <div className="w-full flex-1 flex flex-col justify-center max-w-xl p-[38.5px]">{renderCurrentStep()}</div>
+      <div className="w-full flex-1 flex flex-col justify-center max-w-xl p-[38.5px] overflow-hidden">
+        {renderCurrentStep()}
+      </div>
     </div>
   );
 }

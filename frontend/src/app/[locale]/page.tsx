@@ -40,17 +40,29 @@ export default function TallyAILanding() {
   const hasAnimated = useRef(false); // 防止动画重复执行
   const [hasClickedSignUp, setHasClickedSignUp] = useState(false);
   const { isCompleted } = useSurveyStore();
-
+  const chromaTextRef = useRef<HTMLSpanElement>(null);
+  // 处理20s一次渐变动画
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      console.log('data', data);
-    });
+    const el = chromaTextRef.current;
+    if (!el) return;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const timeout = setTimeout(() => {
+      interval = setInterval(() => {
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = 'start-gradient 0s forwards, chroma-scroll 1.2s ease-in-out forwards';
+      }, 20000);
+    }, 5000);
+
+    return () => {
+      clearTimeout(timeout);
+      if (interval !== null) clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
     if (hasAnimated.current) return;
     hasAnimated.current = true;
-
     requestAnimationFrame(() => {
       // 入场动画逻辑
       gsap.to(heroRef.current, {
@@ -123,7 +135,9 @@ export default function TallyAILanding() {
                         className="block z-10 scale-190"
                       />
                     </span>
-                    <span className="chroma-text chroma-hidden chroma-gradient chroma-reveal">Copilot.</span>
+                    <span ref={chromaTextRef} className="chroma-text">
+                      Copilot.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -132,13 +146,12 @@ export default function TallyAILanding() {
                 Precision guidance from résumé to referral.
               </p>
             </div>
-
-            <div className="my-[76px] web:my-12">
+            <div className="py-[76px]">
               <button
                 onClick={toSurvey}
                 disabled={isCompleted}
                 className="
-                  text-sm rounded-[16px] !font-heavy px-12 py-4 tablet:px-20 table:py-5 tablet:text-xl web:px-20 web:py-5 web:text-[16px] transition-colors
+                  text-sm rounded-[16px] !font-[800] px-12 py-4 tablet:px-20 table:py-5 tablet:text-xl web:px-20 web:py-5 web:text-[16px] transition-colors
                   bg-black text-white
                   hover:bg-[rgba(0,0,0,0.8)]
                   active:bg-black
@@ -162,15 +175,6 @@ export default function TallyAILanding() {
           </div>
           <div className="w-full">
             <InfiniteLogoScroller />
-          </div>
-          <div className="w-full flex justify-center items-center">
-            <Image
-              src={TallyLogo}
-              alt="tally logo"
-              className="hidden tablet:block opacity-40 pb-7"
-              width={24}
-              height={24}
-            />
           </div>
         </main>
       </div>

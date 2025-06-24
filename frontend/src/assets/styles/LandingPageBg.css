@@ -9,7 +9,7 @@
   height: 100%;
   pointer-events: none;
   background: linear-gradient(to bottom, #FFFFFF 0%, #EBEBEB 70%);
-  filter: blur(20px);
+  filter: blur(10px);
   z-index: -1;
 }
 
@@ -46,17 +46,18 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 98%;
-  height: 96%;
+  width: 99%;
+  height: 98%;
   transform: translate(-50%, -50%);
   background: linear-gradient(to bottom, #FFFFFF 0%, rgba(235, 235, 235, 0.7) 77%);
-  filter: blur(40px) ;
+  /* background:#000; */
+  filter: blur(8px) ;
   pointer-events: none;
   z-index: -2;
 }
 .gradient-orb {
   position: absolute;
-  /* filter: blur(20px); */
+  filter: blur(20px);
   will-change: transform, background;
 }
 
@@ -70,6 +71,7 @@
   animation: float-chaotic-1 180s ease-in-out infinite; 
 }
 .gradient-orb-2 {
+  
   width: 550px;
   height: 550px;
   background: url('../../assets/images/shape2.svg') no-repeat center center;

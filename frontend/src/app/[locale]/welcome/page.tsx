@@ -44,7 +44,9 @@ export default function WelcomePage() {
       label: 'Résumé File',
       children: (
         <div className="flex flex-col items-center space-y-6">
-          <Image src={IconFiles} alt="icon_files" width={128} height={128} />
+          <div className="h-[128px] w-[128px] flex justify-center items-center">
+            <Image src={IconFiles} alt="icon_files" width={128} height={128} />
+          </div>
           <div className="w-full flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)]">
             <Upload {...uploadProps}>
               <Button variant="outline" className="bg-transparent">
@@ -61,7 +63,9 @@ export default function WelcomePage() {
       label: 'LinkedIn Import',
       children: (
         <div className="flex flex-col items-center space-y-6">
-          <Image src={IconLink} alt="icon_files" width={128} height={128} />
+          <div className="h-[128px] w-[128px] flex justify-center items-center">
+            <Image src={IconLink} alt="icon_files" width={128} height={128} />
+          </div>
           <div className="w-full flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)]">
             <Input
               placeholder="https://linkedin.com/in/"
@@ -80,13 +84,12 @@ export default function WelcomePage() {
   ];
 
   return (
-    <div className="relative welcome-bg min-h-screen ">
-      <div className="welcome-content w-full flex flex-col items-center">
+    <div className="relative welcome-bg">
+      <div className="welcome-content w-full min-h-screen flex flex-col items-center">
         <div className="w-full">
           <Header />
         </div>
-        {/* todo 背景 & 上传简历或者linkedin */}
-        <div className="max-w-md  w-full flex flex-col items-center">
+        <div className="max-w-md flex-1 w-full flex flex-col items-center">
           <div className="text-[20px] text-[rgba(0,0,0,0.8)] flex flex-col gap-6">
             <p className="font-bold">Welcome</p>
             <p>I&apos;m Tally. Let&apos;s find your dream job together.</p>
