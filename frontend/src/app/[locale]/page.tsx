@@ -40,7 +40,9 @@ export default function TallyAILanding() {
   const hasAnimated = useRef(false); // 防止动画重复执行
   const [hasClickedSignUp, setHasClickedSignUp] = useState(false);
   const { isCompleted } = useSurveyStore();
+  const chromaTextRef = useRef<HTMLSpanElement>(null);
 
+  // Dashboard redirect functionality - checking for authenticated users
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       console.log('session data', data);
@@ -128,7 +130,9 @@ export default function TallyAILanding() {
                         className="block z-10 scale-190"
                       />
                     </span>
-                    <span className="chroma-text chroma-hidden chroma-gradient chroma-reveal">Copilot.</span>
+                    <span ref={chromaTextRef} className="chroma-text chroma-hidden chroma-gradient chroma-reveal">
+                      Copilot.
+                    </span>
                   </div>
                 </div>
               </div>

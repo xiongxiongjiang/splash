@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
 import Image from 'next/image';
 
 // 静态导入所有 logo 的灰色图
@@ -59,7 +57,7 @@ const logos: Logo[] = [
 
 function LogoImage({ name, gray }: { name: string; gray: StaticImageData }) {
   return (
-    <Image src={gray} alt={`${name} logo`} className="w-[100px] web:w-[160px]" />
+    <Image src={gray} alt={`${name} logo`} className="w-[125px] web:w-[160px]" />
   );
 }
 
@@ -79,10 +77,10 @@ export default function InfiniteLogoScroller() {
           {firstRowList.map((logo, idx) => (
             <LogoImage key={logo.name + idx + 'row1'} gray={logo.gray} name={`${logo.name} logo`} />
           ))}
-          <div className="w-[40px] web:w-[80px]"></div>
+          <div className="w-[65px] web:w-[80px]"></div>
         </div>
         <div className={`${styles.scrollerInner} mobile:!gap-0 tablet:!gap-[2em]`}>
-          <div className="w-[40px] web:w-[80px]"></div>
+          <div className="w-[65px] web:w-[80px]"></div>
           {secondRowList.map((logo, idx) => (
             <LogoImage key={logo.name + idx + 'row2'} gray={logo.gray} name={`${logo.name} logo`} />
           ))}
