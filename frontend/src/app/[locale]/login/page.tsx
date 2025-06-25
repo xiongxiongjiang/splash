@@ -1,13 +1,16 @@
 'use client'
 
+import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
+  const params = useParams()
+  const locale = params.locale as string
   const signInWithLinkedIn = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/${locale}/auth/callback`,
         scopes: 'openid profile email'
       }
     })
@@ -21,7 +24,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/${locale}/auth/callback`,
       }
     })
     

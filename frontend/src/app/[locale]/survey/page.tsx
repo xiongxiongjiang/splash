@@ -11,11 +11,11 @@ import { useRouter } from 'next/navigation';
 
 import Header from '@/components/Header';
 import LandingPageBg from '@/components/LandingPageBg';
-import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
 import ErrorIcon from '@/assets/images/icon_erro_info.svg';
+import IconLoading from '@/assets/images/icon_loading.svg';
 import TallyLogo from '@/assets/logos/tally_logo.svg';
 import { useSurvey } from '@/hooks/useSurvey';
 
@@ -23,6 +23,7 @@ import { useSurvey } from '@/hooks/useSurvey';
 interface SurveySubmitButtonProps {
   type?: 'submit' | 'button';
   disabled?: boolean;
+  isLoading?: boolean;
   onClick?: () => void;
   className?: string;
   children?: React.ReactNode;
@@ -31,12 +32,13 @@ interface SurveySubmitButtonProps {
 const SurveySubmitButton: React.FC<SurveySubmitButtonProps> = ({
   type = 'submit',
   disabled = false,
+  isLoading = false,
   onClick,
   className = '',
   children = 'SUBMIT',
 }) => {
   const baseClassName = `
-    rounded-[16px] web:h-[43px] web:font-heavy web:text-base tablet:h-[64px] tablet:px-20 tablet:text-[20px] h-[43px] px-10 w-auto font-bold text-base tracking-wide
+    rounded-[16px] web:h-[43px] web:font-[800] web:text-base tablet:h-[64px] tablet:px-20 tablet:text-[20px] h-[43px] px-10 w-auto font-bold text-base tracking-wide
     active:bg-black
     text-white
     bg-black
@@ -48,8 +50,16 @@ const SurveySubmitButton: React.FC<SurveySubmitButtonProps> = ({
   `;
 
   return (
-    <button type={type} disabled={disabled} onClick={onClick} className={`${baseClassName} ${className}`}>
-      {children}
+    <button
+      type={type}
+      disabled={disabled || isLoading}
+      onClick={onClick}
+      className={`${baseClassName} ${isLoading ? '!bg-black' : ''} ${className}`}
+    >
+      <span className="flex gap-2 justify-center">
+        {isLoading ? <Image src={IconLoading} className="animate-spin rounded-full" alt="loading" /> : ''}
+        {children}
+      </span>
     </button>
   );
 };
@@ -85,10 +95,10 @@ export default function SurveyPage() {
   } = useSurvey();
   const [loading, setLoading] = useState(true);
   const errorRef = useRef<HTMLDivElement>(null);
+  // 新增：分别管理每个步骤的按钮 loading 状态
+  const [emailBtnLoading, setEmailBtnLoading] = useState(false);
+  const [linkedinBtnLoading, setLinkedinBtnLoading] = useState(false);
 
-  
-
- 
   // 初始化表单数据
   React.useEffect(() => {
     if (storeEmail) {
@@ -128,9 +138,11 @@ export default function SurveyPage() {
     );
   }
   // 通用步骤渲染函数
-  const renderStep = (config: StepConfig) => (
+  const renderStep = (
+    config: StepConfig & { btnLoading: boolean; setBtnLoading: React.Dispatch<React.SetStateAction<boolean>> },
+  ) => (
     <div
-      className={`transition-all transform-gpu flex-1 h-full duration-500 ease-in-out flex flex-col justify-center
+      className={`transition-all flex-1 h-full duration-500 ease-in-out flex flex-col justify-center
       ${
         isTransitioning
           ? config.fieldName === 'email'
@@ -149,9 +161,6 @@ export default function SurveyPage() {
             {config.description}
           </p>
         </div>
-
-        {/* {config.showError && config.error && <div className="text-red-500 text-sm mt-2">{config.error}</div>} */}
-
         <Form {...config.form} key={`${config.fieldName}-form`}>
           <form onSubmit={config.form.handleSubmit(config.onSubmit)} className=" flex flex-col justify-center">
             <FormField
@@ -182,33 +191,43 @@ export default function SurveyPage() {
       </div>
       <div className="flex justify-center items-center tablet:flex-2 tablet:flex tablet:flex-col tablet:justify-between tablet:items-center gap-2">
         <SurveySubmitButton
+          isLoading={config.btnLoading}
           key={`desktop-${config.fieldName}-submit`}
           disabled={isSubmitting || !config.form.watch(config.watchField)}
-          onClick={config.form.handleSubmit(config.onSubmit)}
+          onClick={async () => {
+            config.setBtnLoading(true);
+            try {
+              await config.form.handleSubmit(config.onSubmit)();
+            } finally {
+              config.setBtnLoading(false);
+            }
+          }}
         >
           {config.buttonText}
         </SurveySubmitButton>
         {storeEmail && (
-          <Button
+          <button
             key={`mobile-${config.fieldName}-next`}
-            variant="secondary"
             onClick={() => handleStepTransition(config.fieldName === 'email' ? 2 : 1)}
-            size="icon"
-            className="tablet:px-10 bg-[rgba(255,255,255,0.6)]"
+            className="
+            flex justify-center items-center w-[49px] h-[43px] tablet:w-[80px] tablet:h-[40px] tablet:rounded-[8px] rounded-[12px] bg-[rgba(255,255,255,0.6)]"
           >
             {config.fieldName === 'email' ? (
               <ChevronDownIcon strokeWidth={3} color="rgba(0,0,0,0.6)" />
             ) : (
-              <ChevronUpIcon strokeWidth={3} color="rgba(0,0,0,0.6)" />
+              <ChevronUpIcon strokeWidth={3} absoluteStrokeWidth color="rgba(0,0,0,0.6)" />
             )}
-          </Button>
+          </button>
         )}
       </div>
     </div>
   );
 
   const renderStep1 = () => {
-    const step1Config: StepConfig = {
+    const step1Config: StepConfig & {
+      btnLoading: boolean;
+      setBtnLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    } = {
       title: 'What Is Your Email?',
       description: "We're rolling out early access. You will receive an email notification.",
       placeholder: 'name@example.com',
@@ -219,13 +238,17 @@ export default function SurveyPage() {
       watchField: 'email',
       showError: false,
       buttonText: 'JOIN WAITLIST',
+      btnLoading: emailBtnLoading,
+      setBtnLoading: setEmailBtnLoading,
     };
-
     return renderStep(step1Config);
   };
 
   const renderStep2 = () => {
-    const step2Config: StepConfig = {
+    const step2Config: StepConfig & {
+      btnLoading: boolean;
+      setBtnLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    } = {
       title: "What's your LinkedIn?",
       description: "Optional. We'll use this information to tailor your career guidance.",
       placeholder: 'https://linkedin.com/in/',
@@ -236,14 +259,15 @@ export default function SurveyPage() {
       watchField: 'linkedin',
       showError: true,
       error: error,
+      btnLoading: linkedinBtnLoading,
+      setBtnLoading: setLinkedinBtnLoading,
     };
-
     return renderStep(step2Config);
   };
 
   const renderStep3 = () => (
     <div
-      className={`transition-all duration-300 ${
+      className={`transition-all duration-300 mb-[35%] ${
         isTransitioning ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
       }`}
     >

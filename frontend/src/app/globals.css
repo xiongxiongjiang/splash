@@ -309,12 +309,21 @@ body {
 }
 /* 文字动画 */
 .chroma-text {
-  color: black;
+  color: white;
   position: relative;
   display: inline-block;
   animation: 
+    color-fade 1s ease-in-out forwards,
     start-gradient 0s 5s forwards,
     chroma-scroll 1.2s 5s ease-in-out forwards;
+}
+@keyframes color-fade {
+  from {
+    color: white;
+  }
+  to {
+    color: black;
+  }
 }
 /* 加载动画 */
 .chroma-animate-once{

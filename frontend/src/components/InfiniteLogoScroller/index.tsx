@@ -56,9 +56,7 @@ const logos: Logo[] = [
 ];
 
 function LogoImage({ name, gray }: { name: string; gray: StaticImageData }) {
-  return (
-    <Image src={gray} alt={`${name} logo`} className="w-[125px] web:w-[160px]" />
-  );
+  return <Image src={gray} alt={`${name} logo`} className="w-[125px] web:w-[160px]" loading="lazy" />;
 }
 
 export default function InfiniteLogoScroller() {

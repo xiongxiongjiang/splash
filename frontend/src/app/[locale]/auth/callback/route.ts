@@ -7,6 +7,10 @@ import type { NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  
+  // Extract locale from the URL path
+  const pathSegments = requestUrl.pathname.split('/');
+  const locale = pathSegments[1] || 'en';
 
   if (code) {
     const supabase = await createServerActionClient();
@@ -17,7 +21,7 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         console.error('OAuth callback error:', error);
-        return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
+        return NextResponse.redirect(new URL(`/${locale}/login?error=auth_failed`, request.url));
       }
 
       // If we have a user and session, sync with backend
@@ -30,10 +34,10 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       console.error('Unexpected error in OAuth callback:', error);
-      return NextResponse.redirect(new URL('/login?error=unexpected', request.url));
+      return NextResponse.redirect(new URL(`/${locale}/login?error=unexpected`, request.url));
     }
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/en/dashboard', request.url));
+  return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
 }

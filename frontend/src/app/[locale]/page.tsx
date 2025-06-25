@@ -12,7 +12,6 @@ import InfiniteLogoScroller from '@/components/InfiniteLogoScroller';
 import LandingPageBg from '@/components/LandingPageBg';
 
 import BgBubble from '@/assets/images/bg_copilot.svg';
-import TallyLogo from '@/assets/logos/tally_logo.svg';
 import { supabase } from '@/lib/supabase';
 import { useSurveyStore } from '@/store/survey';
 
@@ -35,38 +34,52 @@ const jobQuestions = [
 
 export default function TallyAILanding() {
   const textRef = useRef<HTMLHeadingElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const hasAnimated = useRef(false); // 防止动画重复执行
   const [hasClickedSignUp, setHasClickedSignUp] = useState(false);
   const { isCompleted } = useSurveyStore();
   const chromaTextRef = useRef<HTMLSpanElement>(null);
+  const [locale, setLocale] = useState('en');
 
   // Dashboard redirect functionality - checking for authenticated users
   useEffect(() => {
+    // Get locale from URL path
+    const pathSegments = window.location.pathname.split('/');
+    const currentLocale = pathSegments[1] || 'en';
+    setLocale(currentLocale);
+    
     supabase.auth.getSession().then(({ data }) => {
       console.log('session data', data);
       // If user is already logged in, redirect to dashboard
       if (data.session?.user) {
         console.log('User already authenticated, redirecting to dashboard');
-        router.push('/dashboard');
+        router.push(`/${currentLocale}/dashboard`);
       }
     });
   }, [router]);
+  // 处理20s一次渐变动画
+  useEffect(() => {
+    const el = chromaTextRef.current;
+    if (!el) return;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const timeout = setTimeout(() => {
+      interval = setInterval(() => {
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = 'start-gradient 0s forwards, chroma-scroll 1.2s ease-in-out forwards';
+      }, 20000);
+    }, 5000);
+
+    return () => {
+      clearTimeout(timeout);
+      if (interval !== null) clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     if (hasAnimated.current) return;
     hasAnimated.current = true;
-
     requestAnimationFrame(() => {
-      // 入场动画逻辑
-      gsap.to(heroRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 1,
-        ease: 'power3.out',
-      });
-
       // 打字动画循环
       const textTimeline = gsap.timeline({ repeat: -1 });
       jobQuestions.forEach((question) => {
@@ -99,7 +112,7 @@ export default function TallyAILanding() {
 
     // 延迟1秒
     setTimeout(() => {
-      router.push('/survey');
+      router.push(`/${locale}/survey`);
     }, 1000);
   };
   return (
@@ -109,12 +122,9 @@ export default function TallyAILanding() {
         {/* Header */}
         <Header />
         {/* Hero Section */}
-        <main
-          ref={heroRef}
-          className="w-full max-w-full flex-1 flex flex-col justify-center z-[20] mobile:py-[50px] tablet:p-0"
-        >
-          <div className="w-full flex-1 flex flex-col justify-center text-center px-[44px]">
-            <div className="mt-8">
+        <main className="w-full max-w-full flex-1 flex flex-col justify-center z-[20]">
+          <div className="w-full flex-1 flex flex-col justify-start tablet:justify-center text-center px-[44px]">
+            <div className="pt-15 tablet:pt-8">
               <div className="text-[28px] font-semibold tablet:text-[60px] web:text-[60px] tracking-tight">
                 <div className="relative flex items-center justify-center">
                   <span className="mr-5 tablet:mr-10">Your career</span>
@@ -130,7 +140,7 @@ export default function TallyAILanding() {
                         className="block z-10 scale-190"
                       />
                     </span>
-                    <span ref={chromaTextRef} className="chroma-text chroma-hidden chroma-gradient chroma-reveal">
+                    <span ref={chromaTextRef} className="chroma-text">
                       Copilot.
                     </span>
                   </div>
@@ -141,13 +151,12 @@ export default function TallyAILanding() {
                 Precision guidance from résumé to referral.
               </p>
             </div>
-
-            <div className="my-[76px] web:my-12">
+            <div className="py-15 tablet:py-[76px] ">
               <button
                 onClick={toSurvey}
                 disabled={isCompleted}
                 className="
-                  text-sm rounded-[16px] !font-heavy px-12 py-4 tablet:px-20 table:py-5 tablet:text-xl web:px-20 web:py-5 web:text-[16px] transition-colors
+                  text-sm rounded-[16px] !font-[800] px-12 py-4 tablet:px-20 table:py-5 tablet:text-xl web:px-20 web:py-5 web:text-[16px] transition-colors
                   bg-black text-white
                   hover:bg-[rgba(0,0,0,0.8)]
                   active:bg-black
@@ -169,17 +178,8 @@ export default function TallyAILanding() {
               How Do I Get A PM Job At Meta?
             </h2>
           </div>
-          <div className="w-full">
+          <div className="w-full mobile:mb-10 tablet:mb-0">
             <InfiniteLogoScroller />
-          </div>
-          <div className="w-full flex justify-center items-center">
-            <Image
-              src={TallyLogo}
-              alt="tally logo"
-              className="hidden tablet:block opacity-40 pb-7"
-              width={24}
-              height={24}
-            />
           </div>
         </main>
       </div>

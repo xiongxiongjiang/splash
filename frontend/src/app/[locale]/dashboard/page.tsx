@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import Chat from '@/components/Chat';
 
@@ -20,6 +20,8 @@ interface DashboardState {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
   const [state, setState] = useState<DashboardState>({
     supabaseUser: null,
     backendUser: null,
@@ -44,7 +46,7 @@ export default function DashboardPage() {
 
         if (userError || sessionError || !user || !session) {
           console.log('No authenticated user, redirecting to login');
-          router.push('/login');
+          router.push(`/${locale}/login`);
           return;
         }
 
@@ -95,12 +97,12 @@ export default function DashboardPage() {
     };
 
     initializeDashboard();
-  }, [router]);
+  }, [router, locale]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     apiClient.clearToken();
-    router.push('/login');
+    router.push(`/${locale}/login`);
   };
 
   const handleCreateResume = () => {

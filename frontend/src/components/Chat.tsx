@@ -80,10 +80,13 @@ export default function Chat() {
 
     try {
       // Prepare messages for backend API
-      const chatMessages = [...messages, userMessage].map((msg) => ({
-        role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.message,
-      }));
+      const chatMessages = [...messages, userMessage].map((msg) => {
+        const role: 'user' | 'assistant' | 'system' = msg.sender === 'user' ? 'user' : 'assistant';
+        return {
+          role,
+          content: msg.message,
+        };
+      });
 
       // Send to backend chat completions endpoint
       const data = await apiClient.createChatCompletion(chatMessages, {
