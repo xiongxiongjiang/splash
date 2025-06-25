@@ -12,8 +12,10 @@ passlib[bcrypt]>=1.7.4  # For admin password hashing
 python-jose[cryptography]>=3.3.0
 python-multipart>=0.0.6
 httpx>=0.24.0
+litellm>=1.0.0  # AI model integration
 
 # Development dependencies
 pytest>=7.0.0
+pytest-asyncio>=0.21.0  # For async test support
 black>=23.0.0
 pre-commit>=3.0.0 

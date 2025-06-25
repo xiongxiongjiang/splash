@@ -5,7 +5,6 @@ Working implementation with essential logging
 
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional
 from passlib.context import CryptContext
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request

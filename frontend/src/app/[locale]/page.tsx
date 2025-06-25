@@ -43,9 +43,14 @@ export default function TallyAILanding() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      console.log('data', data);
+      console.log('session data', data);
+      // If user is already logged in, redirect to dashboard
+      if (data.session?.user) {
+        console.log('User already authenticated, redirecting to dashboard');
+        router.push('/dashboard');
+      }
     });
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (hasAnimated.current) return;

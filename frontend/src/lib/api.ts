@@ -242,6 +242,68 @@ class ApiClient {
       body: JSON.stringify({ info })
     })
   }
+
+  /**
+   * Get available chat models
+   */
+  async getChatModels(): Promise<{
+    object: string
+    data: Array<{
+      id: string
+      object: string
+      created: number
+      owned_by: string
+      permission: any[]
+      root: string
+      parent: string | null
+    }>
+  }> {
+    return this.request('/chat/models')
+  }
+
+  /**
+   * Create chat completion
+   */
+  async createChatCompletion(messages: Array<{
+    role: 'user' | 'assistant' | 'system'
+    content: string
+  }>, options?: {
+    model?: string
+    temperature?: number
+    max_tokens?: number
+    stream?: boolean
+  }): Promise<{
+    id: string
+    object: string
+    created: number
+    model: string
+    choices: Array<{
+      finish_reason: string
+      index: number
+      message: {
+        content: string
+        role: string
+        tool_calls: any
+        function_call: any
+      }
+    }>
+    usage: {
+      completion_tokens: number
+      prompt_tokens: number
+      total_tokens: number
+    }
+  }> {
+    return this.request('/chat/completions', {
+      method: 'POST',
+      body: JSON.stringify({
+        messages,
+        model: options?.model || 'gemini/gemini-1.5-flash',
+        temperature: options?.temperature || 0.7,
+        max_tokens: options?.max_tokens || 1000,
+        stream: options?.stream || false,
+      })
+    })
+  }
 }
 
 // Export singleton instance

@@ -14,6 +14,7 @@ services:
       - PYTHONPATH=/app
       - RELOAD_FLAG=--reload
       - LOG_LEVEL=debug
+      - GEMINI_API_KEY=AIzaSyD1WlO2hJMzDZx2jqlNOzee4J7yuccvYUs
     networks:
       - splash-network
     healthcheck:
@@ -37,42 +38,13 @@ services:
       - /app/.next
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_LITELLM_URL=http://localhost:4000
       - NODE_ENV=development
     depends_on:
       - backend
-      - litellm
     networks:
       - splash-network
     env_file:
       - ./frontend/.env.local
-
-  litellm:
-    image: ghcr.io/berriai/litellm:main-stable
-    container_name: splash-litellm
-    ports:
-      - "4000:4000"
-    volumes:
-      - ./litellm_config.yaml:/app/config.yaml
-    environment:
-      - LITELLM_MASTER_KEY=sk-splash-master-key-1234
-      - GEMINI_API_KEY=AIzaSyD1WlO2hJMzDZx2jqlNOzee4J7yuccvYUs
-      - LITELLM_MODE=DEVELOPMENT
-      - UI_USERNAME=admin
-      - UI_PASSWORD=admin
-      - DATABASE_URL=postgresql://litellm:litellm@postgres:5432/litellm
-      - LITELLM_SALT_KEY=sk-12345678
-      - STORE_MODEL_IN_DB=True
-    command: --config /app/config.yaml --port 4000
-    depends_on:
-      - postgres
-    networks:
-      - splash-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   postgres:
     image: postgres:15-alpine  # Using specific version for better caching

@@ -2,7 +2,7 @@ from sqlmodel import Field, SQLModel, Column
 from typing import Optional, Dict, Any
 from datetime import datetime
 from pydantic import EmailStr, ConfigDict
-from sqlalchemy import func, JSON
+from sqlalchemy import JSON
 
 
 class WaitlistBase(SQLModel):

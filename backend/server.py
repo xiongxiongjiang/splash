@@ -1,14 +1,11 @@
-from fastapi import FastAPI, Query, HTTPException, Depends, status, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
-from typing import List, Optional
+from fastapi import FastAPI, Query, HTTPException, Depends, status
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 import uvicorn
 import logging
 import asyncio
-import os
-from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 # Load environment variables from .env.local in development
 load_dotenv(".env.local")
@@ -24,34 +21,20 @@ from database import (
     engine, async_session
 )
 from auth import get_current_user, get_optional_user, get_admin_user
-from models import User, UserRead, Resume, ResumeCreate, ResumeRead, Waitlist, WaitlistCreate, WaitlistUpdate, WaitlistRead
+from models import User, UserRead, ResumeCreate, ResumeRead, WaitlistCreate, WaitlistUpdate, WaitlistRead
 from admin import create_admin
 from klaviyo_integration import subscribe_to_klaviyo_from_waitlist, update_klaviyo_from_waitlist
+from middleware import custom_cors_middleware, https_redirect_middleware
+from config import MCP_MOUNT_PATH, MCP_OPERATIONS, APP_TITLE, APP_DESCRIPTION, APP_VERSION
+from chat import (
+    ChatCompletionRequest, 
+    create_chat_completion, 
+    create_chat_completion_stream
+)
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Configuration constants
-MCP_MOUNT_PATH = "/mcp"
-
-# CORS configuration - simplified
-# Always allow localhost origins
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:8000", 
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8000"
-]
-
-MCP_OPERATIONS = [
-    "search_all_resumes",
-    "get_resume_details", 
-    "find_resumes_by_skill",
-    "get_database_statistics",
-    "check_server_health",
-    "get_server_info"
-]
 
 # Global state
 class AppState:
@@ -118,62 +101,18 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Resume Management API", 
-    description="REST API for managing and searching resumes with SQLModel and authentication",
-    version="2.0.0",
+    title=APP_TITLE, 
+    description=APP_DESCRIPTION,
+    version=APP_VERSION,
     lifespan=lifespan
 )
 
-# Add CORS middleware
-# Custom CORS middleware to handle dynamic Vercel URLs
-@app.middleware("http")
-async def custom_cors_middleware(request, call_next):
-    origin = request.headers.get("origin")
-    
-    # Allow any localhost or Vercel origin
-    allowed = False
-    if origin:
-        # Check localhost origins
-        if origin in ALLOWED_ORIGINS:
-            allowed = True
-        # Allow all Vercel domains (both .vercel.app and custom domains)
-        elif origin.startswith("https://") and ".vercel.app" in origin:
-            allowed = True
-    
-    # Handle preflight requests
-    if request.method == "OPTIONS":
-        response = Response()
-        if allowed and origin:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = "*"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
-    
-    response = await call_next(request)
-    
-    if allowed and origin:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-    
-    return response
+# Add middleware
+app.middleware("http")(custom_cors_middleware)
+app.middleware("http")(https_redirect_middleware)
 
 # Initialize SQLAdmin
 admin = create_admin(app, engine)
-
-# Middleware to handle HTTPS behind proxy (AWS App Runner)
-@app.middleware("http")
-async def https_redirect_middleware(request: Request, call_next):
-    # Check if we're behind a proxy that handles HTTPS
-    forwarded_proto = request.headers.get("x-forwarded-proto")
-    if forwarded_proto == "https":
-        # Tell the app it's HTTPS even though the internal connection is HTTP
-        request.scope["scheme"] = "https"
-    
-    response = await call_next(request)
-    return response
 
 
 @app.middleware("http")
@@ -184,9 +123,7 @@ async def check_mcp_ready(request, call_next):
             status_code=503,
             detail="MCP server is still initializing, please try again in a moment"
         )
-    
-    response = await call_next(request)
-    return response
+    return await call_next(request)
 
 
 # ==================== PUBLIC ENDPOINTS ====================
@@ -456,8 +393,7 @@ async def get_user_by_email_endpoint(
 
 @app.get("/admin/users", operation_id="get_all_users")
 async def get_all_users_admin(
-    admin_user: User = Depends(get_admin_user),
-    session: AsyncSession = Depends(get_session)
+    admin_user: User = Depends(get_admin_user)
 ):
     """Get all users (admin only)."""
     logger.info("GET /admin/users by admin: %s", admin_user.email)
@@ -467,6 +403,58 @@ async def get_all_users_admin(
         "message": "Admin endpoint - would return all users",
         "admin_user": admin_user.email,
         "note": "This endpoint needs implementation in the database module"
+    }
+
+
+# ==================== CHAT ENDPOINTS ====================
+
+@app.post("/chat/completions", operation_id="create_chat_completion")
+async def create_chat_completion_endpoint(
+    request: ChatCompletionRequest,
+    session: AsyncSession = Depends(get_session)
+):
+    """Create a chat completion with function calling support"""
+    logger.info("POST /chat/completions - model=%s, stream=%s", request.model, request.stream)
+    
+    if request.stream:
+        from fastapi.responses import StreamingResponse
+        import json
+        
+        async def generate_stream():
+            async for chunk in create_chat_completion_stream(request, session):
+                yield f"data: {json.dumps(chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+    
+    response = await create_chat_completion(request, session)
+    return response
+
+
+@app.get("/chat/models", operation_id="list_chat_models")
+async def list_chat_models():
+    """List available chat models"""
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "gemini/gemini-1.5-flash",
+                "object": "model",
+                "created": 1677610602,
+                "owned_by": "google",
+                "permission": [],
+                "root": "gemini/gemini-1.5-flash",
+                "parent": None
+            }
+        ]
     }
 
 

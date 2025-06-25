@@ -1,10 +1,9 @@
-from sqlmodel import SQLModel, create_engine, Session, select
+from sqlmodel import SQLModel, select
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator, Optional, List
 import os
-from contextlib import asynccontextmanager
 import logging
 from sqlalchemy import text
 
@@ -142,7 +141,6 @@ async def create_resume(session: AsyncSession, resume_data: dict) -> "Resume":
 async def add_to_waitlist(session: AsyncSession, email: str, info: dict = None) -> "Waitlist":
     """Add email to waitlist"""
     from models import Waitlist
-    from sqlalchemy.exc import IntegrityError
     
     # Check if email already exists
     statement = select(Waitlist).where(Waitlist.email == email)

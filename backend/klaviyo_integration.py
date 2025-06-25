@@ -10,9 +10,7 @@ from dotenv import load_dotenv
 load_dotenv(".env.local")
 
 import logging
-from typing import Optional
 import httpx
-from fastapi import HTTPException
 from pydantic import BaseModel, EmailStr
 
 # Setup logging
