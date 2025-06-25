@@ -1,51 +1,34 @@
 # Splash - Resume Management Platform
 
-A full-stack application with FastAPI backend and Next.js frontend for resume management.
+A full-stack application designed to streamline the job application process by managing resumes, analyzing job descriptions, and automating personalized outreach.
+
+## 🏗️ Architecture
+
+- **Frontend**: Next.js 14+ with TypeScript, Tailwind CSS, and Supabase authentication
+- **Backend**: FastAPI with PostgreSQL database, providing REST API and MCP (Model Context Protocol) endpoints
+- **Infrastructure**: Docker Compose for local development, deploys to Heroku (backend) and Vercel (frontend)
+
+## ✨ Key Features
+
+1. **Resume Management**: Upload and manage multiple resume versions
+2. **LinkedIn Integration**: Save and analyze LinkedIn profiles
+3. **Job Description Analysis**: AI-powered JD analysis with personalized recommendations
+4. **Content Generation**: Automated generation of cover letters and application materials
+5. **Outreach Automation**: Personalized message generation and email sending
+6. **Dashboard Analytics**: Track application progress and success metrics
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Docker and Docker Compose installed on your system
-  - [Install Docker Desktop](https://docs.docker.com/get-docker/) (includes Docker Compose)
-  - Verify installation: `docker --version` and `docker-compose --version`
+For detailed local development instructions, see [Local Development Guide](./local_dev_guide.md).
 
-### Docker Setup Explained
-
-**What is Docker Compose?**
-Docker Compose is a tool for defining and running multi-container Docker applications. It uses a YAML file to configure your application's services, then with a single command, you create and start all services.
-
-**Our Setup:**
-- `docker-compose.yml`: Development configuration with hot-reload
-- Each service (frontend/backend) runs in its own container
-- Containers communicate via internal Docker network
-
-### Environment Setup
-The frontend requires environment variables for Supabase configuration:
-```bash
-# Copy the environment template
-cd frontend
-cp .env.template .env.local
-# Edit .env.local with your Supabase credentials
-cd ..
-```
-
-### Run Everything
 ```bash
 # Start all services
 docker-compose up
 
-# Or run in background
-docker-compose up -d
-```
-
-That's it! The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-
-### Stop Services
-```bash
-docker-compose down
+# Access points:
+# - Frontend: http://localhost:3000
+# - Backend API: http://localhost:8000
+# - API Documentation: http://localhost:8000/docs
 ```
 
 ## 📁 Project Structure
@@ -53,72 +36,20 @@ docker-compose down
 splash/
 ├── backend/          # FastAPI application
 ├── frontend/         # Next.js application
+├── docs/            # API design and documentation
 └── docker-compose.yml
-```
-
-## 🛠️ Development
-
-### Making Changes
-- Code changes are automatically reflected (hot reload enabled)
-- Backend: Edit files in `backend/` - FastAPI auto-reloads
-- Frontend: Edit files in `frontend/` - Next.js hot-reloads
-
-### Viewing Logs
-```bash
-# View all logs
-docker-compose logs
-
-# View specific service logs
-docker-compose logs backend
-docker-compose logs frontend
-
-# Follow logs in real-time
-docker-compose logs -f
-```
-
-### Rebuilding Containers
-```bash
-# Rebuild after dependency changes
-docker-compose build
-
-# Rebuild and start
-docker-compose up --build
-```
-
-### Running Tests
-```bash
-# Backend tests
-docker-compose exec backend pytest
-
-# Frontend tests
-docker-compose exec frontend npm test
-```
-
-### Database Access
-SQLite database is persisted in Docker volume. To reset:
-```bash
-docker-compose down -v  # Remove volumes
-docker-compose up       # Recreate fresh database
 ```
 
 ## 🚢 Deployment
 
-### Production Deployment
-
 This monorepo deploys frontend and backend as separate services:
-- **Backend**: Heroku (uses `backend/Dockerfile`)
-  - Only the backend directory is deployed
-  - Uses production Dockerfile configuration
-- **Frontend**: Vercel (uses Next.js build)
-  - Only the frontend directory is deployed
-  - Vercel builds from source
 
-**Note**: The regular `docker-compose.yml` is only for local development. For production, each service deploys independently to its respective platform.
-
-See individual README files in `backend/` and `frontend/` for specific deployment instructions.
+- **Backend**: AWS App Runner with automated deployment
+  - See [Backend Deployment Guide](./backend/deployment_guide.md)
+  - Uses `./backend/deploy.sh` script for streamlined deployment
+- **Frontend**: Vercel (Next.js)
+  - Run `vercel` in the frontend directory
 
 ## 🔧 Manual Setup (Optional)
 
-If you prefer not to use Docker, see:
-- [Backend Manual Setup](./backend/README.md#manual-setup-without-docker)
-- [Frontend Manual Setup](./frontend/README.md#manual-setup-without-docker) 
+For development without Docker, see [Local Development Guide](./local_dev_guide.md). 

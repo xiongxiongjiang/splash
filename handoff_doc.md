@@ -48,6 +48,8 @@ The current implementation needs GDPR compliance updates for email consent manag
 This is both a legal compliance issue and affects email deliverability rates.
 
 这既是法律合规问题，也影响邮件送达率。
+### 4. Point to our domain
+i can prob just do it. either via vercel or CF
 
 ## Project Structure & Development Recommendations
 
