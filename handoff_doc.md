@@ -51,6 +51,10 @@ This is both a legal compliance issue and affects email deliverability rates.
 ### 4. Point to our domain
 i can prob just do it. either via vercel or CF
 
+### 5. make the product stand out/controversial
+one idea we had is to make tally roast people
+让tally 去 talk shit about the applicant
+
 ## Project Structure & Development Recommendations
 
 ### Monorepo Structure - Strongly Recommended
