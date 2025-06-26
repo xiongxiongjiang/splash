@@ -2,7 +2,6 @@
 
 .bg-gradient-mesh-top{
   position: absolute;
-  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -10,13 +9,14 @@
   pointer-events: none;
   background: linear-gradient(to bottom, #FFFFFF 0%, rgba(235,235,235,0.7) 50%);
   opacity: 0.9;
-  filter: blur(60px);
+  filter: blur(55px);
   z-index: -1;
 }
 
 .bg-gradient-mesh {
-  overflow: hidden;
-  min-height: 100%;
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
   z-index: -3;
   background: linear-gradient(
     -135deg,
@@ -25,22 +25,6 @@
     rgba(109, 201, 244, 0.3) 63%,
     rgba(249, 240, 68, 0.3) 100%
   );
-}
-/* 色相改变动画 */
-@keyframes hue-rotate-animation {
-  0% {
-    filter: hue-rotate(0deg);
-  }
-  100% {
-    filter: hue-rotate(360deg);
-  }
-}
-
-/* .hue-rotate-animation-slow {
-  animation: hue-rotate-animation 30s linear infinite;
-} */
-.hue-rotate-animation-fast {
-  animation: hue-rotate-animation 1s linear infinite;
 }
 .bg-gradient-mesh::after {
   content: "";
@@ -55,6 +39,24 @@
   pointer-events: none;
   z-index: -2;
 }
+
+/* 色相改变动画 */
+@keyframes hue-rotate-animation {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+/* .hue-rotate-animation-slow {
+  animation: hue-rotate-animation 180s linear infinite;
+} */
+.hue-rotate-animation-fast {
+  animation: hue-rotate-animation 1s linear 2;
+}
+
 .gradient-orb {
   position: absolute;
   filter: blur(20px);

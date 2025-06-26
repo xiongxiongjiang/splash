@@ -8,9 +8,9 @@ export default function LandingPageBg({ animationSpeed = 'slow' }: LandingPageBg
   return (
     <>
       {/* 弥散渐变背景 */}
-      <div className={`absolute inset-0 bg-gradient-mesh ${animationClass}`}>
-        <div className="gradient-orb gradient-orb-1"></div>
-        <div className="gradient-orb gradient-orb-2"></div>
+      <div className={`bg-gradient-mesh ${animationClass}`}>
+        {/* <div className="gradient-orb gradient-orb-1"></div>
+        <div className="gradient-orb gradient-orb-2"></div> */}
       </div>
       <div className="bg-gradient-mesh-top"></div>
     </>

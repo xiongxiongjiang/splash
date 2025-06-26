@@ -47,7 +47,6 @@ export default function TallyAILanding() {
     const pathSegments = window.location.pathname.split('/');
     const currentLocale = pathSegments[1] || 'en';
     setLocale(currentLocale);
-    
     supabase.auth.getSession().then(({ data }) => {
       console.log('session data', data);
       // If user is already logged in, redirect to dashboard
@@ -111,11 +110,9 @@ export default function TallyAILanding() {
   const toSurvey = () => {
     // 设置点击状态为 true
     setHasClickedSignUp(true);
-
-    // 延迟600ms
     setTimeout(() => {
       router.push(`/${locale}/survey`);
-    }, 600);
+    }, 300);
   };
   return (
     <>
@@ -153,7 +150,7 @@ export default function TallyAILanding() {
                 Precision guidance from résumé to referral.
               </p>
             </div>
-            <div className="py-15 tablet:py-[76px] ">
+            <div className="py-15 tablet:py-18">
               <button
                 onClick={toSurvey}
                 disabled={isCompleted}

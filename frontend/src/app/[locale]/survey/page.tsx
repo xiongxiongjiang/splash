@@ -19,7 +19,6 @@ import IconLoading from '@/assets/images/icon_loading.svg';
 import TallyLogo from '@/assets/logos/tally_logo.svg';
 import { useSurvey } from '@/hooks/useSurvey';
 
-// 内部组件定义
 interface SurveySubmitButtonProps {
   type?: 'submit' | 'button';
   disabled?: boolean;
@@ -64,7 +63,6 @@ const SurveySubmitButton: React.FC<SurveySubmitButtonProps> = ({
   );
 };
 
-// 步骤配置接口
 interface StepConfig {
   title: string;
   description: string;
@@ -77,54 +75,91 @@ interface StepConfig {
   showError?: boolean;
   error?: string | null;
   buttonText?: string;
+  onTransition: (nextStep: number) => void;
+  btnLoading?: boolean;
+  setBtnLoading?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function SurveyPage() {
   const router = useRouter();
   const {
     isSubmitting,
-    isTransitioning,
+    isTransitioning, // 我们将用它来防止动画期间的重复点击
     error,
     currentStep,
     emailForm,
     linkedinForm,
     submitEmail,
     submitLinkedin,
-    handleStepTransition,
+    handleStepTransition: originalHandleStepTransition,
     storeEmail,
   } = useSurvey();
+
   const [loading, setLoading] = useState(true);
   const errorRef = useRef<HTMLDivElement>(null);
-  // 新增：分别管理每个步骤的按钮 loading 状态
   const [emailBtnLoading, setEmailBtnLoading] = useState(false);
   const [linkedinBtnLoading, setLinkedinBtnLoading] = useState(false);
 
-  // 初始化表单数据
-  React.useEffect(() => {
+  // 新增：一个 ref 用于指向动画容器
+  const stepContainerRef = useRef<HTMLDivElement>(null);
+  // 新增：一个 ref 用于跟踪上一步，以判断动画方向
+  const prevStepRef = useRef(0);
+
+  useEffect(() => {
     if (storeEmail) {
       emailForm.reset({ email: storeEmail });
     }
-    // 无论是否有 storeEmail，都等待一帧后设置为 false
     const timeout = setTimeout(() => {
       setLoading(false);
-    }, 1000); // 给个轻微 delay，确保用户体验流畅
+    }, 1000);
     return () => clearTimeout(timeout);
   }, [storeEmail, emailForm]);
-  // 错误信息动画
+
   useEffect(() => {
     if (error && errorRef.current) {
-      // 下滑进入
       gsap.fromTo(errorRef.current, { y: -80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' });
     } else if (!error && errorRef.current) {
-      // 上滑离开
-      gsap.to(errorRef.current, {
-        y: -80,
-        opacity: 0,
-        duration: 0.6,
-        ease: 'power2.in',
-      });
+      gsap.to(errorRef.current, { y: -80, opacity: 0, duration: 0.6, ease: 'power2.in' });
     }
   }, [error]);
+
+  // **核心动画逻辑**
+  // 1. 入场动画: 每当 currentStep 变化后执行
+  useEffect(() => {
+    const container = stepContainerRef.current;
+    if (container) {
+      // 首次加载动画
+      if (prevStepRef.current === 0) {
+        gsap.fromTo(container, { y: '100%', opacity: 0 }, { y: '0%', opacity: 1, duration: 0.5, ease: 'power2.out' });
+      } else {
+        // 后续切换的入场动画
+        const direction = currentStep > prevStepRef.current ? 'up' : 'down';
+        const startY = direction === 'up' ? '100%' : '-100%';
+        gsap.fromTo(container, { y: startY, opacity: 0 }, { y: '0%', opacity: 1, duration: 0.5, ease: 'power2.out' });
+      }
+    }
+  }, [currentStep]); // 依赖 currentStep
+
+  // 2. 出场动画: 点击按钮时触发
+  const handleTransition = (nextStep: number) => {
+    if (isTransitioning || !stepContainerRef.current) return;
+
+    const direction = nextStep > currentStep ? 'up' : 'down';
+    const exitY = direction === 'up' ? '-100%' : '100%';
+
+    // 执行出场动画
+    gsap.to(stepContainerRef.current, {
+      y: exitY,
+      opacity: 0,
+      duration: 0.4,
+      ease: 'power2.in',
+      onComplete: () => {
+        // 动画结束后，更新 prevStep 并切换真正的 state
+        prevStepRef.current = currentStep;
+        originalHandleStepTransition(nextStep);
+      },
+    });
+  };
 
   if (loading) {
     return (
@@ -137,21 +172,11 @@ export default function SurveyPage() {
       </>
     );
   }
-  // 通用步骤渲染函数
-  const renderStep = (
-    config: StepConfig & { btnLoading: boolean; setBtnLoading: React.Dispatch<React.SetStateAction<boolean>> },
-  ) => (
-    <div
-      className={`transition-all flex-1 h-full duration-500 ease-in-out flex flex-col justify-center
-      ${
-        isTransitioning
-          ? config.fieldName === 'email'
-            ? 'opacity-0 -translate-y-20'
-            : 'opacity-0 translate-y-20'
-          : 'opacity-100 translate-y-0'
-      }
-    `}
-    >
+
+  // renderStep 函数现在接收 onTransition prop
+  const renderStep = (config: StepConfig) => (
+    // 您原有的布局class，移除了所有动画相关的class
+    <div className={`flex-1 h-full flex flex-col justify-center`}>
       <div className="flex-1 justify-start mobile:pt-[32%] tablet:pt-0 tablet:justify-end tablet:pb-[50px] flex flex-col gap-[50px]">
         <div className="space-y-4">
           <h2 className="tablet:text-[32px] text-[24px] font-medium tablet:font-semibold text-[rgba(0,0,0,0.8)]">
@@ -172,13 +197,7 @@ export default function SurveyPage() {
                     <Input
                       type={config.inputType}
                       placeholder={config.placeholder}
-                      className="shadow-none border-0 border-b-2 !border-b-[rgba(0,0,0,0.2)] px-0
-                                !text-semibold !text-[18px] tablet:!text-2xl
-                                focus:!border-b-[rgba(0,0,0,0.8)]
-                                focus:outline-none focus:shadow-none
-                                focus-visible:!ring-0 focus-visible:!ring-transparent
-                                rounded-none bg-transparent transition-colors
-                                text-[rgba(0,0,0,0.8)] placeholder:text-[rgba(0,0,0,0.2)]"
+                      className="shadow-none border-0 border-b-2 !border-b-[rgba(0,0,0,0.2)] px-0 !text-semibold !text-[18px] tablet:!text-2xl focus:!border-b-[rgba(0,0,0,0.8)] focus:outline-none focus:shadow-none focus-visible:!ring-0 focus-visible:!ring-transparent rounded-none bg-transparent transition-colors text-[rgba(0,0,0,0.8)] placeholder:text-[rgba(0,0,0,0.2)]"
                       {...field}
                     />
                   </FormControl>
@@ -191,15 +210,16 @@ export default function SurveyPage() {
       </div>
       <div className="flex justify-center items-center tablet:flex-2 tablet:flex tablet:flex-col tablet:justify-between tablet:items-center gap-2">
         <SurveySubmitButton
-          isLoading={config.btnLoading}
+          isLoading={config.fieldName === 'email' ? emailBtnLoading : linkedinBtnLoading}
           key={`desktop-${config.fieldName}-submit`}
           disabled={isSubmitting || !config.form.watch(config.watchField)}
           onClick={async () => {
-            config.setBtnLoading(true);
+            const setLoading = config.fieldName === 'email' ? setEmailBtnLoading : setLinkedinBtnLoading;
+            setLoading(true);
             try {
               await config.form.handleSubmit(config.onSubmit)();
             } finally {
-              config.setBtnLoading(false);
+              setLoading(false);
             }
           }}
         >
@@ -208,9 +228,9 @@ export default function SurveyPage() {
         {storeEmail && (
           <button
             key={`mobile-${config.fieldName}-next`}
-            onClick={() => handleStepTransition(config.fieldName === 'email' ? 2 : 1)}
-            className="
-            flex justify-center items-center w-[49px] h-[43px] tablet:w-[80px] tablet:h-[40px] tablet:rounded-[8px] rounded-[12px] bg-[rgba(255,255,255,0.6)]"
+            // 调用新的动画处理函数
+            onClick={() => config.onTransition(config.fieldName === 'email' ? 2 : 1)}
+            className="flex justify-center items-center w-[49px] h-[43px] tablet:w-[80px] tablet:h-[40px] tablet:rounded-[8px] rounded-[12px] bg-[rgba(255,255,255,0.6)]"
           >
             {config.fieldName === 'email' ? (
               <ChevronDownIcon strokeWidth={3} color="rgba(0,0,0,0.6)" />
@@ -223,11 +243,9 @@ export default function SurveyPage() {
     </div>
   );
 
+  // renderStep1, renderStep2, renderStep3 定义保持不变，但要传入 onTransition
   const renderStep1 = () => {
-    const step1Config: StepConfig & {
-      btnLoading: boolean;
-      setBtnLoading: React.Dispatch<React.SetStateAction<boolean>>;
-    } = {
+    return renderStep({
       title: 'What Is Your Email?',
       description: "We're rolling out early access. You will receive an email notification.",
       placeholder: 'name@example.com',
@@ -236,19 +254,15 @@ export default function SurveyPage() {
       onSubmit: submitEmail,
       form: emailForm,
       watchField: 'email',
-      showError: false,
       buttonText: 'JOIN WAITLIST',
       btnLoading: emailBtnLoading,
       setBtnLoading: setEmailBtnLoading,
-    };
-    return renderStep(step1Config);
+      onTransition: handleTransition, // 传入动画函数
+    });
   };
 
   const renderStep2 = () => {
-    const step2Config: StepConfig & {
-      btnLoading: boolean;
-      setBtnLoading: React.Dispatch<React.SetStateAction<boolean>>;
-    } = {
+    return renderStep({
       title: "What's your LinkedIn?",
       description: "Optional. We'll use this information to tailor your career guidance.",
       placeholder: 'https://linkedin.com/in/',
@@ -257,12 +271,11 @@ export default function SurveyPage() {
       onSubmit: submitLinkedin,
       form: linkedinForm,
       watchField: 'linkedin',
-      showError: true,
       error: error,
       btnLoading: linkedinBtnLoading,
       setBtnLoading: setLinkedinBtnLoading,
-    };
-    return renderStep(step2Config);
+      onTransition: handleTransition, // 传入动画函数
+    });
   };
 
   const renderStep3 = () => (
@@ -304,7 +317,6 @@ export default function SurveyPage() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center transparent">
       <LandingPageBg />
-
       <div className="w-full">
         <Header showBackButton={true} />
       </div>
@@ -330,9 +342,10 @@ export default function SurveyPage() {
           </div>
         )}
       </div>
-
       <div className="w-full flex-1 flex flex-col justify-center max-w-xl p-[38.5px] overflow-hidden">
-        {renderCurrentStep()}
+        <div ref={stepContainerRef} key={currentStep} className="flex-1 flex-col flex justify-center">
+          {renderCurrentStep()}
+        </div>
       </div>
     </div>
   );
