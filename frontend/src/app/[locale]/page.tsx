@@ -111,9 +111,10 @@ export default function TallyAILanding() {
     setHasClickedSignUp(true);
 
     // 延迟1秒
-    setTimeout(() => {
-      router.push(`/${locale}/survey`);
-    }, 1000);
+    // setTimeout(() => {
+    //   router.push(`/${locale}/survey`);
+    // }, 1000);
+    router.push(`/${locale}/survey`);
   };
   return (
     <>
