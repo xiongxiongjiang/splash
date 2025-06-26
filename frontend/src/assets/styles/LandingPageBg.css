@@ -36,9 +36,9 @@
   }
 }
 
-.hue-rotate-animation-slow {
-  animation: hue-rotate-animation 180s linear infinite;
-}
+/* .hue-rotate-animation-slow {
+  animation: hue-rotate-animation 30s linear infinite;
+} */
 .hue-rotate-animation-fast {
   animation: hue-rotate-animation 1s linear infinite;
 }
