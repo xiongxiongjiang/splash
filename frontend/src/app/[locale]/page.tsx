@@ -79,9 +79,10 @@ export default function TallyAILanding() {
   useEffect(() => {
     if (hasAnimated.current) return;
     hasAnimated.current = true;
-    requestAnimationFrame(() => {
-      // 打字动画循环
+
+    const ctx = gsap.context(() => {
       const textTimeline = gsap.timeline({ repeat: -1 });
+
       jobQuestions.forEach((question) => {
         textTimeline
           .to(textRef.current, {
@@ -89,7 +90,9 @@ export default function TallyAILanding() {
             opacity: 0,
             ease: 'power1.inOut',
             onComplete: () => {
-              if (textRef.current) textRef.current.innerText = '';
+              if (textRef.current) {
+                textRef.current.innerText = '';
+              }
             },
           })
           .to(textRef.current, {
@@ -98,23 +101,21 @@ export default function TallyAILanding() {
             ease: 'none',
             opacity: 1,
           })
-          .to(textRef.current, {
-            duration: 5,
-            opacity: 1,
-          });
+          .to({}, { duration: 5 });
       });
     });
+
+    return () => ctx.revert();
   }, []);
 
   const toSurvey = () => {
     // 设置点击状态为 true
     setHasClickedSignUp(true);
 
-    // 延迟1秒
-    // setTimeout(() => {
-    //   router.push(`/${locale}/survey`);
-    // }, 1000);
-    router.push(`/${locale}/survey`);
+    // 延迟600ms
+    setTimeout(() => {
+      router.push(`/${locale}/survey`);
+    }, 600);
   };
   return (
     <>
