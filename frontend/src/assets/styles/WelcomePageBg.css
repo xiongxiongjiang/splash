@@ -1,44 +1,63 @@
 .welcome-bg {
+  background: linear-gradient(-135deg, #B5EF58 0%, #5B7DF7 47%, #F94480 100%);
+  /* Fallback for browsers that don't support animation */
+  min-height: 100vh;
   position: relative;
   overflow: hidden;
-  min-height: 100vh;
+  animation: gradient-middle-color-shift 10s ease-in-out infinite alternate;
 }
 
+@keyframes gradient-middle-color-shift {
+  0% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #5B7DF7 47%, #F94480 100%);
+  }
+  10% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #7393F4 47%, #F94480 100%);
+  }
+  20% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #8AA3F0 47%, #F94480 100%);
+  }
+  30% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #A0B3EC 47%, #F94480 100%);
+  }
+  40% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #C1CBE3 47%, #F94480 100%);
+  }
+  50% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #E1D3C6 47%, #F94480 100%);
+  }
+  60% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #F0D87A 47%, #F94480 100%);
+  }
+  70% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #F4D068 47%, #F94480 100%);
+  }
+  80% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #F6C960 47%, #F94480 100%);
+  }
+  90% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #F7C85C 47%, #F94480 100%);
+  }
+  100% {
+    background: linear-gradient(-135deg, #B5EF58 0%, #F7CA5B 47%, #F94480 100%);
+  }
+}
+
+
+/* Your existing ::before and .welcome-content styles */
 .welcome-bg::before {
   content: '';
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: linear-gradient(-135deg, #B5EF58 0%, #5B7DF7 47%, #F94480 100%);
-  filter: hue-rotate(0deg);
-  animation: hue-rotate-animation 360s linear infinite;
-  z-index: 0;
-}
-
-.welcome-bg::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: radial-gradient(circle, rgba(248,248,247,0.7) 0%, rgba(248,248,247,1) 65%);
-  z-index: 1;
-  pointer-events: none;
-}
-
-.welcome-content {
-  position: relative;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
+  background: radial-gradient(circle, rgba(248,248,247,0.7) 0%, rgba(248,248,247,1) 65%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.welcome-bg .welcome-content {
+  position: relative;
   z-index: 2;
 }
-
-/* 色相改变动画 */
-@keyframes hue-rotate-animation {
-  0% {
-    filter: hue-rotate(0deg);
-  }
-  100% {
-    filter: hue-rotate(360deg);
-  }
-}
-
