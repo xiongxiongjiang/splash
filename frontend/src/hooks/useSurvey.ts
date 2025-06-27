@@ -66,10 +66,8 @@ export const useSurvey = () => {
     (nextStep: number) => {
       setIsTransitioning(true);
       setError(null);
-      setTimeout(() => {
-        setCurrentStep(nextStep);
-        setIsTransitioning(false);
-      }, 1000);
+      setCurrentStep(nextStep);
+      setIsTransitioning(false);
     },
     [setCurrentStep],
   );
@@ -92,14 +90,15 @@ export const useSurvey = () => {
         });
 
         setEmail(values.email);
-        handleStepTransition(2);
+        // 移除自动步骤切换，让页面组件控制动画
+        // handleStepTransition(2);
       } catch (err: any) {
         handleApiError(err);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [setEmail, handleStepTransition, handleApiError],
+    [setEmail, handleApiError],
   );
 
   const submitLinkedin = useCallback(
@@ -121,14 +120,15 @@ export const useSurvey = () => {
 
         setLinkedin(values.linkedin);
         markAsCompleted();
-        handleStepTransition(3);
+        // 移除自动步骤切换，让页面组件控制动画
+        // handleStepTransition(3);
       } catch (err: any) {
         handleApiError(err);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [storeEmail, setLinkedin, markAsCompleted, handleStepTransition, handleApiError],
+    [storeEmail, setLinkedin, markAsCompleted, handleApiError],
   );
 
   const clearError = useCallback(() => {

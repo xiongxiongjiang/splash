@@ -37,7 +37,10 @@ const SurveySubmitButton: React.FC<SurveySubmitButtonProps> = ({
   children = 'SUBMIT',
 }) => {
   const baseClassName = `
-    rounded-[16px] web:h-[43px] web:font-[800] web:text-base tablet:h-[64px] tablet:px-20 tablet:text-[20px] h-[43px] px-10 w-auto font-bold text-base tracking-wide
+    rounded-[16px] text-base px-10 w-auto font-bold tracking-wide
+    !h-[44px]
+    !max-h-[44px]
+    !min-h-[44px]
     active:bg-black
     text-white
     bg-black
@@ -104,6 +107,8 @@ export default function SurveyPage() {
   const stepContainerRef = useRef<HTMLDivElement>(null);
   // 新增：一个 ref 用于跟踪上一步，以判断动画方向
   const prevStepRef = useRef(0);
+  // 动画移动距离，使用具体的像素值
+  const animationDistance = '142px';
 
   useEffect(() => {
     if (storeEmail) {
@@ -130,12 +135,18 @@ export default function SurveyPage() {
     if (container) {
       // 首次加载动画
       if (prevStepRef.current === 0) {
-        gsap.fromTo(container, { y: '100%', opacity: 0 }, { y: '0%', opacity: 1, duration: 0.5, ease: 'power2.out' });
+        gsap.fromTo(
+          container,
+          { y: animationDistance, opacity: 0 },
+          { y: '0%', opacity: 1, duration: 0.4, ease: 'ease.in' },
+        );
       } else {
         // 后续切换的入场动画
-        const direction = currentStep > prevStepRef.current ? 'up' : 'down';
-        const startY = direction === 'up' ? '100%' : '-100%';
-        gsap.fromTo(container, { y: startY, opacity: 0 }, { y: '0%', opacity: 1, duration: 0.5, ease: 'power2.out' });
+        // 当步骤增加时（如1->2），新元素从下方进入（正值）
+        // 当步骤减少时（如2->1），新元素从上方进入（负值）
+        const direction = currentStep > prevStepRef.current ? 'forward' : 'backward';
+        const startY = direction === 'forward' ? animationDistance : `-${animationDistance}`;
+        gsap.fromTo(container, { y: startY, opacity: 0 }, { y: '0%', opacity: 1, duration: 0.4, ease: 'ease.out' });
       }
     }
   }, [currentStep]); // 依赖 currentStep
@@ -143,16 +154,17 @@ export default function SurveyPage() {
   // 2. 出场动画: 点击按钮时触发
   const handleTransition = (nextStep: number) => {
     if (isTransitioning || !stepContainerRef.current) return;
-
-    const direction = nextStep > currentStep ? 'up' : 'down';
-    const exitY = direction === 'up' ? '-100%' : '100%';
+    // 当步骤增加时（如1->2），当前元素向上退出（负值）
+    // 当步骤减少时（如2->1），当前元素向下退出（正值）
+    const direction = nextStep > currentStep ? 'forward' : 'backward';
+    const exitY = direction === 'forward' ? `-${animationDistance}` : animationDistance;
 
     // 执行出场动画
     gsap.to(stepContainerRef.current, {
       y: exitY,
       opacity: 0,
-      duration: 0.4,
-      ease: 'power2.in',
+      duration: 0.4, // 缩短出场动画时间，使过渡更快
+      ease: 'ease.in',
       onComplete: () => {
         // 动画结束后，更新 prevStep 并切换真正的 state
         prevStepRef.current = currentStep;
@@ -177,7 +189,7 @@ export default function SurveyPage() {
   const renderStep = (config: StepConfig) => (
     // 您原有的布局class，移除了所有动画相关的class
     <div className={`flex-1 h-full flex flex-col justify-center`}>
-      <div className="flex-1 justify-start mobile:pt-[32%] tablet:pt-0 tablet:justify-end tablet:pb-[50px] flex flex-col gap-[50px]">
+      <div className="flex-1 justify-start tablet:pt-0 tablet:justify-center tablet:pb-[50px] flex flex-col gap-[50px]">
         <div className="space-y-4">
           <h2 className="tablet:text-[32px] text-[24px] font-medium tablet:font-semibold text-[rgba(0,0,0,0.8)]">
             {config.title}
@@ -207,38 +219,25 @@ export default function SurveyPage() {
             />
           </form>
         </Form>
-      </div>
-      <div className="flex justify-center items-center tablet:flex-2 tablet:flex tablet:flex-col tablet:justify-between tablet:items-center gap-2">
-        <SurveySubmitButton
-          isLoading={config.fieldName === 'email' ? emailBtnLoading : linkedinBtnLoading}
-          key={`desktop-${config.fieldName}-submit`}
-          disabled={isSubmitting || !config.form.watch(config.watchField)}
-          onClick={async () => {
-            const setLoading = config.fieldName === 'email' ? setEmailBtnLoading : setLinkedinBtnLoading;
-            setLoading(true);
-            try {
-              await config.form.handleSubmit(config.onSubmit)();
-            } finally {
-              setLoading(false);
-            }
-          }}
-        >
-          {config.buttonText}
-        </SurveySubmitButton>
-        {storeEmail && (
-          <button
-            key={`mobile-${config.fieldName}-next`}
-            // 调用新的动画处理函数
-            onClick={() => config.onTransition(config.fieldName === 'email' ? 2 : 1)}
-            className="flex justify-center items-center w-[49px] h-[43px] tablet:w-[80px] tablet:h-[40px] tablet:rounded-[8px] rounded-[12px] bg-[rgba(255,255,255,0.6)]"
+        <div className="flex justify-center items-center mt-8">
+          <SurveySubmitButton
+            isLoading={config.fieldName === 'email' ? emailBtnLoading : linkedinBtnLoading}
+            key={`desktop-${config.fieldName}-submit`}
+            disabled={isSubmitting || !config.form.watch(config.watchField)}
+            className="h-[44px]"
+            onClick={async () => {
+              const setLoading = config.fieldName === 'email' ? setEmailBtnLoading : setLinkedinBtnLoading;
+              setLoading(true);
+              try {
+                await config.form.handleSubmit(config.onSubmit)();
+              } finally {
+                setLoading(false);
+              }
+            }}
           >
-            {config.fieldName === 'email' ? (
-              <ChevronDownIcon strokeWidth={3} color="rgba(0,0,0,0.6)" />
-            ) : (
-              <ChevronUpIcon strokeWidth={3} absoluteStrokeWidth color="rgba(0,0,0,0.6)" />
-            )}
-          </button>
-        )}
+            {config.buttonText}
+          </SurveySubmitButton>
+        </div>
       </div>
     </div>
   );
@@ -251,7 +250,16 @@ export default function SurveyPage() {
       placeholder: 'name@example.com',
       fieldName: 'email',
       inputType: 'email',
-      onSubmit: submitEmail,
+      onSubmit: async (values: any) => {
+        try {
+          await submitEmail(values);
+          // 只有在成功提交后才触发动画切换
+          handleTransition(2);
+        } catch (error) {
+          // 错误处理已经在 submitEmail 中完成
+          console.error('Submit email error:', error);
+        }
+      },
       form: emailForm,
       watchField: 'email',
       buttonText: 'JOIN WAITLIST',
@@ -268,13 +276,23 @@ export default function SurveyPage() {
       placeholder: 'https://linkedin.com/in/',
       fieldName: 'linkedin',
       inputType: 'url',
-      onSubmit: submitLinkedin,
+      onSubmit: async (values: any) => {
+        try {
+          await submitLinkedin(values);
+          // 只有在成功提交后才触发动画切换
+          handleTransition(3);
+        } catch (error) {
+          // 错误处理已经在 submitLinkedin 中完成
+          console.error('Submit linkedin error:', error);
+        }
+      },
       form: linkedinForm,
       watchField: 'linkedin',
       error: error,
+      buttonText: 'CONTINUE',
       btnLoading: linkedinBtnLoading,
       setBtnLoading: setLinkedinBtnLoading,
-      onTransition: handleTransition, // 传入动画函数
+      onTransition: () => handleTransition(3), // 传入动画函数
     });
   };
 
@@ -343,9 +361,25 @@ export default function SurveyPage() {
         )}
       </div>
       <div className="w-full flex-1 flex flex-col justify-center max-w-xl p-[38.5px] overflow-hidden">
-        <div ref={stepContainerRef} key={currentStep} className="flex-1 flex-col flex justify-center">
-          {renderCurrentStep()}
+        <div key={currentStep} className="flex-1 flex-col flex justify-center">
+          <div ref={stepContainerRef}>{renderCurrentStep()}</div>
         </div>
+
+        {/* 导航按钮移到动画区域外面 */}
+        {storeEmail && currentStep < 3 && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => handleTransition(currentStep === 1 ? 2 : 1)}
+              className="flex justify-center items-center w-[49px] h-[43px] tablet:w-[80px] tablet:h-[40px] tablet:rounded-[8px] rounded-[12px] bg-[rgba(255,255,255,0.6)]"
+            >
+              {currentStep === 1 ? (
+                <ChevronDownIcon strokeWidth={3} color="rgba(0,0,0,0.6)" />
+              ) : (
+                <ChevronUpIcon strokeWidth={3} absoluteStrokeWidth color="rgba(0,0,0,0.6)" />
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

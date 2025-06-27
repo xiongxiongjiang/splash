@@ -18,7 +18,7 @@
   width: max-content;
   will-change: transform;
   // update去除动画以提高性能
-  // animation: scroll-x 180s linear infinite;
+  animation: scroll-x 180s linear infinite;
 }
 
 @keyframes scroll-x {

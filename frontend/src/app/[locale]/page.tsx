@@ -161,7 +161,6 @@ export default function TallyAILanding() {
                   active:bg-black
                   disabled:bg-[rgba(0,0,0,0.05)]
                   disabled:text-[rgba(0,0,0,0.6)]
-                  disabled:cursor-not-allowed
                   disabled:hover:bg-[rgba(0,0,0,0.05)]
                   disabled:active:bg-[rgba(0,0,0,0.05)]
                 "
