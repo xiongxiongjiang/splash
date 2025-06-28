@@ -4,7 +4,7 @@ Add a resume for cdzengpeiyun@gmail.com to the existing database
 """
 
 import asyncio
-from database import async_session, create_resume
+from database import SupabaseSession, create_resume
 
 async def add_peiyun_resume():
     """Add Peiyun's resume to the database"""
@@ -20,7 +20,7 @@ async def add_peiyun_resume():
         "summary": "Passionate full-stack engineer with expertise in modern web technologies and backend systems. Experience building scalable applications with Python, React, and cloud technologies."
     }
     
-    async with async_session() as session:
+    async with SupabaseSession() as session:
         try:
             # Check if resume already exists
             from models import Resume

@@ -15,16 +15,13 @@ MCP_OPERATIONS = [
     "get_server_info"
 ]
 
-# Database Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://splash:splash@localhost:5432/splash")
-
-# Admin Configuration
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+# Supabase Configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # Application Settings
 APP_TITLE = "Resume Management API"
-APP_DESCRIPTION = "REST API for managing and searching resumes with SQLModel and authentication"
+APP_DESCRIPTION = "REST API for managing and searching resumes with Supabase and authentication"
 APP_VERSION = "2.0.0"
 
 # Pagination defaults

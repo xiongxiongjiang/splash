@@ -58,8 +58,8 @@ docker-compose exec backend pytest
 ```
 
 ### Database
-- SQLite database persisted in Docker volume
-- Reset database: `docker-compose down -v && docker-compose up`
+- Using Supabase for data storage and authentication
+- Configure Supabase credentials in environment variables
 
 ## Project Structure
 ```
@@ -78,9 +78,8 @@ backend/
 - ReDoc: http://localhost:8000/redoc
 
 ## Environment Variables
-- `DATABASE_URL`: SQLite connection string (default: `sqlite:///./resume_db.sqlite`)
-- `ADMIN_USERNAME`: Admin panel username (default: configured in code)
-- `ADMIN_PASSWORD`: Admin panel password (default: configured in code)
+- `SUPABASE_URL`: Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key
 
 ## 🚢 Deployment (Heroku)
 
@@ -98,7 +97,8 @@ backend/
 
 3. Set environment variables:
    ```bash
-   heroku config:set DATABASE_URL=your_postgres_url -a your-app-name
+   heroku config:set SUPABASE_URL=your_supabase_url -a your-app-name
+   heroku config:set SUPABASE_SERVICE_ROLE_KEY=your_service_role_key -a your-app-name
    ```
 
 ## 🐛 Troubleshooting

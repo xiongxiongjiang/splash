@@ -1,33 +1,27 @@
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, List
+from pydantic import BaseModel, ConfigDict
+from typing import Optional
 from datetime import datetime
 
-class UserBase(SQLModel):
-    email: str = Field(unique=True, index=True)
+class UserBase(BaseModel):
+    email: str
     name: Optional[str] = None
-    role: str = Field(default="user")
+    role: str = "user"
 
-class User(UserBase, table=True):
-    __tablename__ = "users"
+class User(UserBase):
+    model_config = ConfigDict(from_attributes=True)
     
-    id: Optional[int] = Field(default=None, primary_key=True)
-    supabase_id: str = Field(unique=True, index=True)
-    created_at: datetime = Field(default_factory=datetime.now)
-    last_seen: datetime = Field(default_factory=datetime.now)
-    
-    # Relationship to resumes
-    resumes: List["Resume"] = Relationship(back_populates="user")
-
-class UserCreate(UserBase):
-    supabase_id: str
-
-class UserRead(UserBase):
     id: int
     supabase_id: str
     created_at: datetime
     last_seen: datetime
 
-class UserUpdate(SQLModel):
+class UserCreate(UserBase):
+    supabase_id: str
+
+class UserRead(User):
+    pass
+
+class UserUpdate(BaseModel):
     email: Optional[str] = None
     name: Optional[str] = None
     role: Optional[str] = None 

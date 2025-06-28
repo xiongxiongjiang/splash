@@ -1,9 +1,9 @@
 # Splash Backend Deployment Guide
 # Splash 后端部署指南
 
-This guide provides the streamlined deployment process for the Splash backend, using our automated deployment script.
+This guide provides the streamlined deployment process for the Splash backend using Supabase and our automated deployment script.
 
-本指南提供了使用自动化部署脚本的 Splash 后端简化部署流程。
+本指南提供了使用 Supabase 和自动化部署脚本的 Splash 后端简化部署流程。
 
 ## Quick Deployment
 ## 快速部署
@@ -69,7 +69,6 @@ You need programmatic access keys for AWS CLI:
 3. Attach policies directly:
    - `AmazonEC2ContainerRegistryFullAccess`
    - `AWSAppRunnerFullAccess`
-   - `AmazonRDSFullAccess` (for database setup)
 4. Create user, then go to Security credentials tab
 5. Click "Create access key" → "Command Line Interface (CLI)"
 6. **Save these credentials securely**:
@@ -81,7 +80,6 @@ You need programmatic access keys for AWS CLI:
 3. 直接附加策略：
    - `AmazonEC2ContainerRegistryFullAccess`
    - `AWSAppRunnerFullAccess`
-   - `AmazonRDSFullAccess`（用于数据库设置）
 4. 创建用户后，进入安全凭证选项卡
 5. 点击"创建访问密钥" → "命令行界面 (CLI)"
 6. **安全保存这些凭证**：
@@ -146,18 +144,24 @@ These are one-time setup steps:
 aws ecr create-repository --repository-name splash-backend
 ```
 
-#### Set Up RDS Database (if not done)
-#### 设置 RDS 数据库（如果尚未完成）
+#### Set Up Supabase Project (if not done)
+#### 设置 Supabase 项目（如果尚未完成）
 
-1. Go to AWS Console → RDS → Create Database
-2. Choose PostgreSQL, Free tier template
-3. Database name: `splash`, Username: `tally`
-4. Note the endpoint for App Runner configuration
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Create a new project
+3. Note down your project credentials:
+   - Project URL (SUPABASE_URL): Found in Project Settings → API
+   - Service role key (SUPABASE_SERVICE_ROLE_KEY): Found in Project Settings → API
+   - JWT secret (SUPABASE_JWT_SECRET): Found in Project Settings → API → JWT Settings
+4. Run the database migration in SQL Editor
 
-1. 前往 AWS 控制台 → RDS → 创建数据库
-2. 选择 PostgreSQL，免费套餐模板
-3. 数据库名称：`splash`，用户名：`tally`
-4. 记录端点用于 App Runner 配置
+1. 前往 [Supabase Dashboard](https://supabase.com/dashboard)
+2. 创建新项目
+3. 记录您的项目凭证：
+   - 项目 URL (SUPABASE_URL)：在项目设置 → API 中找到
+   - 服务角色密钥 (SUPABASE_SERVICE_ROLE_KEY)：在项目设置 → API 中找到
+   - JWT 密钥 (SUPABASE_JWT_SECRET)：在项目设置 → API → JWT 设置中找到
+4. 在 SQL 编辑器中运行数据库迁移
 
 #### Create App Runner Service (first time only)
 #### 创建 App Runner 服务（仅首次）
@@ -242,11 +246,23 @@ Set these in the App Runner console (not in code):
 在 App Runner 控制台中设置这些变量（不在代码中）：
 
 ```bash
-DATABASE_URL=postgresql://tally:PASSWORD@your-rds-endpoint:5432/splash
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your-secure-password
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SUPABASE_JWT_SECRET=your-supabase-jwt-secret
 LOG_LEVEL=info
 ```
+
+**Required Environment Variables:**
+
+- `SUPABASE_URL`: Your Supabase project URL (found in Project Settings → API)
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for backend operations (found in Project Settings → API)
+- `SUPABASE_JWT_SECRET`: JWT secret for token verification (found in Project Settings → API → JWT Settings)
+
+**必需的环境变量：**
+
+- `SUPABASE_URL`: 您的 Supabase 项目 URL（在项目设置 → API 中找到）
+- `SUPABASE_SERVICE_ROLE_KEY`: 用于后端操作的服务角色密钥（在项目设置 → API 中找到）
+- `SUPABASE_JWT_SECRET`: 用于令牌验证的 JWT 密钥（在项目设置 → API → JWT 设置中找到）
 
 **Security Note**: Never commit these values to Git. Set them directly in the AWS console.
 
@@ -326,9 +342,9 @@ aws apprunner create-service \
       "ImageConfiguration": {
         "Port": "8000",
         "RuntimeEnvironmentVariables": {
-          "DATABASE_URL": "YOUR_DATABASE_URL",
-          "ADMIN_USERNAME": "admin",
-          "ADMIN_PASSWORD": "YOUR_ADMIN_PASSWORD"
+          "SUPABASE_URL": "https://your-project-id.supabase.co",
+          "SUPABASE_SERVICE_ROLE_KEY": "YOUR_SUPABASE_SERVICE_ROLE_KEY",
+          "SUPABASE_JWT_SECRET": "YOUR_SUPABASE_JWT_SECRET"
         }
       },
       "ImageRepositoryType": "ECR"
@@ -340,156 +356,100 @@ aws apprunner create-service \
 #### Database Connection Issues
 #### 数据库连接问题
 
-- Verify RDS security group allows App Runner connections
-- Check DATABASE_URL format in App Runner environment variables
-- Ensure RDS is in "available" state
+- Verify SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are correctly set in App Runner environment variables
+- Check Supabase project status in dashboard
+- Ensure database tables are created via migration
 
-- 验证 RDS 安全组允许 App Runner 连接
-- 检查 App Runner 环境变量中的 DATABASE_URL 格式
-- 确保 RDS 处于"可用"状态
+- 验证 App Runner 环境变量中正确设置了 SUPABASE_URL 和 SUPABASE_SERVICE_ROLE_KEY
+- 在仪表板中检查 Supabase 项目状态
+- 确保通过迁移创建了数据库表
 
 #### ECR Storage Limits
-#### ECR 存储限制
 
 The script automatically cleans up old images, but if you hit the 500MB free tier limit:
 
-脚本会自动清理旧镜像，但如果您达到 500MB 免费套餐限制：
-
 ```bash
 # Manual cleanup of all images
-# 手动清理所有镜像
 aws ecr list-images --repository-name splash-backend --query 'imageIds[*]' --output json | \
   jq '.[] | select(.imageTag != "latest")' | \
   aws ecr batch-delete-image --repository-name splash-backend --image-ids file:///dev/stdin
 ```
 
 ## Cost Optimization
-## 成本优化
 
 ### Free Tier Usage
-### 免费套餐使用
 
 - **ECR**: 500MB storage (script manages this)
 - **App Runner**: Pay per use (~$5-10/month typical)
-- **RDS**: Free tier for first 12 months
-
-- **ECR**：500MB 存储（脚本管理）
-- **App Runner**：按使用付费（通常约 $5-10/月）
-- **RDS**：前 12 个月免费套餐
+- **Supabase**: Free tier with generous limits
 
 ### Reducing Costs
-### 降低成本
 
 - Use smallest App Runner instance size (0.25 vCPU, 0.5 GB RAM)
 - Set up auto-scaling with min instances = 1
-- Monitor usage through AWS Cost Explorer
-
-- 使用最小的 App Runner 实例大小（0.25 vCPU，0.5 GB RAM）
-- 设置自动扩展，最小实例数 = 1
-- 通过 AWS Cost Explorer 监控使用情况
+- Monitor usage through AWS Cost Explorer and Supabase dashboard
 
 ## Security Best Practices
-## 安全最佳实践
 
 ### Environment Variables
-### 环境变量
 
 - Never commit secrets to Git
-- Use secure passwords for ADMIN_PASSWORD
+- Use secure service role keys for SUPABASE_SERVICE_ROLE_KEY
 - Consider AWS Secrets Manager for production
 
-- 永远不要将机密信息提交到 Git
-- 为 ADMIN_PASSWORD 使用安全密码
-- 考虑在生产环境中使用 AWS Secrets Manager
-
 ### Database Security
-### 数据库安全
 
-- RDS should not be publicly accessible
-- Use security groups to restrict database access to App Runner only
-- Enable encryption at rest
-
-- RDS 不应公开访问
-- 使用安全组将数据库访问限制为仅 App Runner
-- 启用静态加密
+- Supabase handles database security and encryption
+- Use Row Level Security (RLS) policies in Supabase
+- Rotate service role keys regularly
 
 ### Access Control
-### 访问控制
 
 - Use IAM roles with least privilege
 - Rotate AWS access keys regularly
 - Enable CloudTrail for audit logging
 
-- 使用最小权限的 IAM 角色
-- 定期轮换 AWS 访问密钥
-- 启用 CloudTrail 进行审计日志记录
-
 ## Maintenance
-## 维护
 
 ### Regular Tasks
-### 定期任务
 
 #### Weekly
-#### 每周
 
 ```bash
 # Deploy latest changes
-# 部署最新更改
 ./deploy.sh
 ```
 
 #### Monthly
-#### 每月
 
 ```bash
 # Check ECR storage usage
-# 检查 ECR 存储使用情况
 aws ecr describe-repositories --repository-names splash-backend
 
 # Review AWS costs
-# 查看 AWS 成本
 aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-01-31 --granularity MONTHLY --metrics BlendedCost
 ```
 
 ### Database Maintenance
-### 数据库维护
 
-- Monitor RDS performance metrics
-- Set up automated backups (enabled by default)
-- Plan for database scaling if needed
-
-- 监控 RDS 性能指标
-- 设置自动备份（默认启用）
-- 根据需要规划数据库扩展
+- Monitor Supabase dashboard metrics
+- Database backups are handled automatically by Supabase
+- Plan for scaling using Supabase's infrastructure
 
 ## Support
-## 支持
 
 ### Logs and Debugging
-### 日志和调试
 
 - App Runner logs: AWS Console → App Runner → Your Service → Logs
 - Application metrics: Available in App Runner service dashboard
-- Database metrics: RDS console → Your database → Monitoring
-
-- App Runner 日志：AWS 控制台 → App Runner → 您的服务 → 日志
-- 应用程序指标：在 App Runner 服务仪表板中可用
-- 数据库指标：RDS 控制台 → 您的数据库 → 监控
+- Database metrics: Supabase Dashboard → Your Project → Database
 
 ### Getting Help
-### 获取帮助
 
 - AWS documentation: [App Runner User Guide](https://docs.aws.amazon.com/apprunner/)
 - Check deploy.sh script for detailed error messages
 - Review CloudFormation events if using infrastructure as code
 
-- AWS 文档：[App Runner 用户指南](https://docs.aws.amazon.com/apprunner/)
-- 检查 deploy.sh 脚本的详细错误消息
-- 如果使用基础设施即代码，请查看 CloudFormation 事件
-
 ---
 
 This deployment guide focuses on the stable, automated process using deploy.sh. The script handles all the complexity while providing clear feedback and monitoring capabilities.
-
-本部署指南专注于使用 deploy.sh 的稳定自动化流程。该脚本处理所有复杂性，同时提供清晰的反馈和监控功能。

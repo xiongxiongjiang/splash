@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Query, HTTPException, Depends, status
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
 import uvicorn
 import logging
 import asyncio
@@ -17,8 +16,7 @@ from fastapi_mcp import FastApiMCP
 from database import (
     init_db, seed_initial_data, get_session, get_all_resumes, get_resume_by_id,
     get_resumes_by_email, create_resume, get_database_stats, get_user_by_email, 
-    add_to_waitlist, update_waitlist_info,
-    engine, async_session
+    add_to_waitlist, update_waitlist_info, SupabaseSession
 )
 from auth import get_current_user, get_optional_user, get_admin_user
 from models import User, UserRead, ResumeCreate, ResumeRead, WaitlistCreate, WaitlistUpdate, WaitlistRead
@@ -82,7 +80,7 @@ async def lifespan(app: FastAPI):
         logger.info("Starting up...")
         await init_db()
         
-        async with async_session() as session:
+        async with SupabaseSession() as session:
             await seed_initial_data(session)
         
         await asyncio.sleep(1)  # Ensure database is ready
@@ -111,8 +109,8 @@ app = FastAPI(
 app.middleware("http")(custom_cors_middleware)
 app.middleware("http")(https_redirect_middleware)
 
-# Initialize SQLAdmin
-admin = create_admin(app, engine)
+# Initialize Admin (disabled for Supabase)
+create_admin(app)
 
 
 @app.middleware("http")
@@ -177,7 +175,7 @@ async def get_mcp_info():
 
 
 @app.get("/stats", operation_id="get_database_statistics")
-async def get_database_stats_endpoint(session: AsyncSession = Depends(get_session)):
+async def get_database_stats_endpoint(session: SupabaseSession = Depends(get_session)):
     """Get database statistics."""
     logger.info("GET /stats")
     return await get_database_stats(session)
@@ -186,7 +184,7 @@ async def get_database_stats_endpoint(session: AsyncSession = Depends(get_sessio
 @app.post("/waitlist", response_model=WaitlistRead, operation_id="add_to_waitlist")
 async def add_to_waitlist_endpoint(
     waitlist_data: WaitlistCreate,
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Add an email to the waitlist and automatically subscribe to Klaviyo."""
     logger.info("POST /waitlist - email=%s", waitlist_data.email)
@@ -211,7 +209,7 @@ async def add_to_waitlist_endpoint(
 async def update_waitlist_info_endpoint(
     email: str,
     update_data: WaitlistUpdate,
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Update waitlist info for an email (merges with existing info) and sync to Klaviyo."""
     logger.info("PATCH /waitlist/%s", email)
@@ -245,7 +243,7 @@ async def search_resumes(
     skill: Optional[str] = Query(None, description="Filter by skill"),
     min_experience: Optional[int] = Query(None, ge=0, description="Minimum years of experience"),
     current_user: Optional[User] = Depends(get_optional_user),
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Get a list of resumes with optional filtering and limiting."""
     logger.info("GET /resumes - limit=%s, skill=%s, min_experience=%s", limit, skill, min_experience)
@@ -271,7 +269,7 @@ async def search_resumes(
 async def get_resume_details(
     resume_id: int,
     current_user: Optional[User] = Depends(get_optional_user),
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Get a specific resume by ID."""
     logger.info("GET /resumes/%d", resume_id)
@@ -294,7 +292,7 @@ async def get_resume_details(
 async def find_resumes_by_skill(
     skill: str = Query(..., description="Skill to search for"),
     current_user: Optional[User] = Depends(get_optional_user),
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Search resumes by skill."""
     logger.info("GET /resumes/search/skills - skill=%s", skill)
@@ -323,7 +321,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 @app.get("/my-resumes", response_model=dict, operation_id="get_user_resumes")
 async def get_user_resumes(
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Get resumes belonging to the current user. Requires authentication."""
     logger.info("GET /my-resumes for user: %s", current_user.email)
@@ -341,7 +339,7 @@ async def get_user_resumes(
 async def create_new_resume(
     resume_data: ResumeCreate,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Create a new resume. Requires authentication."""
     logger.info("POST /resumes for user: %s", current_user.email)
@@ -363,7 +361,7 @@ async def create_new_resume(
 async def get_user_by_email_endpoint(
     email: str,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Get user information by email. Requires authentication."""
     # Security check: users can only access their own data, admins can access anyone's
@@ -411,7 +409,7 @@ async def get_all_users_admin(
 @app.post("/chat/completions", operation_id="create_chat_completion")
 async def create_chat_completion_endpoint(
     request: ChatCompletionRequest,
-    session: AsyncSession = Depends(get_session)
+    session: SupabaseSession = Depends(get_session)
 ):
     """Create a chat completion with function calling support"""
     logger.info("POST /chat/completions - model=%s, stream=%s", request.model, request.stream)

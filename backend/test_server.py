@@ -9,7 +9,7 @@ from datetime import datetime
 # Mock the database module before importing server
 with patch('server.init_db', new_callable=AsyncMock):
     with patch('server.seed_initial_data', new_callable=AsyncMock):
-        with patch('server.async_session') as mock_session:
+        with patch('server.SupabaseSession') as mock_session:
             # Mock the session context manager
             mock_session_instance = AsyncMock()
             mock_session_instance.__aenter__ = AsyncMock(return_value=mock_session_instance)

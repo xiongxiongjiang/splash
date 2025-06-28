@@ -5,8 +5,8 @@ A full-stack application designed to streamline the job application process by m
 ## 🏗️ Architecture
 
 - **Frontend**: Next.js 14+ with TypeScript, Tailwind CSS, and Supabase authentication
-- **Backend**: FastAPI with PostgreSQL database, providing REST API and MCP (Model Context Protocol) endpoints
-- **Infrastructure**: Docker Compose for local development, deploys to Heroku (backend) and Vercel (frontend)
+- **Backend**: FastAPI with Supabase database, providing REST API and MCP (Model Context Protocol) endpoints
+- **Infrastructure**: Docker Compose for local development, deploys to AWS App Runner (backend) and Vercel (frontend)
 
 ## ✨ Key Features
 
