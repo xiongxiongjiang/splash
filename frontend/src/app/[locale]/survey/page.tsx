@@ -102,6 +102,8 @@ export default function SurveyPage() {
   const errorRef = useRef<HTMLDivElement>(null);
   const [emailBtnLoading, setEmailBtnLoading] = useState(false);
   const [linkedinBtnLoading, setLinkedinBtnLoading] = useState(false);
+  // 添加状态用于控制 LandingPageBg 的显示
+  const [showBg, setShowBg] = useState(true);
 
   // 新增：一个 ref 用于指向动画容器
   const stepContainerRef = useRef<HTMLDivElement>(null);
@@ -159,6 +161,9 @@ export default function SurveyPage() {
     const direction = nextStep > currentStep ? 'forward' : 'backward';
     const exitY = direction === 'forward' ? `-${animationDistance}` : animationDistance;
 
+    // 在动画开始前隐藏背景，减少页面卡顿
+    setShowBg(false);
+
     // 执行出场动画
     gsap.to(stepContainerRef.current, {
       y: exitY,
@@ -169,6 +174,11 @@ export default function SurveyPage() {
         // 动画结束后，更新 prevStep 并切换真正的 state
         prevStepRef.current = currentStep;
         originalHandleStepTransition(nextStep);
+
+        // 动画完成后，延迟一小段时间再显示背景
+        setTimeout(() => {
+          setShowBg(true);
+        }, 400);
       },
     });
   };
@@ -176,7 +186,7 @@ export default function SurveyPage() {
   if (loading) {
     return (
       <>
-        <LandingPageBg />
+        {showBg && <LandingPageBg />}
         <div className="min-h-screen w-full flex items-center justify-center gap-2">
           <Image src={TallyLogo} alt="Tally Logo" width={24} height={24} />
           <span className="font-bold text-[28px] chroma-animate-once">Tally AI</span>
@@ -189,7 +199,7 @@ export default function SurveyPage() {
   const renderStep = (config: StepConfig) => (
     // 您原有的布局class，移除了所有动画相关的class
     <div className={`flex-1 h-full flex flex-col justify-center`}>
-      <div className="flex-1 justify-start tablet:pt-0 tablet:justify-center tablet:pb-[50px] flex flex-col gap-[50px]">
+      <div className="flex-1 justify-start tablet:pt-0 tablet:justify-center flex flex-col gap-[50px]">
         <div className="space-y-4">
           <h2 className="tablet:text-[32px] text-[24px] font-medium tablet:font-semibold text-[rgba(0,0,0,0.8)]">
             {config.title}
@@ -334,9 +344,9 @@ export default function SurveyPage() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center transparent">
-      <LandingPageBg />
+      {showBg && <LandingPageBg />}
       <div className="w-full">
-        <Header showBackButton={true} />
+        <Header showBackButton={true} fixed={true} />
       </div>
       <div className="absolute top-4  backdrop-blur-sm z-50 ">
         {error && (
@@ -362,7 +372,9 @@ export default function SurveyPage() {
       </div>
       <div className="w-full flex-1 flex flex-col justify-center max-w-xl p-[38.5px] overflow-hidden">
         <div key={currentStep} className="flex-1 flex-col flex justify-center">
-          <div ref={stepContainerRef}>{renderCurrentStep()}</div>
+          <div ref={stepContainerRef} className="step-anim-container">
+            {renderCurrentStep()}
+          </div>
         </div>
 
         {/* 导航按钮移到动画区域外面 */}

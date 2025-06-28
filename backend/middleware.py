@@ -13,7 +13,10 @@ ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8000",
-    "https://www.get-tally.ai"
+    "https://www.get-tally.ai",
+    "https://gettally.ai",
+    "https://get-tally.ai",
+    "https://www.gettally.ai"
 ]
 
 

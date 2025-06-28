@@ -318,57 +318,99 @@ body {
 }
 /* 文字动画 */
 .chroma-text {
-  color: white;
+  color: black; /* Start with the final solid color */
   position: relative;
   display: inline-block;
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* Fix for iOS: Ensure background properties are set for the animation to work */
+  background-image: linear-gradient(
+    90deg,
+    #000000 0,
+    #000000 33.33%,
+    #2294d2 40%,
+    #f972b8 45%,
+    #e58524 50%,
+    #2b9ce7 55%,
+    transparent 66.67%,
+    transparent
+  );
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  color: transparent; /* Make the text color transparent to show the background */
+
+  /* Separate animations for better compatibility */
   animation: 
-    color-fade 1s ease-in-out forwards,
-    start-gradient 0s 5s forwards,
+    color-fade-in 1s ease-in-out forwards,
     chroma-scroll 1.2s 5s ease-in-out forwards;
 }
-@keyframes color-fade {
+
+/* Initial color fade from white to black (optional, can be simplified) */
+@keyframes color-fade-in {
   from {
-    color: white;
+    /* This keyframe is tricky with background-clip. 
+       A simpler approach is to have the text black initially 
+       and just delay the gradient animation.
+       However, to maintain the spirit of the original, 
+       we'll start with a solid color and then make it transparent. */
+    color: white; 
   }
   to {
     color: black;
   }
 }
-/* 加载动画 */
-.chroma-animate-once{
-  color: black;
-  position: relative;
-  display: inline-block;
-  animation: 
-    start-gradient 0s forwards 3,
-    chroma-scroll 1.2s ease-in-out forwards 3;
-}
 
-/* 5秒后切换为渐变色文字 */
-@keyframes start-gradient {
-  to {
-    color: transparent;
-    background-image: linear-gradient(
-      90deg,
-      #000000 0,
-      #000000 33.33%,
-      #2294d2 40%,
-      #f972b8 45%,
-      #e58524 50%,
-      #2b9ce7 55%,
-      transparent 66.67%,
-      transparent
-    );
-    background-size: 300% 100%;
+
+/* 5 seconds later, the gradient scrolls into view */
+@keyframes chroma-scroll {
+  from {
     background-position: 100% 0;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+  }
+  to {
+    background-position: 0% 0;
   }
 }
 
-/* 渐变动画（背景滑动） */
-@keyframes chroma-scroll {
+/* 加载动画 */
+.chroma-animate-once {
+  /* 目的：让文字作为背景的遮罩 */
+  /* 1. 将文字颜色设为透明，否则会覆盖背景 */
+  color: transparent; 
+  
+  /* 2. 设置渐变背景 */
+  background-image: linear-gradient(
+    90deg,
+    #000000 0,
+    #000000 33.33%,
+    #2294d2 40%,
+    #f972b8 45%,
+    #e58524 50%,
+    #2b9ce7 55%,
+    transparent 66.67%,
+    transparent
+  );
+  
+  /* 3. 设置背景尺寸和初始位置 */
+  /* 300% 的宽度是为了让渐变有滚动的空间 */
+  background-size: 300% 100%;
+  background-position: 100% 0; /* 从最右边开始 */
+
+  /* 4. 最关键的一步：将背景裁剪为文字的形状 */
+  -webkit-background-clip: text;
+  background-clip: text;
+  
+  /* 兼容性处理，某些旧浏览器需要这个 */
+  -webkit-text-fill-color: transparent;
+
+  /* 5. 只运行一个动画，负责滚动背景 */
+  animation: scroll-animation 1.2s ease-in-out forwards;
+  
+  /* 其他样式 */
+  position: relative;
+  display: inline-block;
+}
+
+@keyframes scroll-animation {
   from {
     background-position: 100% 0;
   }
@@ -397,4 +439,10 @@ body {
   50.01%, 100% {
     opacity: 0;
   }
+}
+
+.step-anim-container {
+  /* 关键：告诉浏览器为 transform 和 opacity 动画开启硬件加速 */
+  /* will-change: transform, opacity; */
+  transform: translateZ(0);
 }

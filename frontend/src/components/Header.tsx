@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl';
 import Logo from '@/assets/logos/tally_logo.svg';
 // import { useSurveyStore } from '@/store/survey';
 
-const Header = ({ showBackButton = false }: { showBackButton?: boolean }) => {
+const Header = ({ showBackButton = false, fixed = false }: { showBackButton?: boolean; fixed?: boolean }) => {
   const t = useTranslations('HomePage');
   const router = useRouter();
   // const { reset } = useSurveyStore();
@@ -33,7 +33,9 @@ const Header = ({ showBackButton = false }: { showBackButton?: boolean }) => {
   };
   return (
     <header
-      className={`mx-auto py-[6.5vh] px-[1.3vh] tablet:py-[3vh] tablet:px-[3vh] flex items-center z-10 opacity-40 bg-transparent`}
+      className={`mx-auto h-[136px] px-[1.3vh] tablet:px-[3vh] flex items-center z-10 opacity-40 bg-transparent ${
+        fixed ? 'fixed top-0 left-0 right-0' : ''
+      }`}
     >
       {showBackButton && (
         <button onClick={handleExit} className="p-2 tablet:p-4" aria-label="Exit survey">
