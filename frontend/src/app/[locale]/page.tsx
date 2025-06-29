@@ -56,24 +56,6 @@ export default function TallyAILanding() {
       }
     });
   }, [router]);
-  // 处理20s一次渐变动画
-  useEffect(() => {
-    const el = chromaTextRef.current;
-    if (!el) return;
-    let interval: ReturnType<typeof setInterval> | null = null;
-    const timeout = setTimeout(() => {
-      interval = setInterval(() => {
-        el.style.animation = 'none';
-        void el.offsetWidth;
-        el.style.animation = 'start-gradient 0s forwards, chroma-scroll 1.2s ease-in-out forwards';
-      }, 20000);
-    }, 5000);
-
-    return () => {
-      clearTimeout(timeout);
-      if (interval !== null) clearInterval(interval);
-    };
-  }, []);
 
   useEffect(() => {
     if (hasAnimated.current) return;
