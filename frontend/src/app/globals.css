@@ -304,26 +304,13 @@ body {
   animation: rainbow-scroll 3s linear infinite;
 }
 
-/* * 定义动画关键帧
- */
-@keyframes rainbow-scroll {
-  /* 动画开始时，背景在初始位置 */
-  from {
-    background-position: 0% 50%;
-  }
-  /* 动画结束时，背景向左移动了200%的宽度，回到初始视觉状态 */
-  to {
-    background-position: -200% 50%;
-  }
-}
 /* 文字动画 */
 .chroma-text {
-  color: black; /* Start with the final solid color */
+  color: black; /* 初始黑色 */
   position: relative;
   display: inline-block;
   -webkit-background-clip: text;
   background-clip: text;
-  /* Fix for iOS: Ensure background properties are set for the animation to work */
   background-image: linear-gradient(
     90deg,
     #000000 0,
@@ -337,40 +324,38 @@ body {
   );
   background-size: 300% 100%;
   background-position: 100% 0;
-  color: transparent; /* Make the text color transparent to show the background */
 
-  /* Separate animations for better compatibility */
-  animation: 
-    color-fade-in 1s ease-in-out forwards,
-    chroma-scroll 1.2s 5s ease-in-out forwards;
+  /* 循环动画：总时长20秒 */
+  animation: chroma-cycle 20s infinite;
 }
 
-/* Initial color fade from white to black (optional, can be simplified) */
-@keyframes color-fade-in {
-  from {
-    /* This keyframe is tricky with background-clip. 
-       A simpler approach is to have the text black initially 
-       and just delay the gradient animation.
-       However, to maintain the spirit of the original, 
-       we'll start with a solid color and then make it transparent. */
-    color: white; 
-  }
-  to {
+@keyframes chroma-cycle {
+  0% {
+    /* 开始：黑色文字 */
     color: black;
-  }
-}
-
-
-/* 5 seconds later, the gradient scrolls into view */
-@keyframes chroma-scroll {
-  from {
     background-position: 100% 0;
   }
-  to {
+  1% {
+    /* 开始彩虹动画：文字变透明显示渐变 */
+    color: transparent;
+    background-position: 100% 0;
+  }
+  9% {
+    /* 彩虹动画结束 */
+    color: transparent;
     background-position: 0% 0;
   }
+  10% {
+    /* 恢复黑色 */
+    color: black;
+    background-position: 100% 0;
+  }
+  100% {
+    /* 保持黑色到循环结束 */
+    color: black;
+    background-position: 100% 0;
+  }
 }
-
 /* 加载动画 */
 .chroma-animate-once {
   /* 目的：让文字作为背景的遮罩 */
