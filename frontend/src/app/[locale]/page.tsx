@@ -11,7 +11,7 @@ import Header from '@/components/Header';
 import InfiniteLogoScroller from '@/components/InfiniteLogoScroller';
 import LandingPageBg from '@/components/LandingPageBg';
 
-import BgBubble from '@/assets/images/bg_copilot.svg';
+import BgBubble from '@/assets/images/bg_copilot.png';
 import { supabase } from '@/lib/supabase';
 import { useSurveyStore } from '@/store/survey';
 
@@ -108,20 +108,20 @@ export default function TallyAILanding() {
             <div className="pt-15 tablet:pt-8">
               <div className="text-[28px] font-semibold tablet:text-[60px] web:text-[60px] tracking-tight">
                 <div className="relative flex items-center justify-center">
-                  <span className="mr-5 tablet:mr-10">Your career</span>
+                  <span className="mr-4 tablet:mr-7">Your career</span>
                   <div className="relative flex items-center justify-center">
-                    <span className="absolute tablet:left-[10px]">
+                    <span className="absolute">
                       <Image
                         src={BgBubble}
                         alt="copilot"
-                        width={200} // 你可以用固定宽度或 max-w
+                        // width={200} // 你可以用固定宽度或 max-w
                         height={0} // 这里给 0，让 height 用自动撑开
                         objectFit="cover"
-                        style={{ height: '100%', objectFit: 'cover' }}
-                        className="block z-10 scale-190"
+                        // style={{ height: '100%', objectFit: 'cover' }}
+                        className="block z-10 scale-220"
                       />
                     </span>
-                    <span ref={chromaTextRef} className="chroma-text">
+                    <span ref={chromaTextRef} className="chroma-text ml-2.5 tablet:ml-4">
                       Copilot.
                     </span>
                   </div>
