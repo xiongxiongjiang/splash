@@ -266,6 +266,15 @@ body {
     border-radius: 4px;
   }
 }
+
+/* 隐藏滚动条 */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Webkit */
+}
 .rainbow-text-animated {
   /* * 1. 使用你提供的颜色创建线性渐变。
    * 为了让动画无缝衔接，我们在末尾重复了第一个颜色。
@@ -431,3 +440,26 @@ body {
   /* will-change: transform, opacity; */
   transform: translateZ(0);
 }
+
+
+/* onboarding 背景 */
+.onboarding-bg {
+  position: relative; 
+  background: linear-gradient(to right, #B5EF58 0%, #F7D75B 47%, #F94480 100%);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.onboarding-bg::after{
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 248, 247, 0.95);
+  z-index: 0;
+  pointer-events: none; /* 可选：让点击穿透 */
+}
+.onboarding-bg > * {
+  position: relative;
+  z-index: 1; /* 所有子元素提升层级，盖在遮罩上 */
+}
+
