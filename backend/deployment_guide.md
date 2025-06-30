@@ -100,13 +100,13 @@ aws configure
 When prompted, enter:
 - **AWS Access Key ID**: Your access key from step 2
 - **AWS Secret Access Key**: Your secret key from step 2
-- **Default region**: `us-east-1` (or your preferred region)
+- **Default region**: `us-east-2` (or your preferred region)
 - **Default output format**: `json`
 
 出现提示时，输入：
 - **AWS 访问密钥 ID**：步骤 2 中的访问密钥
 - **AWS 秘密访问密钥**：步骤 2 中的秘密密钥
-- **默认区域**：`us-east-1`（或您偏好的区域）
+- **默认区域**：`us-east-2`（或您偏好的区域）
 - **默认输出格式**：`json`
 
 Test configuration:
@@ -213,8 +213,8 @@ Expected output:
 
 📋 Deployment Configuration:
    AWS Account: 123456789012
-   Region: us-east-1
-   ECR Repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/splash-backend
+   Region: us-east-2
+   ECR Repository: 123456789012.dkr.ecr.us-east-2.amazonaws.com/splash-backend
 
 1️⃣ Logging into ECR...
 2️⃣ Building Docker image for x86_64...
@@ -226,11 +226,11 @@ Expected output:
    ✅ Deployment started with Operation ID: abc123
 
    📊 Monitor deployment progress at:
-   https://console.aws.amazon.com/apprunner/home?region=us-east-1#/services/tally
+   https://console.aws.amazon.com/apprunner/home?region=us-east-2#/services/tally
 
-   🌐 Service URL: https://xyz.us-east-1.awsapprunner.com
-   📚 API Docs: https://xyz.us-east-1.awsapprunner.com/docs
-   🏥 Health Check: https://xyz.us-east-1.awsapprunner.com/health
+   🌐 Service URL: https://xyz.us-east-2.awsapprunner.com
+📚 API Docs: https://xyz.us-east-2.awsapprunner.com/docs
+🏥 Health Check: https://xyz.us-east-2.awsapprunner.com/health
 
 ✅ Deployment script completed!
 ```
@@ -249,6 +249,7 @@ Set these in the App Runner console (not in code):
 SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 SUPABASE_JWT_SECRET=your-supabase-jwt-secret
+SUPABASE_AUDIENCE=authenticated
 LOG_LEVEL=info
 ```
 
@@ -257,12 +258,14 @@ LOG_LEVEL=info
 - `SUPABASE_URL`: Your Supabase project URL (found in Project Settings → API)
 - `SUPABASE_SERVICE_ROLE_KEY`: Service role key for backend operations (found in Project Settings → API)
 - `SUPABASE_JWT_SECRET`: JWT secret for token verification (found in Project Settings → API → JWT Settings)
+- `SUPABASE_AUDIENCE`: JWT audience for token validation (default: "authenticated")
 
 **必需的环境变量：**
 
 - `SUPABASE_URL`: 您的 Supabase 项目 URL（在项目设置 → API 中找到）
 - `SUPABASE_SERVICE_ROLE_KEY`: 用于后端操作的服务角色密钥（在项目设置 → API 中找到）
 - `SUPABASE_JWT_SECRET`: 用于令牌验证的 JWT 密钥（在项目设置 → API → JWT 设置中找到）
+- `SUPABASE_AUDIENCE`: JWT 受众令牌验证（默认："authenticated"）
 
 **Security Note**: Never commit these values to Git. Set them directly in the AWS console.
 
@@ -344,7 +347,8 @@ aws apprunner create-service \
         "RuntimeEnvironmentVariables": {
           "SUPABASE_URL": "https://your-project-id.supabase.co",
           "SUPABASE_SERVICE_ROLE_KEY": "YOUR_SUPABASE_SERVICE_ROLE_KEY",
-          "SUPABASE_JWT_SECRET": "YOUR_SUPABASE_JWT_SECRET"
+          "SUPABASE_JWT_SECRET": "YOUR_SUPABASE_JWT_SECRET",
+          "SUPABASE_AUDIENCE": "authenticated"
         }
       },
       "ImageRepositoryType": "ECR"

@@ -45,7 +45,6 @@ export default function DashboardPage() {
         } = await supabase.auth.getSession();
 
         if (userError || sessionError || !user || !session) {
-          console.log('No authenticated user, redirecting to login');
           router.push(`/${locale}/login`);
           return;
         }
@@ -57,17 +56,26 @@ export default function DashboardPage() {
         }));
 
         // Sync user with backend
-        console.log('🔄 Starting backend sync for:', user.email);
-        const backendUser = await syncUserWithBackend(user, session.access_token);
-
-        setState((prev) => ({
-          ...prev,
-          backendUser,
-          syncStatus: 'success',
-        }));
+        try {
+          const backendUser = await syncUserWithBackend(user, session.access_token);
+          
+          setState((prev) => ({
+            ...prev,
+            backendUser,
+            syncStatus: 'success',
+          }));
+          
+          console.log('✅ Backend sync successful');
+        } catch (syncError: any) {
+          console.error('❌ Backend sync failed:', syncError);
+          setState((prev) => ({
+            ...prev,
+            backendUser: null,
+            syncStatus: 'error',
+          }));
+        }
 
         // Fetch user's resumes
-        console.log('📄 Fetching user resumes...');
         try {
           const resumesData = await getUserResumes(session.access_token);
           setState((prev) => ({
@@ -75,10 +83,7 @@ export default function DashboardPage() {
             resumes: resumesData.resumes,
             isLoading: false,
           }));
-          console.log(`✅ Found ${resumesData.resumes.length} resumes for user`);
         } catch (resumeError: any) {
-          console.log('ℹ️ No resumes found or user not yet in backend database');
-          console.log('Resume error:', resumeError);
           setState((prev) => ({
             ...prev,
             resumes: [],
@@ -107,7 +112,6 @@ export default function DashboardPage() {
 
   const handleCreateResume = () => {
     // TODO: Navigate to resume creation page
-    console.log('Create resume clicked - to be implemented');
   };
 
   if (state.isLoading) {
@@ -155,6 +159,16 @@ export default function DashboardPage() {
                 {state.syncStatus === 'success' && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     ✓ Synced
+                  </span>
+                )}
+                {state.syncStatus === 'error' && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    ⚠ Sync Failed
+                  </span>
+                )}
+                {state.syncStatus === 'syncing' && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    ⏳ Syncing...
                   </span>
                 )}
               </div>

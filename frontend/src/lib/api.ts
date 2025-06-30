@@ -100,28 +100,14 @@ class ApiClient {
    * This will create or update the user in the backend database
    */
   async syncUser(supabaseUser: Record<string, any>): Promise<User> {
-    console.log('🔄 Syncing user with backend:', supabaseUser.email)
-    
     try {
       // First try to get existing user
       const existingUser = await this.request<{ user: User }>(`/users/by-email/${supabaseUser.email}`)
-      console.log('✅ Found existing user:', existingUser.user.email)
       return existingUser.user
     } catch (error: any) {
-      // User doesn't exist, this is expected for new users
-      console.log('👤 New user detected, will be created on first authenticated request')
-      console.log('Sync error:', error)
-      
-      // The backend will automatically create the user when they make their first authenticated request
-      // due to the get_current_user dependency injection
-      return {
-        id: 0, // Temporary ID
-        supabase_id: supabaseUser.id,
-        email: supabaseUser.email,
-        name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
-        role: 'user',
-        created_at: new Date().toISOString(),
-      }
+      console.error('❌ User sync failed:', error)
+      // Re-throw the error instead of returning fake data
+      throw new Error(`Backend sync failed: ${error.message}`)
     }
   }
 

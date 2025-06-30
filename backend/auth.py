@@ -19,13 +19,17 @@ security = HTTPBearer()
 
 # Supabase JWT settings
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 ALGORITHM = "HS256"
+
+# Derive issuer from Supabase URL
+SUPABASE_ISSUER = f"{SUPABASE_URL}/auth/v1" if SUPABASE_URL else ""
+SUPABASE_AUDIENCE = os.getenv("SUPABASE_AUDIENCE", "authenticated")
 
 
 def verify_supabase_token(token: str) -> dict:
     """
-    Verify Supabase JWT token against Supabase's public key
-    In production, SUPABASE_JWT_SECRET should be set to your project's JWT secret
+    Verify Supabase JWT token with proper verification options
     """
     try:
         if not SUPABASE_JWT_SECRET:
@@ -33,7 +37,27 @@ def verify_supabase_token(token: str) -> dict:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="JWT secret not configured"
             )
-        payload = jwt.decode(token, SUPABASE_JWT_SECRET, algorithms=[ALGORITHM])
+        
+        if not SUPABASE_ISSUER:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Supabase URL not configured"
+            )
+        
+        # Verify JWT with proper security checks
+        payload = jwt.decode(
+            token, 
+            SUPABASE_JWT_SECRET, 
+            algorithms=[ALGORITHM],
+            audience=SUPABASE_AUDIENCE,  # ✅ Verify audience for security
+            issuer=SUPABASE_ISSUER,      # ✅ Verify issuer for security
+            options={
+                "verify_aud": True,   # ✅ Enable audience verification
+                "verify_iss": True,   # ✅ Enable issuer verification
+                "verify_exp": True,   # ✅ Verify token expiration
+                "verify_signature": True  # ✅ Verify token signature
+            }
+        )
         return payload
     except JWTError as e:
         logger.error(f"JWT verification failed: {e}")
@@ -62,7 +86,6 @@ async def create_or_get_user(supabase_payload: dict, session: SupabaseSession) -
     
     if not user:
         # Create new user
-        logger.info(f"Creating new user: {email}")
         user_data = {
             "supabase_id": supabase_id,
             "email": email,
@@ -90,7 +113,6 @@ async def get_current_user(
         # Get or create user
         user = await create_or_get_user(payload, session)
         
-        logger.info(f"Authenticated user: {user.email}")
         return user
         
     except Exception as e:

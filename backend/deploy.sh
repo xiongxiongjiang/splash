@@ -15,7 +15,7 @@ fi
 
 # Get AWS account ID and region
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION=$(aws configure get region || echo "us-east-1")
+AWS_REGION=$(aws configure get region || echo "us-east-2")
 ECR_REPO="splash-backend"
 ECR_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO"
 
@@ -125,7 +125,8 @@ else
     echo "           \"RuntimeEnvironmentVariables\": {"
     echo "             \"SUPABASE_URL\": \"https://your-project-id.supabase.co\","
     echo "             \"SUPABASE_SERVICE_ROLE_KEY\": \"YOUR_SUPABASE_SERVICE_ROLE_KEY\","
-    echo "             \"SUPABASE_JWT_SECRET\": \"YOUR_SUPABASE_JWT_SECRET\""
+    echo "             \"SUPABASE_JWT_SECRET\": \"YOUR_SUPABASE_JWT_SECRET\","
+    echo "             \"SUPABASE_AUDIENCE\": \"authenticated\""
     echo "           }"
     echo "         },"
     echo "         \"ImageRepositoryType\": \"ECR\""
