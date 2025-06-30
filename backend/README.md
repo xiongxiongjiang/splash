@@ -64,9 +64,19 @@ docker-compose exec backend pytest
 ## Project Structure
 ```
 backend/
+├── clients/         # External API clients
+│   ├── __init__.py
+│   ├── dify_client.py   # Dify API client class
+│   └── s3_client.py     # AWS S3 client class
+├── services/        # Business logic services
+│   ├── __init__.py
+│   ├── exceptions.py        # Service layer exceptions
+│   └── resume_parse_service.py  # Resume parsing service
 ├── models/          # SQLModel/Pydantic models
 ├── admin.py         # Admin interface setup
 ├── auth.py          # Authentication logic
+├── chat.py          # LiteLLM chat completion
+├── config.py        # Application configuration
 ├── database.py      # Database configuration
 ├── server.py        # Main FastAPI application
 ├── requirements.txt # Python dependencies
@@ -80,6 +90,11 @@ backend/
 ## Environment Variables
 - `SUPABASE_URL`: Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key
+- `DIFY_RESUME_PARSE_API_KEY`: Dify API key for chat completion (optional)
+- `AWS_ACCESS_KEY_ID`: AWS Access Key ID for S3 uploads (optional)
+- `AWS_SECRET_ACCESS_KEY`: AWS Secret Access Key for S3 uploads (optional)
+- `AWS_REGION`: AWS region for S3 bucket (default: us-east-1)
+- `S3_BUCKET_NAME`: S3 bucket name for file uploads (optional)
 
 ## 🚢 Deployment (Heroku)
 

@@ -8,6 +8,8 @@ python-jose[cryptography]>=3.3.0  # JWT token verification
 python-multipart>=0.0.6
 httpx>=0.24.0
 litellm>=1.0.0  # AI model integration
+boto3>=1.26.0
+nanoid>=2.0.0  # AWS S3 integration
 
 # Development dependencies
 pytest>=7.0.0

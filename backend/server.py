@@ -29,6 +29,7 @@ from chat import (
     create_chat_completion, 
     create_chat_completion_stream
 )
+from controllers import upload_router, resume_router
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -108,6 +109,10 @@ app = FastAPI(
 # Add middleware
 app.middleware("http")(custom_cors_middleware)
 app.middleware("http")(https_redirect_middleware)
+
+# Include routers
+app.include_router(upload_router)
+app.include_router(resume_router)
 
 # Initialize Admin (disabled for Supabase)
 create_admin(app)
