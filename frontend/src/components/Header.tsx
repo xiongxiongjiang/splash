@@ -1,36 +1,36 @@
-'use client';
-import React, { useEffect } from 'react';
+'use client'
+import React, {useEffect} from 'react'
 
-import { ChevronLeft } from 'lucide-react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import {ChevronLeft} from 'lucide-react'
+import Image from 'next/image'
+import {useRouter} from 'next/navigation'
+import {useTranslations} from 'next-intl'
 
-import Logo from '@/assets/logos/tally_logo.svg';
+import Logo from '@/assets/logos/tally_logo.svg'
 // import { useSurveyStore } from '@/store/survey';
 
-const Header = ({ showBackButton = false, fixed = false }: { showBackButton?: boolean; fixed?: boolean }) => {
-  const t = useTranslations('HomePage');
-  const router = useRouter();
+const Header = ({showBackButton = false, fixed = false}: {showBackButton?: boolean; fixed?: boolean}) => {
+  const t = useTranslations('HomePage')
+  const router = useRouter()
   // const { reset } = useSurveyStore();
   // ESC key handler
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        handleExit();
+        handleExit()
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
   // Handle exit functionality
   const handleExit = () => {
     // reset();
-    router.back();
-  };
+    router.back()
+  }
   return (
     <header
       className={`mx-auto h-[136px] px-[1.3vh] tablet:px-[3vh] flex items-center z-10 opacity-40 bg-transparent ${
@@ -47,7 +47,7 @@ const Header = ({ showBackButton = false, fixed = false }: { showBackButton?: bo
         <span className="font-bold text-[18px] tablet:text-[28px]">{t('appName')}</span>
       </div>
     </header>
-  );
-};
+  )
+}
 
-export default Header;
+export default Header
