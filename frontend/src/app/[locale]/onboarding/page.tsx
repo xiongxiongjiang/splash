@@ -1,191 +1,131 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
+import {useState} from 'react'
 
-import { Tabs, ConfigProvider, Upload, message, Button as AntButton } from 'antd';
-import { Upload as UploadIcon } from 'lucide-react';
-import Image from 'next/image';
+import {Tabs, ConfigProvider, Upload, message, Button as AntButton} from 'antd'
+import {Upload as UploadIcon} from 'lucide-react'
+import Image from 'next/image'
 
-import Header from '@/components/Header';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import Header from '@/components/Header'
+import {Button} from '@/components/ui/button'
+import {Input} from '@/components/ui/input'
+import {apiClient} from '@/lib/api'
+import ProcessingView from '@/components/ProcessingView'
+import IconClose from '@/assets/images/icon_close.svg'
+import IconFiles from '@/assets/images/icon_files.png'
+import IconLink from '@/assets/images/icon_link.png'
+import IconLoading from '@/assets/images/icon_loading_dark.svg'
+import IconTick from '@/assets/images/icon_tick.svg'
+import useBreakpoint from '@/hooks/useBreakpoint'
 
-import IconClose from '@/assets/images/icon_close.svg';
-import IconFiles from '@/assets/images/icon_files.png';
-import IconLink from '@/assets/images/icon_link.png';
-import IconLoading from '@/assets/images/icon_loading_dark.svg';
-import IconTick from '@/assets/images/icon_tick.svg';
-import useBreakpoint from '@/hooks/useBreakpoint';
-
-import type { TabsProps, UploadProps } from 'antd';
-import type { UploadFile } from 'antd/es/upload/interface';
-import type { UploadRequestOption } from 'rc-upload/lib/interface';
+import type {TabsProps, UploadProps} from 'antd'
+import type {UploadFile} from 'antd/es/upload/interface'
+import type {UploadRequestOption} from 'rc-upload/lib/interface'
 
 export default function WelcomePage() {
-  const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [activeKey, setActiveKey] = useState('resume');
-  const deviceType = useBreakpoint(); // 获取设备类型
-  const [uploadError, setUploadError] = useState('');
-  const [linkedinError, setLinkedinError] = useState('');
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [linkedinUrl, setLinkedinUrl] = useState('')
+  const [activeKey, setActiveKey] = useState('resume')
+  const deviceType = useBreakpoint() // 获取设备类型
+  const [uploadError, setUploadError] = useState('')
+  const [linkedinError, setLinkedinError] = useState('')
+  const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [parseResult, setParseResult] = useState('')
+  const [uploadedFileUrl, setUploadedFileUrl] = useState('')
 
   // 检查是否可以继续
   const canContinue = () => {
     if (activeKey === 'resume') {
       // 简历模式下，需要有成功上传的文件
-      return fileList.some((file) => file.status === 'done');
+      return fileList.some(file => file.status === 'done')
     } else if (activeKey === 'linkedin') {
       // LinkedIn模式下，需要有有效的LinkedIn URL
       // return linkedinUrl.trim() !== '' && linkedinUrl.includes('linkedin.com/in/');
-      return true;
+      return true
     }
-    return false;
-  };
+    return false
+  }
 
   const beforeUpload = (file: UploadFile) => {
     // 文件格式验证
-    const isValidFormat = /\.(pdf|doc|docx)$/i.test(file.name);
+    const isValidFormat = /\.(pdf|doc|docx)$/i.test(file.name)
     if (!isValidFormat) {
-      setUploadError('Wrong file format, pdf or doc format required');
-      return Upload.LIST_IGNORE;
+      setUploadError('Wrong file format, pdf or doc format required')
+      return Upload.LIST_IGNORE
     }
 
     // 文件大小验证 (20MB = 20 * 1024 * 1024 bytes)
-    const maxSize = 20 * 1024 * 1024;
+    const maxSize = 20 * 1024 * 1024
     if (file.size && file.size > maxSize) {
-      setUploadError('File size exceeds 20MB limit');
-      return Upload.LIST_IGNORE;
+      setUploadError('File size exceeds 20MB limit')
+      return Upload.LIST_IGNORE
     }
 
     // 清除之前的错误信息
-    setUploadError('');
-    return true;
-  };
+    setUploadError('')
+    return true
+  }
 
-  const uploadCustomRequest = (options: UploadRequestOption) => {
-    const { file, onProgress, onSuccess, onError, data, withCredentials, action, headers } = options;
-    console.log(111);
+  const uploadCustomRequest = async (options: UploadRequestOption) => {
+    const {file, onProgress, onSuccess, onError} = options
 
-    // 创建FormData
-    const formData = new FormData();
-    formData.append('file', file as File);
+    try {
+      // 使用API客户端上传文件
+      const response = await apiClient.uploadFile(file as File)
 
-    // 添加额外的数据
-    if (data) {
-      Object.keys(data).forEach((key) => {
-        formData.append(key, String(data[key]));
-      });
+      // 保存上传的文件URL
+      setUploadedFileUrl(response.file_url)
+
+      // 调用成功回调
+      onSuccess?.(response)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed'
+      setUploadError(errorMessage)
+      onError?.(new Error(errorMessage))
     }
 
-    // 创建XMLHttpRequest
-    const xhr = new XMLHttpRequest();
-
-    // 监听上传进度
-    xhr.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable) {
-        const percent = Math.round((event.loaded / event.total) * 100);
-        onProgress?.({ percent });
-      }
-    });
-
-    // 监听请求完成
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const response = JSON.parse(xhr.responseText);
-          onSuccess?.(response, xhr);
-        } catch (error) {
-          onSuccess?.(xhr.responseText, xhr);
-        }
-      } else {
-        const errorMessage = `Upload failed with status ${xhr.status}`;
-        setUploadError(errorMessage);
-        onError?.(new Error(errorMessage), xhr);
-      }
-    });
-
-    // 监听请求错误
-    xhr.addEventListener('error', () => {
-      const errorMessage = 'Upload failed - network error';
-      setUploadError(errorMessage);
-      onError?.(new Error(errorMessage), xhr);
-    });
-
-    // 监听请求中止
-    xhr.addEventListener('abort', () => {
-      const errorMessage = 'Upload aborted';
-      setUploadError(errorMessage);
-      onError?.(new Error(errorMessage), xhr);
-    });
-
-    // 打开连接
-    xhr.open('POST', action || 'http://localhost:3000/api/upload', true);
-
-    // 设置请求头
-    if (headers) {
-      Object.keys(headers).forEach((key) => {
-        xhr.setRequestHeader(key, headers[key]);
-      });
-    }
-
-    // 设置withCredentials
-    if (withCredentials) {
-      xhr.withCredentials = true;
-    }
-
-    // 发送请求
-    xhr.send(formData);
-
-    // 模拟上传成功（用于测试，实际项目中应该移除）
-    setTimeout(() => {
-      onSuccess?.({ success: true, url: 'mock-url' }, xhr);
-    }, 2000);
-
-    // 返回一个取消函数
+    // 返回一个取消函数（对于fetch请求，这里是空实现）
     return {
       abort: () => {
-        xhr.abort();
+        // Fetch API 不支持直接取消，这里是空实现
       },
-    };
-  };
+    }
+  }
 
   const uploadProps: UploadProps = {
     name: 'file',
     accept: '.pdf,.doc,.docx',
     maxCount: 1,
-    fileList: fileList, // 恢复使用实际的fileList
+    fileList: fileList,
     showUploadList: false, // 隐藏默认的上传列表
-    headers: {
-      authorization: 'authorization-text',
-    },
     beforeUpload: beforeUpload,
     customRequest: uploadCustomRequest,
     onChange(info) {
       // 更新文件列表状态
-      setFileList(info.fileList);
+      setFileList(info.fileList)
       // 处理上传错误
       if (info.file.status === 'error') {
-        setUploadError(info.file.error?.message || 'Upload failed');
+        setUploadError(info.file.error?.message || 'Upload failed')
         // 上传失败时从文件列表中移除该文件
-        const newFileList = info.fileList.filter((file) => file.uid !== info.file.uid);
-        setFileList(newFileList);
+        const newFileList = info.fileList.filter(file => file.uid !== info.file.uid)
+        setFileList(newFileList)
       } else if (info.file.status === 'done') {
         // 上传成功时清除错误信息
-        setUploadError('');
+        setUploadError('')
       }
     },
-  };
+  }
 
   // 渲染文件列表的函数
   const renderFileList = () => {
-    if (fileList.length === 0) return null;
+    if (fileList.length === 0) return null
 
-    return fileList.map((file) => {
-      const isUploading = file.status === 'uploading';
-      const isDone = file.status === 'done';
+    return fileList.map(file => {
+      const isUploading = file.status === 'uploading'
+      const isDone = file.status === 'done'
 
       // 调试信息
-      console.log('Rendering file:', file.name, 'status:', file.status, 'isUploading:', isUploading, 'isDone:', isDone);
+      console.log('Rendering file:', file.name, 'status:', file.status, 'isUploading:', isUploading, 'isDone:', isDone)
 
       return (
         <div key={file.uid} className="flex w-full items-center py-2 relative group hover:bg-gray-50 rounded px-2">
@@ -205,10 +145,10 @@ export default function WelcomePage() {
                 type="button"
                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
                 onClick={() => {
-                  const newFileList = fileList.filter((f) => f.uid !== file.uid);
-                  setFileList(newFileList);
+                  const newFileList = fileList.filter(f => f.uid !== file.uid)
+                  setFileList(newFileList)
                   // 清除错误信息
-                  setUploadError('');
+                  setUploadError('')
                 }}
                 title="移除"
               >
@@ -217,9 +157,9 @@ export default function WelcomePage() {
             )}
           </div>
         </div>
-      );
-    });
-  };
+      )
+    })
+  }
 
   const items: TabsProps['items'] = [
     {
@@ -263,18 +203,68 @@ export default function WelcomePage() {
                           rounded-none bg-transparent transition-colors
                         text-[rgba(0,0,0,0.8)] placeholder:text-[rgba(0,0,0,0.3)]"
               value={linkedinUrl}
-              onChange={(e) => setLinkedinUrl(e.target.value)}
+              onChange={e => setLinkedinUrl(e.target.value)}
             />
           </div>
           {linkedinError && <div className="w-full text-center text-base text-[#FF6767] mt-2">{linkedinError}</div>}
         </div>
       ),
     },
-  ];
+  ]
 
   const handleTabChange = (key: string) => {
-    setActiveKey(key);
-  };
+    setActiveKey(key)
+  }
+
+  // 处理简历解析
+  const handleResumeParseAsync = async (fileUrl: string) => {
+    setIsProcessing(true)
+    setParseResult('')
+
+    try {
+      await apiClient.parseResumeWithCallback(
+        fileUrl,
+        (data: string) => {
+          // 实时接收解析数据
+          setParseResult(prev => prev + data)
+        },
+        () => {
+          console.log('Resume parsing completed')
+        },
+        (error: Error) => {
+          setUploadError(`Resume parsing failed: ${error.message}`)
+        }
+      )
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Resume parsing failed'
+      setUploadError(errorMessage)
+    }
+  }
+
+  // 处理Continue按钮点击
+  const handleContinue = async () => {
+    if (activeKey === 'resume') {
+      // 简历模式：开始解析简历
+      if (uploadedFileUrl) {
+        await handleResumeParseAsync(uploadedFileUrl)
+      } else {
+        setUploadError('No file uploaded')
+      }
+    } else if (activeKey === 'linkedin') {
+      // LinkedIn模式：验证URL格式
+      if (!linkedinUrl.trim() || !linkedinUrl.includes('linkedin.com/in/')) {
+        setLinkedinError('The link format is incorrect')
+        return
+      }
+      // TODO: 处理LinkedIn导入逻辑
+      console.log('Processing LinkedIn URL:', linkedinUrl)
+    }
+  }
+  // 如果正在处理，显示ProcessingView
+  if (isProcessing) {
+    return <ProcessingView linkedinUrl={activeKey === 'linkedin' ? linkedinUrl : undefined} parseResult={parseResult} />
+  }
+
   return (
     <div className={`relative welcome-bg is-${deviceType}`}>
       <style jsx global>{`
@@ -321,7 +311,7 @@ export default function WelcomePage() {
             >
               <Tabs
                 defaultActiveKey={activeKey}
-                indicator={{ size: 40 }}
+                indicator={{size: 40}}
                 className="font-semibold !border-none "
                 items={items}
                 centered
@@ -333,17 +323,7 @@ export default function WelcomePage() {
               {(fileList.length !== 0 || activeKey === 'linkedin' || deviceType !== 'mobile') && (
                 <Button
                   className="w-[270px] tablet:w-[180px] rounded-[12px] text-base font-semibold py-[25px] disabled:bg-[rgba(0,0,0,0.2)] disabled:text-white]"
-                  disabled={!canContinue()}
-                  onClick={() => {
-                    if (activeKey === 'linkedin') {
-                      // LinkedIn模式下，需要有有效的LinkedIn URL
-                      // 判断链接是否合法，不合法就显示错误信息
-                      if (!linkedinUrl.trim() || !linkedinUrl.includes('linkedin.com/in/')) {
-                        // 显示错误信息
-                        setLinkedinError('The link format is incorrect');
-                      }
-                    }
-                  }}
+                  onClick={handleContinue}
                 >
                   CONTINUE
                 </Button>
@@ -366,5 +346,5 @@ export default function WelcomePage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

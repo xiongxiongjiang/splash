@@ -290,6 +290,106 @@ class ApiClient {
       })
     })
   }
+
+  /**
+   * Upload file to S3
+   */
+  async uploadFile(file: File): Promise<{
+    success: boolean
+    file_url: string
+    s3_key: string
+    bucket: string
+    original_name: string
+    uploaded_name: string
+    content_type: string
+    file_size: number
+    folder: string
+  }> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${this.baseUrl}/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || `Upload failed with status ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  /**
+   * Parse resume from URL using streaming response
+   */
+  async parseResume(fileUrl: string): Promise<ReadableStream<Uint8Array>> {
+    const response = await fetch(`${this.baseUrl}/resume-parse`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ file_url: fileUrl })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || `Resume parsing failed with status ${response.status}`)
+    }
+
+    if (!response.body) {
+      throw new Error('No response body received')
+    }
+
+    return response.body
+  }
+
+  /**
+   * Parse resume with callback for streaming data
+   */
+  async parseResumeWithCallback(
+    fileUrl: string, 
+    onData: (data: string) => void,
+    onComplete?: () => void,
+    onError?: (error: Error) => void
+  ): Promise<void> {
+    try {
+      const stream = await this.parseResume(fileUrl)
+      const reader = stream.getReader()
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) {
+          onComplete?.()
+          break
+        }
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim()
+            if (data && data !== '[DONE]') {
+              try {
+                const parsed = JSON.parse(data)
+                if (parsed.answer) {
+                  onData(parsed.answer)
+                }
+              } catch (e) {
+                // Ignore JSON parse errors for partial data
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error as Error)
+    }
+  }
 }
 
 // Export singleton instance
