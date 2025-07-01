@@ -1,254 +1,369 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-import { Skeleton } from 'antd';
-import { ChevronDown, Check, Link } from 'lucide-react';
+import { Tabs, ConfigProvider, Upload, message, Button as AntButton } from 'antd';
+import { Upload as UploadIcon } from 'lucide-react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
 
-import Logo from '@/assets/logos/tally_logo.svg';
+import Header from '@/components/Header';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
-interface PersonalExtra {
-  label: string;
-  value: string;
-}
+import IconClose from '@/assets/images/icon_close.svg';
+import IconFiles from '@/assets/images/icon_files.png';
+import IconLink from '@/assets/images/icon_link.png';
+import IconLoading from '@/assets/images/icon_loading_dark.svg';
+import IconTick from '@/assets/images/icon_tick.svg';
+import useBreakpoint from '@/hooks/useBreakpoint';
 
-interface EducationExtra {
-  university: string;
-  degreeType: string;
-  major: string;
-}
+import type { TabsProps, UploadProps } from 'antd';
+import type { UploadFile } from 'antd/es/upload/interface';
+import type { UploadRequestOption } from 'rc-upload/lib/interface';
 
-interface AnalysisBlockProps {
-  title: string;
-  description: string;
-  detail: string;
-  extra?: PersonalExtra[] | string[] | EducationExtra;
-  extraType?: 'personal' | 'skills' | 'education';
-}
-const AnalysisBlock = ({ title, description, detail, extra, extraType }: AnalysisBlockProps) => {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="text-sm">{title}</div>
-      <div className="font-[12px] flex flex-col gap-2">
-        <div className="flex">
-          <div className="bg-[rgba(0,0,0,0.06)] px-4 py-2 rounded-[8px] flex gap-2">
-            <span>{description}</span>
-            <span className="text-[rgba(0,0,0,0.4)]">{detail}</span>
-          </div>
-        </div>
+export default function WelcomePage() {
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [activeKey, setActiveKey] = useState('resume');
+  const deviceType = useBreakpoint(); // 获取设备类型
+  const [uploadError, setUploadError] = useState('');
+  const [linkedinError, setLinkedinError] = useState('');
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
-        {extra && extraType === 'personal' && (
-          <div className="flex">
-            <div className="flex gap-2 flex-col bg-[rgba(0,0,0,0.06)] px-4 py-2 rounded-[8px]">
-              {(extra as PersonalExtra[]).map((item) => (
-                <p key={item.label}>
-                  <span>{item.label}:</span>
-                  <span className="text-[rgba(0,0,0,0.4)]">{item.value}</span>
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
-        {extra && extraType === 'education' && (
-          <div className="flex">
-            <div className="flex gap-2 flex-col bg-[rgba(0,0,0,0.06)] px-4 py-2 rounded-[8px]">
-              <span>{(extra as EducationExtra).university}</span>
-              <p>
-                {(extra as EducationExtra).degreeType},{(extra as EducationExtra).major}
-              </p>
-            </div>
-          </div>
-        )}
-        {extra && extraType === 'skills' && (
-          <div className="flex flex-wrap gap-2">
-            {(extra as string[]).map((item) => (
-              <div className="bg-[rgba(0,0,0,0.06)] px-4 py-2 rounded-[8px]" key={item}>
-                <span className="text-[12px] text-[rgba(0,0,0,0.8)]">{item}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-interface ExtractedData {
-  name: string;
-  title: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin: string;
-  sponsorship: string;
-  education: {
-    university: string;
-    degreeType: string;
-    major: string;
-    location?: string;
+  // 检查是否可以继续
+  const canContinue = () => {
+    if (activeKey === 'resume') {
+      // 简历模式下，需要有成功上传的文件
+      return fileList.some((file) => file.status === 'done');
+    } else if (activeKey === 'linkedin') {
+      // LinkedIn模式下，需要有有效的LinkedIn URL
+      // return linkedinUrl.trim() !== '' && linkedinUrl.includes('linkedin.com/in/');
+      return true;
+    }
+    return false;
   };
-  skills: string[];
-}
 
-const mockData: ExtractedData = {
-  name: 'Alex Chen',
-  title: 'Senior UX Designer',
-  email: 'alex.chen.ux@gmail.com',
-  phone: '(415) 555-0123',
-  location: 'San Francisco, CA 94105',
-  linkedin: 'linkedin.com/in/alexchenux',
-  sponsorship: 'Never Needed',
-  education: {
-    university: 'Carnegie Mellon University',
-    degreeType: 'Master of Science',
-    major: 'Human-Computer Interaction',
-  },
-  skills: [
-    'UX design',
-    'accessibility consulting',
-    'digital accessibility',
-    'Figma',
-    'WCAG 2.1',
-    'ARIA',
-    'WCAG 2.2',
-    'Storybook',
-    'Jira',
-    'Confluence',
-    'AirTable',
-  ],
-};
+  const beforeUpload = (file: UploadFile) => {
+    // 文件格式验证
+    const isValidFormat = /\.(pdf|doc|docx)$/i.test(file.name);
+    if (!isValidFormat) {
+      setUploadError('Wrong file format, pdf or doc format required');
+      return Upload.LIST_IGNORE;
+    }
 
-const ResumeCardSkeleton = () => {
-  return (
-    <div className="p-8 w-[353px] flex flex-col gap-2 bg-[rgba(255,255,255,0.5)] rounded-[16px]">
-      <Skeleton active avatar paragraph={{ rows: 4 }} />
-    </div>
-  );
-};
-export default function TallyAIOnboarding() {
-  const [linkedinUrl, setLinkedinUrl] = useState('https://linkedin.com/lcccccooo/');
-  const [showSkeleton, setShowSkeleton] = useState(true);
-  const [showAnalysis, setShowAnalysis] = useState(false);
-  const t = useTranslations('HomePage');
+    // 文件大小验证 (20MB = 20 * 1024 * 1024 bytes)
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size && file.size > maxSize) {
+      setUploadError('File size exceeds 20MB limit');
+      return Upload.LIST_IGNORE;
+    }
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSkeleton(false);
+    // 清除之前的错误信息
+    setUploadError('');
+    return true;
+  };
+
+  const uploadCustomRequest = (options: UploadRequestOption) => {
+    const { file, onProgress, onSuccess, onError, data, withCredentials, action, headers } = options;
+    console.log(111);
+
+    // 创建FormData
+    const formData = new FormData();
+    formData.append('file', file as File);
+
+    // 添加额外的数据
+    if (data) {
+      Object.keys(data).forEach((key) => {
+        formData.append(key, String(data[key]));
+      });
+    }
+
+    // 创建XMLHttpRequest
+    const xhr = new XMLHttpRequest();
+
+    // 监听上传进度
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        onProgress?.({ percent });
+      }
+    });
+
+    // 监听请求完成
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          onSuccess?.(response, xhr);
+        } catch (error) {
+          onSuccess?.(xhr.responseText, xhr);
+        }
+      } else {
+        const errorMessage = `Upload failed with status ${xhr.status}`;
+        setUploadError(errorMessage);
+        onError?.(new Error(errorMessage), xhr);
+      }
+    });
+
+    // 监听请求错误
+    xhr.addEventListener('error', () => {
+      const errorMessage = 'Upload failed - network error';
+      setUploadError(errorMessage);
+      onError?.(new Error(errorMessage), xhr);
+    });
+
+    // 监听请求中止
+    xhr.addEventListener('abort', () => {
+      const errorMessage = 'Upload aborted';
+      setUploadError(errorMessage);
+      onError?.(new Error(errorMessage), xhr);
+    });
+
+    // 打开连接
+    xhr.open('POST', action || 'http://localhost:3000/api/upload', true);
+
+    // 设置请求头
+    if (headers) {
+      Object.keys(headers).forEach((key) => {
+        xhr.setRequestHeader(key, headers[key]);
+      });
+    }
+
+    // 设置withCredentials
+    if (withCredentials) {
+      xhr.withCredentials = true;
+    }
+
+    // 发送请求
+    xhr.send(formData);
+
+    // 模拟上传成功（用于测试，实际项目中应该移除）
+    setTimeout(() => {
+      onSuccess?.({ success: true, url: 'mock-url' }, xhr);
     }, 2000);
 
-    return () => clearTimeout(timer);
-  }, []);
+    // 返回一个取消函数
+    return {
+      abort: () => {
+        xhr.abort();
+      },
+    };
+  };
 
-  return (
-    <div className="h-screen onboarding-bg flex gap-6 justify-between p-10">
-      <div>
-        <div className="flex justify-center items-center gap-2">
-          <Image src={Logo} alt={t('appName')} width={24} height={24} />
-          <span className="font-bold text-[20px]">{t('appName')}</span>
-        </div>
-      </div>
+  const uploadProps: UploadProps = {
+    name: 'file',
+    accept: '.pdf,.doc,.docx',
+    maxCount: 1,
+    fileList: fileList, // 恢复使用实际的fileList
+    showUploadList: false, // 隐藏默认的上传列表
+    headers: {
+      authorization: 'authorization-text',
+    },
+    beforeUpload: beforeUpload,
+    customRequest: uploadCustomRequest,
+    onChange(info) {
+      // 更新文件列表状态
+      setFileList(info.fileList);
+      // 处理上传错误
+      if (info.file.status === 'error') {
+        setUploadError(info.file.error?.message || 'Upload failed');
+        // 上传失败时从文件列表中移除该文件
+        const newFileList = info.fileList.filter((file) => file.uid !== info.file.uid);
+        setFileList(newFileList);
+      } else if (info.file.status === 'done') {
+        // 上传成功时清除错误信息
+        setUploadError('');
+      }
+    },
+  };
 
-      <div className="transition-all hide-scrollbar flex flex-col gap-8 duration-500 ease-in-out max-h-screen overflow-y-auto ">
-        <div className="space-y-4 text-base text-[rgba(0,0,0,0.8)]">
-          <h1 className="font-bold">Welcome</h1>
-          <p>{`I'm Tally, your career wingman. Let's land your dream job together.`}</p>
-          <p className="font-bold">Start by sharing your LinkedIn or résumé.</p>
-        </div>
+  // 渲染文件列表的函数
+  const renderFileList = () => {
+    if (fileList.length === 0) return null;
 
-        <div className="flex justify-end">
-          <div className="bg-white flex gap-2 px-4 py-2 rounded-[8px] justify-center items-center">
-            <Link size={16} />
-            <span>{linkedinUrl}</span>
+    return fileList.map((file) => {
+      const isUploading = file.status === 'uploading';
+      const isDone = file.status === 'done';
+
+      // 调试信息
+      console.log('Rendering file:', file.name, 'status:', file.status, 'isUploading:', isUploading, 'isDone:', isDone);
+
+      return (
+        <div key={file.uid} className="flex w-full items-center py-2 relative group hover:bg-gray-50 rounded px-2">
+          <div className="flex w-full items-center">
+            {/* 上传中显示 loading */}
+            {isUploading ? (
+              <span className="w-5 h-5 flex items-center justify-center mr-2">
+                <Image src={IconLoading} alt="loading" className="animate-spin" />
+              </span>
+            ) : (
+              <Image src={IconTick} alt="icon_check" className="w-5 h-5 mr-2" />
+            )}
+            <span className="flex-1 text-center truncate">{file.name}</span>
+            {/* 上传成功时显示移除按钮 */}
+            {isDone && (
+              <button
+                type="button"
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
+                onClick={() => {
+                  const newFileList = fileList.filter((f) => f.uid !== file.uid);
+                  setFileList(newFileList);
+                  // 清除错误信息
+                  setUploadError('');
+                }}
+                title="移除"
+              >
+                <Image src={IconClose} alt="icon_close" className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
-        <p className="text-base font-medium">
-          {` I will extract your resume's personal background information, education background information, and skills
-          based on the LinkedIn link for further analysis.`}
-        </p>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-[7px]">
-            <div className="w-4 h-4 bg-[rgba(0,0,0,0.2)] rounded-full animate-pulse" />
-            <h2 className="text-lg font-medium">Extracting LinkedIn information</h2>
-            <ChevronDown
-              strokeWidth={1.5}
-              onClick={() => setShowAnalysis((v) => !v)}
-              className={`w-4 h-4 cursor-pointer text-[rgba(0,0,0,0.5)] transition-transform duration-200 ${
-                showAnalysis ? 'rotate-180' : ''
-              }`}
+      );
+    });
+  };
+
+  const items: TabsProps['items'] = [
+    {
+      key: 'resume',
+      label: 'Résumé File',
+      children: (
+        <div className="flex flex-col items-center">
+          <div className="h-[128px]  flex flex-col justify-center items-center">
+            <Image src={IconFiles} alt="icon_files" width={128} height={128} />
+            <p className="text-xs text-[rgba(0,0,0,0.5)]">.doc, .docx or .pdf, up to 20 MB.</p>
+          </div>
+
+          <div className="mobile:hidden w-full tablet:flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)]">
+            <Upload {...uploadProps}>
+              <Button variant="outline" className="bg-transparent">
+                <UploadIcon />
+                Upload resume
+              </Button>
+            </Upload>
+          </div>
+          {/* 自定义文件列表渲染 */}
+          <div className="w-full">{renderFileList()}</div>
+          {uploadError && <div className="w-full text-center text-base text-[#FF6767] mt-2">{uploadError}</div>}
+        </div>
+      ),
+    },
+    {
+      key: 'linkedin',
+      label: 'LinkedIn Import',
+      children: (
+        <div className="flex flex-col items-center">
+          <div className="h-[128px] w-[128px] flex justify-center items-center">
+            <Image src={IconLink} alt="icon_files" width={128} height={128} />
+          </div>
+          <div className="w-full flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)]">
+            <Input
+              placeholder="https://linkedin.com/in/"
+              className="!text-semibold !text-base border-0
+                          focus:outline-none shadow-none text-center
+                          focus-visible:!ring-0 focus-visible:!ring-transparent
+                          rounded-none bg-transparent transition-colors
+                        text-[rgba(0,0,0,0.8)] placeholder:text-[rgba(0,0,0,0.3)]"
+              value={linkedinUrl}
+              onChange={(e) => setLinkedinUrl(e.target.value)}
             />
           </div>
-
-          {showAnalysis && (
-            <div className="space-y-3 ml-5 text-[rgba(0,0,0,0.8)] font-medium">
-              <AnalysisBlock title="Visiting linkedin page" description="Browsing linkedin" detail={linkedinUrl} />
-              <AnalysisBlock
-                title="Researching your background"
-                description="Extracting performance data from the Linkedin resume"
-                detail={linkedinUrl}
-                extra={[
-                  { label: 'Name', value: mockData.name },
-                  { label: 'Title', value: mockData.title },
-                  { label: 'Email', value: mockData.email },
-                  { label: 'Phone', value: mockData.phone },
-                  { label: 'Location', value: mockData.location },
-                  { label: 'LinkedIn', value: mockData.linkedin },
-                  { label: 'Sponsorship', value: mockData.sponsorship },
-                ]}
-                extraType="personal"
-              />
-              <AnalysisBlock
-                title="Your Education background information"
-                description="Extracting performance data from the Linkedin resume"
-                detail={linkedinUrl}
-                extra={{
-                  university: mockData.education.university,
-                  degreeType: mockData.education.degreeType,
-                  major: mockData.education.major,
-                }}
-                extraType="education"
-              />
-              <AnalysisBlock
-                title="Your skills list (13)"
-                description="Extracting performance data from the Linkedin resume"
-                detail={linkedinUrl}
-                extra={mockData.skills}
-                extraType="skills"
-              />
-            </div>
-          )}
+          {linkedinError && <div className="w-full text-center text-base text-[#FF6767] mt-2">{linkedinError}</div>}
         </div>
-      </div>
-      <div>
-        {showSkeleton ? (
-          <ResumeCardSkeleton />
-        ) : (
-          <div className="p-8 flex flex-col gap-2 bg-[rgba(255,255,255,0.5)] rounded-[16px]">
-            <div className="flex items-center px-4 py-[10px] gap-4 bg-white rounded-[16px]">
-              <div className="w-[70px] h-[70px] border-6  border-[rgba(0,0,0,0.08)] rounded-full flex items-center justify-center"></div>
-              <div>
-                <p className="text-[13px] text-[rgba(0,0,0,0.4)]">Your resume</p>
-                <p className="font-bold text-[15px]">senior_ux</p>
-                <p className="font-bold text-[15px]">designer_RicO1_LinkedIn</p>
-              </div>
-            </div>
-            <div className="px-4 text-sm font-medium text-[rgba(0,0,0,0.8)]">
-              <div className="flex py-3 items-center justify-between">
-                <span>Background Matching</span>
-                <Check className="w-4 h-4 text-green-500" />
-              </div>
-              <div className="flex py-3 items-center justify-between">
-                <span>Industry Experience</span>
-                <Check className="w-4 h-4 text-green-500" />
-              </div>
-              <div className="flex py-3 items-center justify-between">
-                <span>Skills (4/11)</span>
-                <Check className="w-4 h-4 text-green-500" />
-              </div>
+      ),
+    },
+  ];
+
+  const handleTabChange = (key: string) => {
+    setActiveKey(key);
+  };
+  return (
+    <div className={`relative welcome-bg is-${deviceType}`}>
+      <style jsx global>{`
+        .ant-tabs-top > .ant-tabs-nav::before {
+          border-bottom: none !important;
+        }
+        .ant-tabs-ink-bar {
+          height: 4px !important;
+          border-radius: 4px !important;
+        }
+        .is-mobile .ant-tabs-tab {
+          font-size: 18px !important;
+        }
+        .is-tablet .ant-tabs-tab,
+        .is-web .ant-tabs-tab {
+          font-size: 22px !important;
+        }
+      `}</style>
+      <div className="welcome-content w-full min-h-screen flex flex-col items-center">
+        <div className="w-full">
+          <Header />
+        </div>
+        <div className="tablet:max-w-md flex-1 w-full flex flex-col items-center">
+          <div className="flex-1 px-6 tablet:px-3 tablet:flex-none text-[18px] tablet:text-[20px] text-[rgba(0,0,0,0.8)] flex flex-col gap-6">
+            <p className="font-bold">Welcome</p>
+            <p className="text-base">{`I'm Tally, your career wingman. Let's land your dream job together.`} </p>
+            <p className="font-bold">Start by sharing your LinkedIn or résumé.</p>
+          </div>
+
+          <div className="flex-1 justify-between items-center flex flex-col rounded-t-[12px] tablet:flex-none  tablet:rounded-3xl bg-[rgba(255,255,255,0.8)] tablet:mt-13 tablet:p-9 w-full tablet:shadow-sm">
+            <ConfigProvider
+              theme={{
+                components: {
+                  Tabs: {
+                    itemColor: 'rgba(0,0,0,0.3)',
+                    titleFontSize: 22,
+                    itemHoverColor: 'black',
+                    itemActiveColor: 'black',
+                    itemSelectedColor: 'black',
+                    inkBarColor: 'black',
+                  },
+                },
+              }}
+            >
+              <Tabs
+                defaultActiveKey={activeKey}
+                indicator={{ size: 40 }}
+                className="font-semibold !border-none "
+                items={items}
+                centered
+                onChange={handleTabChange}
+              />
+            </ConfigProvider>
+
+            <div className="flex tablet:mt-8 w-full justify-center gap-4 mb-10 tablet:mb-0">
+              {(fileList.length !== 0 || activeKey === 'linkedin' || deviceType !== 'mobile') && (
+                <Button
+                  className="w-[270px] tablet:w-[180px] rounded-[12px] text-base font-semibold py-[25px] disabled:bg-[rgba(0,0,0,0.2)] disabled:text-white]"
+                  disabled={!canContinue()}
+                  onClick={() => {
+                    if (activeKey === 'linkedin') {
+                      // LinkedIn模式下，需要有有效的LinkedIn URL
+                      // 判断链接是否合法，不合法就显示错误信息
+                      if (!linkedinUrl.trim() || !linkedinUrl.includes('linkedin.com/in/')) {
+                        // 显示错误信息
+                        setLinkedinError('The link format is incorrect');
+                      }
+                    }
+                  }}
+                >
+                  CONTINUE
+                </Button>
+              )}
+
+              {/* 手机端：没有文件时显示UPLOAD RESUME，有文件时显示Continue */}
+              {activeKey === 'resume' && (
+                <>
+                  {/* 没有文件时显示UPLOAD RESUME */}
+                  <Upload {...uploadProps} key="mobile-upload">
+                    <Button className="w-[270px] rounded-[12px] tablet:hidden text-base font-semibold py-[25px]">
+                      <UploadIcon />
+                      UPLOAD RESUME
+                    </Button>
+                  </Upload>
+                </>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
