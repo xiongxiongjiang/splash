@@ -1,34 +1,34 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react'
 
-import { Skeleton } from 'antd';
-import { ChevronDown, Check, Link } from 'lucide-react';
-import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import {Skeleton} from 'antd'
+import {ChevronDown, Check, Link} from 'lucide-react'
+import Image from 'next/image'
+import {useTranslations} from 'next-intl'
 
-import Logo from '@/assets/logos/tally_logo.svg';
+import Logo from '@/assets/logos/tally_logo.svg'
 
 interface PersonalExtra {
-  label: string;
-  value: string;
+  label: string
+  value: string
 }
 
 interface EducationExtra {
-  university: string;
-  degreeType: string;
-  major: string;
+  university: string
+  degreeType: string
+  major: string
 }
 
 interface AnalysisBlockProps {
-  title: string;
-  description: string;
-  detail: string;
-  extra?: PersonalExtra[] | string[] | EducationExtra;
-  extraType?: 'personal' | 'skills' | 'education';
+  title: string
+  description: string
+  detail: string
+  extra?: PersonalExtra[] | string[] | EducationExtra
+  extraType?: 'personal' | 'skills' | 'education'
 }
 
-const AnalysisBlock = ({ title, description, detail, extra, extraType }: AnalysisBlockProps) => {
+const AnalysisBlock = ({title, description, detail, extra, extraType}: AnalysisBlockProps) => {
   return (
     <div className="flex flex-col gap-3">
       <div className="text-sm">{title}</div>
@@ -43,7 +43,7 @@ const AnalysisBlock = ({ title, description, detail, extra, extraType }: Analysi
         {extra && extraType === 'personal' && (
           <div className="flex">
             <div className="flex gap-2 flex-col bg-[rgba(0,0,0,0.06)] px-4 py-2 rounded-[8px]">
-              {(extra as PersonalExtra[]).map((item) => (
+              {(extra as PersonalExtra[]).map(item => (
                 <p key={item.label}>
                   <span>{item.label}:</span>
                   <span className="text-[rgba(0,0,0,0.4)]">{item.value}</span>
@@ -64,7 +64,7 @@ const AnalysisBlock = ({ title, description, detail, extra, extraType }: Analysi
         )}
         {extra && extraType === 'skills' && (
           <div className="flex flex-wrap gap-2">
-            {(extra as string[]).map((item) => (
+            {(extra as string[]).map(item => (
               <div className="bg-[rgba(0,0,0,0.06)] px-4 py-2 rounded-[8px]" key={item}>
                 <span className="text-[12px] text-[rgba(0,0,0,0.8)]">{item}</span>
               </div>
@@ -73,48 +73,48 @@ const AnalysisBlock = ({ title, description, detail, extra, extraType }: Analysi
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 interface ExtractedData {
-  name: string;
-  title: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin: string;
-  sponsorship: string;
+  name: string
+  title: string
+  email: string
+  phone: string
+  location: string
+  linkedin: string
+  sponsorship: string
   education: {
-    university: string;
-    degreeType: string;
-    major: string;
-    location?: string;
-  };
-  skills: string[];
+    university: string
+    degreeType: string
+    major: string
+    location?: string
+  }
+  skills: string[]
 }
 
 const ResumeCardSkeleton = () => {
   return (
     <div className="p-8 w-[353px] flex flex-col gap-2 bg-[rgba(255,255,255,0.5)] rounded-[16px]">
-      <Skeleton active avatar paragraph={{ rows: 4 }} />
+      <Skeleton active avatar paragraph={{rows: 4}} />
     </div>
-  );
-};
-
-interface ProcessingViewProps {
-  linkedinUrl?: string;
-  parseResult?: string;
-  extractedData?: Partial<ExtractedData>;
+  )
 }
 
-export default function ProcessingView({ 
-  linkedinUrl = 'https://linkedin.com/in/example', 
+interface ProcessingViewProps {
+  linkedinUrl?: string
+  parseResult?: string
+  extractedData?: Partial<ExtractedData>
+}
+
+export default function ProcessingView({
+  linkedinUrl = 'https://linkedin.com/in/example',
   parseResult = '',
-  extractedData 
+  extractedData,
 }: ProcessingViewProps) {
-  const [showSkeleton, setShowSkeleton] = useState(true);
-  const [showAnalysis, setShowAnalysis] = useState(false);
-  const t = useTranslations('HomePage');
+  const [showSkeleton, setShowSkeleton] = useState(true)
+  const [showAnalysis, setShowAnalysis] = useState(false)
+  const t = useTranslations('HomePage')
 
   // 模拟数据，实际使用时会被 extractedData 替换
   const mockData: ExtractedData = {
@@ -143,18 +143,18 @@ export default function ProcessingView({
       'Confluence',
       'AirTable',
     ],
-  };
+  }
 
   // 合并提取的数据和模拟数据
-  const displayData = { ...mockData, ...extractedData };
+  const displayData = {...mockData, ...extractedData}
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowSkeleton(false);
-    }, 2000);
+      setShowSkeleton(false)
+    }, 2000)
 
-    return () => clearTimeout(timer);
-  }, []);
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <div className="h-screen onboarding-bg flex gap-6 justify-between p-10">
@@ -178,7 +178,7 @@ export default function ProcessingView({
             <span>{linkedinUrl}</span>
           </div>
         </div>
-        
+
         <p className="text-base font-medium">
           {`I'm analyzing your resume and extracting personal background information, education background information, and skills for further analysis.`}
         </p>
@@ -187,9 +187,7 @@ export default function ProcessingView({
         {parseResult && (
           <div className="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto">
             <h3 className="text-sm font-semibold mb-2 text-gray-700">Analysis Progress:</h3>
-            <div className="text-sm text-gray-600 whitespace-pre-wrap">
-              {parseResult}
-            </div>
+            <div className="text-sm text-gray-600 whitespace-pre-wrap">{parseResult}</div>
           </div>
         )}
 
@@ -199,7 +197,7 @@ export default function ProcessingView({
             <h2 className="text-lg font-medium">Extracting resume information</h2>
             <ChevronDown
               strokeWidth={1.5}
-              onClick={() => setShowAnalysis((v) => !v)}
+              onClick={() => setShowAnalysis(v => !v)}
               className={`w-4 h-4 cursor-pointer text-[rgba(0,0,0,0.5)] transition-transform duration-200 ${
                 showAnalysis ? 'rotate-180' : ''
               }`}
@@ -214,13 +212,13 @@ export default function ProcessingView({
                 description="Extracting personal information from resume"
                 detail="Personal Details"
                 extra={[
-                  { label: 'Name', value: displayData.name },
-                  { label: 'Title', value: displayData.title },
-                  { label: 'Email', value: displayData.email },
-                  { label: 'Phone', value: displayData.phone },
-                  { label: 'Location', value: displayData.location },
-                  { label: 'LinkedIn', value: displayData.linkedin },
-                  { label: 'Sponsorship', value: displayData.sponsorship },
+                  {label: 'Name', value: displayData.name},
+                  {label: 'Title', value: displayData.title},
+                  {label: 'Email', value: displayData.email},
+                  {label: 'Phone', value: displayData.phone},
+                  {label: 'Location', value: displayData.location},
+                  {label: 'LinkedIn', value: displayData.linkedin},
+                  {label: 'Sponsorship', value: displayData.sponsorship},
                 ]}
                 extraType="personal"
               />
@@ -246,7 +244,7 @@ export default function ProcessingView({
           )}
         </div>
       </div>
-      
+
       <div>
         {showSkeleton ? (
           <ResumeCardSkeleton />
@@ -278,5 +276,5 @@ export default function ProcessingView({
         )}
       </div>
     </div>
-  );
+  )
 }

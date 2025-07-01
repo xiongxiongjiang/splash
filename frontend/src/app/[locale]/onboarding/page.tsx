@@ -172,7 +172,7 @@ export default function WelcomePage() {
             <p className="text-xs text-[rgba(0,0,0,0.5)]">.doc, .docx or .pdf, up to 20 MB.</p>
           </div>
 
-          <div className="mobile:hidden w-full tablet:flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)]">
+          <div className="mobile:hidden tablet:w-[400px] web:w-[400px] tablet:flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)]">
             <Upload {...uploadProps}>
               <Button variant="outline" className="bg-transparent">
                 <UploadIcon />
@@ -194,7 +194,7 @@ export default function WelcomePage() {
           <div className="h-[128px] w-[128px] flex justify-center items-center">
             <Image src={IconLink} alt="icon_files" width={128} height={128} />
           </div>
-          <div className="w-full flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)]">
+          <div className="flex justify-center tablet:w-[400px] web:w-[400px] py-4 mx-4 rounded-2xl bg-[rgba(235,235,235,0.5)]">
             <Input
               placeholder="https://linkedin.com/in/"
               className="!text-semibold !text-base border-0
@@ -282,65 +282,84 @@ export default function WelcomePage() {
         .is-web .ant-tabs-tab {
           font-size: 22px !important;
         }
+        .ant-tabs-content-holder {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .ant-tabs-content {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+        .ant-tabs-tabpane {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
       `}</style>
       <div className="welcome-content w-full min-h-screen flex flex-col items-center">
-        <div className="w-full">
-          <Header />
-        </div>
-        <div className="tablet:max-w-md flex-1 w-full flex flex-col items-center">
-          <div className="flex-1 px-6 tablet:px-3 tablet:flex-none text-[18px] tablet:text-[20px] text-[rgba(0,0,0,0.8)] flex flex-col gap-6">
-            <p className="font-bold">Welcome</p>
-            <p className="text-base">{`I'm Tally, your career wingman. Let's land your dream job together.`} </p>
-            <p className="font-bold">Start by sharing your LinkedIn or résumé.</p>
-          </div>
+        <Header fixed />
+        <div className="flex-1 w-full flex flex-col items-center tablet:justify-center web:justify-center tablet:pt-0 web:pt-0 mobile:pt-40 bg-[]">
+          <div className="items-start w-full flex flex-col max-w-[704px] web:flex-0 tablet:flex-0 mobile:flex-1">
+            {/* 顶部 */}
+            <div className="flex-1 px-6 tablet:px-3 tablet:flex-none text-[18px] tablet:text-[20px] text-[rgba(0,0,0,0.8)] flex flex-col gap-6">
+              <p className="font-bold">Welcome</p>
+              <p className="text-base">{`I'm Tally, your career wingman. Let's land your dream job together.`} </p>
+              <p className="font-bold">Start by sharing your LinkedIn or résumé.</p>
+            </div>
 
-          <div className="flex-1 justify-between items-center flex flex-col rounded-t-[12px] tablet:flex-none  tablet:rounded-3xl bg-[rgba(255,255,255,0.8)] tablet:mt-13 tablet:p-9 w-full tablet:shadow-sm">
-            <ConfigProvider
-              theme={{
-                components: {
-                  Tabs: {
-                    itemColor: 'rgba(0,0,0,0.3)',
-                    titleFontSize: 22,
-                    itemHoverColor: 'black',
-                    itemActiveColor: 'black',
-                    itemSelectedColor: 'black',
-                    inkBarColor: 'black',
+            {/* 中间 */}
+            <div className="max-w-[704px] flex-3 web:max-h-[100vh] tablet:max-h-[100vh] mobile:h-[480px] justify-between items-center flex flex-col rounded-t-[12px] tablet:flex-none tablet:rounded-3xl bg-[rgba(255,255,255,0.8)] mt-11 tablet:p-9 w-full tablet:shadow-sm mobile:bg-[]">
+              <ConfigProvider
+                theme={{
+                  components: {
+                    Tabs: {
+                      itemColor: 'rgba(0,0,0,0.3)',
+                      titleFontSize: 22,
+                      itemHoverColor: 'black',
+                      itemActiveColor: 'black',
+                      itemSelectedColor: 'black',
+                      inkBarColor: 'black',
+                    },
                   },
-                },
-              }}
-            >
-              <Tabs
-                defaultActiveKey={activeKey}
-                indicator={{size: 40}}
-                className="font-semibold !border-none "
-                items={items}
-                centered
-                onChange={handleTabChange}
-              />
-            </ConfigProvider>
+                }}
+              >
+                <Tabs
+                  defaultActiveKey={activeKey}
+                  indicator={{size: 40}}
+                  className="font-semibold !border-none w-full"
+                  items={items}
+                  centered
+                  onChange={handleTabChange}
+                  style={{height: deviceType === 'mobile' ? '400px' : 'auto'}}
+                />
+              </ConfigProvider>
 
-            <div className="flex tablet:mt-8 w-full justify-center gap-4 mb-10 tablet:mb-0">
-              {(fileList.length !== 0 || activeKey === 'linkedin' || deviceType !== 'mobile') && (
-                <Button
-                  className="w-[270px] tablet:w-[180px] rounded-[12px] text-base font-semibold py-[25px] disabled:bg-[rgba(0,0,0,0.2)] disabled:text-white]"
-                  onClick={handleContinue}
-                >
-                  CONTINUE
-                </Button>
-              )}
+              <div className="flex tablet:mt-8 w-full justify-center mb-10 tablet:mb-0" style={{ gap: activeKey === 'resume' ? 0 : '1rem' }}>
+                {(fileList.length !== 0 || activeKey === 'linkedin' || deviceType !== 'mobile') && (
+                  <Button
+                    className="w-[270px] tablet:w-[180px] rounded-[12px] text-base font-semibold py-[25px] disabled:bg-[rgba(0,0,0,0.2)] disabled:text-white]"
+                    onClick={handleContinue}
+                  >
+                    CONTINUE
+                  </Button>
+                )}
 
-              {/* 手机端：没有文件时显示UPLOAD RESUME，有文件时显示Continue */}
-              {activeKey === 'resume' && (
-                <>
-                  {/* 没有文件时显示UPLOAD RESUME */}
-                  <Upload {...uploadProps} key="mobile-upload">
-                    <Button className="w-[270px] rounded-[12px] tablet:hidden text-base font-semibold py-[25px]">
-                      <UploadIcon />
-                      UPLOAD RESUME
-                    </Button>
-                  </Upload>
-                </>
-              )}
+                {/* 手机端：没有文件时显示UPLOAD RESUME，有文件时显示Continue */}
+                {activeKey === 'resume' && (
+                  <>
+                    {/* 没有文件时显示UPLOAD RESUME */}
+                    <Upload {...uploadProps} key="mobile-upload">
+                      <Button className="w-[270px] rounded-[12px] tablet:hidden text-base font-semibold py-[25px]">
+                        <UploadIcon />
+                        UPLOAD RESUME
+                      </Button>
+                    </Upload>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
