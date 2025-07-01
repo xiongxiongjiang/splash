@@ -128,8 +128,8 @@ export default function WelcomePage() {
       console.log('Rendering file:', file.name, 'status:', file.status, 'isUploading:', isUploading, 'isDone:', isDone)
 
       return (
-        <div key={file.uid} className="flex w-full items-center py-2 relative group hover:bg-gray-50 rounded px-2">
-          <div className="flex w-full items-center">
+        <div key={file.uid} className="flex w-full items-center py-2 relative group rounded px-2">
+          <div className="flex w-full items-center justify-center">
             {/* 上传中显示 loading */}
             {isUploading ? (
               <span className="w-5 h-5 flex items-center justify-center mr-2">
@@ -138,7 +138,7 @@ export default function WelcomePage() {
             ) : (
               <Image src={IconTick} alt="icon_check" className="w-5 h-5 mr-2" />
             )}
-            <span className="flex-1 text-center truncate">{file.name}</span>
+            <span className="text-center truncate">{file.name}</span>
             {/* 上传成功时显示移除按钮 */}
             {isDone && (
               <button
@@ -172,17 +172,21 @@ export default function WelcomePage() {
             <p className="text-xs text-[rgba(0,0,0,0.5)]">.doc, .docx or .pdf, up to 20 MB.</p>
           </div>
 
-          <div className="mobile:hidden tablet:w-[400px] web:w-[400px] tablet:flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)]">
-            <Upload {...uploadProps}>
+          <div className="mobile:hidden tablet:w-[400px] web:w-[400px] tablet:flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)] relative mt-6">
+            <Upload {...uploadProps} style={{opacity: fileList.length === 0 ? 1 : 0}}>
               <Button variant="outline" className="bg-transparent">
                 <UploadIcon />
                 Upload resume
               </Button>
             </Upload>
+            {fileList.length !== 0 && (
+              <div className="w-full absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center">{renderFileList()}</div>
+            )}
           </div>
-          {/* 自定义文件列表渲染 */}
-          <div className="w-full">{renderFileList()}</div>
           {uploadError && <div className="w-full text-center text-base text-[#FF6767] mt-2">{uploadError}</div>}
+          {/* {(fileList.length !== 0 && deviceType === 'mobile') && (
+              <div className="w-full absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center">{renderFileList()}</div>
+          )} */}
         </div>
       ),
     },
@@ -337,8 +341,10 @@ export default function WelcomePage() {
                 />
               </ConfigProvider>
 
-              <div className="flex tablet:mt-8 w-full justify-center mb-10 tablet:mb-0" style={{ gap: activeKey === 'resume' ? 0 : '1rem' }}>
-                {(fileList.length !== 0 || activeKey === 'linkedin' || deviceType !== 'mobile') && (
+              <div className="flex tablet:mt-8 w-full justify-center mb-10 tablet:mb-0" style={{gap: activeKey === 'resume' ? 0 : '1rem'}}>
+                {((fileList.length !== 0 && (deviceType !== 'mobile' || activeKey !== 'resume')) ||
+                  activeKey === 'linkedin' ||
+                  (deviceType !== 'mobile' && activeKey === 'resume')) && (
                   <Button
                     className="w-[270px] tablet:w-[180px] rounded-[12px] text-base font-semibold py-[25px] disabled:bg-[rgba(0,0,0,0.2)] disabled:text-white]"
                     onClick={handleContinue}
@@ -347,17 +353,25 @@ export default function WelcomePage() {
                   </Button>
                 )}
 
-                {/* 手机端：没有文件时显示UPLOAD RESUME，有文件时显示Continue */}
-                {activeKey === 'resume' && (
-                  <>
-                    {/* 没有文件时显示UPLOAD RESUME */}
-                    <Upload {...uploadProps} key="mobile-upload">
+                {/* 手机端：始终保持Upload组件存在 */}
+                {activeKey === 'resume' && deviceType === 'mobile' && (
+                  <div className="relative">
+                    <Upload {...uploadProps} key="mobile-upload" style={{opacity: canContinue() ? 0 : 1}}>
                       <Button className="w-[270px] rounded-[12px] tablet:hidden text-base font-semibold py-[25px]">
                         <UploadIcon />
                         UPLOAD RESUME
                       </Button>
                     </Upload>
-                  </>
+
+                    {canContinue() && (
+                      <Button
+                        className="w-[270px] rounded-[12px] tablet:hidden text-base font-semibold py-[25px] absolute top-0 left-0"
+                        onClick={handleContinue}
+                      >
+                        CONTINUE
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
