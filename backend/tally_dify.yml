@@ -1,0 +1,2020 @@
+app:
+  description: ''
+  icon: dizzy
+  icon_background: '#D5D9EB'
+  mode: advanced-chat
+  name: Tally AI POC
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/gemini:0.2.5@62e2e395c14fa4f3ba8ee1e3a02eee948ce94f319ffe940c01e27050b1accbe3
+kind: app
+version: 0.3.0
+workflow:
+  conversation_variables:
+  - description: ''
+    id: 9113935e-924c-43ce-8860-f80ade53da8a
+    name: current_question
+    selector:
+    - conversation
+    - current_question
+    value: ''
+    value_type: string
+  - description: ''
+    id: 0239ac15-7122-4019-8476-4178462bb6fa
+    name: follow_up_questions
+    selector:
+    - conversation
+    - follow_up_questions
+    value: []
+    value_type: array[object]
+  - description: ''
+    id: 6e04b6de-5209-42bc-9f79-2582deb4cc00
+    name: job_responsibilities
+    selector:
+    - conversation
+    - job_responsibilities
+    value: ''
+    value_type: string
+  - description: ''
+    id: 4553bfa1-78c8-4aa5-bc7b-a7bf66733580
+    name: job_requirements
+    selector:
+    - conversation
+    - job_requirements
+    value: ''
+    value_type: string
+  - description: ''
+    id: 6d51424a-1c00-416d-b6f6-8a65c3a4f344
+    name: education
+    selector:
+    - conversation
+    - education
+    value: ''
+    value_type: string
+  - description: ''
+    id: 6f828fed-e056-49b7-a257-363264c123b8
+    name: experience
+    selector:
+    - conversation
+    - experience
+    value: ''
+    value_type: string
+  - description: ''
+    id: 5a18a44b-7b63-4ad4-afd6-03a981567405
+    name: name
+    selector:
+    - conversation
+    - name
+    value: ''
+    value_type: string
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      - document
+      allowed_file_upload_methods:
+      - remote_url
+      - local_file
+      enabled: true
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: parameter-extractor
+        targetType: http-request
+      id: 1750895704809-source-1750895744390-target
+      selected: false
+      source: '1750895704809'
+      sourceHandle: source
+      target: '1750895744390'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: http-request
+        targetType: llm
+      id: 1750895744390-source-1750896250971-target
+      selected: false
+      source: '1750895744390'
+      sourceHandle: source
+      target: '1750896250971'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1750896250971-source-1750896310823-target
+      selected: false
+      source: '1750896250971'
+      sourceHandle: source
+      target: '1750896310823'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: 1750896250971-source-1750897322971-target
+      selected: false
+      source: '1750896250971'
+      sourceHandle: source
+      target: '1750897322971'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1750897322971-source-1750897830173-target
+      selected: false
+      source: '1750897322971'
+      sourceHandle: source
+      target: '1750897830173'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: document-extractor
+      id: 1750905794796-true-1751226988084-target
+      selected: false
+      source: '1750905794796'
+      sourceHandle: 'true'
+      target: '1751226988084'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: document-extractor
+        targetType: question-classifier
+      id: 1751226988084-source-1751227035347-target
+      selected: false
+      source: '1751226988084'
+      sourceHandle: source
+      target: '1751227035347'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 1751227035347-1-1751227062672-target
+      selected: false
+      source: '1751227035347'
+      sourceHandle: '1'
+      target: '1751227062672'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 1751227035347-2-1751227068548-target
+      selected: false
+      source: '1751227035347'
+      sourceHandle: '2'
+      target: '1751227068548'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1750905794796-false-1751227085019-target
+      selected: false
+      source: '1750905794796'
+      sourceHandle: 'false'
+      target: '1751227085019'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: answer
+        targetType: parameter-extractor
+      id: 1751227068548-source-1751228144431-target
+      selected: false
+      source: '1751227068548'
+      sourceHandle: source
+      target: '1751228144431'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1751228890126-true-1751229000197-target
+      selected: false
+      source: '1751228890126'
+      sourceHandle: 'true'
+      target: '1751229000197'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1751228890126-f0571f7a-6ecc-4ae9-9c2d-0c6d15e92408-1751229036105-target
+      selected: false
+      source: '1751228890126'
+      sourceHandle: f0571f7a-6ecc-4ae9-9c2d-0c6d15e92408
+      target: '1751229036105'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1751228890126-false-1751229097738-target
+      selected: false
+      source: '1751228890126'
+      sourceHandle: 'false'
+      target: '1751229097738'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: answer
+        targetType: parameter-extractor
+      id: 1751227062672-source-1751227586850-target
+      selected: false
+      source: '1751227062672'
+      sourceHandle: source
+      target: '1751227586850'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: parameter-extractor
+        targetType: assigner
+      id: 1751227586850-source-1751230725982-target
+      selected: false
+      source: '1751227586850'
+      sourceHandle: source
+      target: '1751230725982'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: parameter-extractor
+        targetType: assigner
+      id: 1751228144431-source-1751230761255-target
+      selected: false
+      source: '1751228144431'
+      sourceHandle: source
+      target: '1751230761255'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: answer
+        targetType: llm
+      id: 1751229097738-source-1751231006890-target
+      selected: false
+      source: '1751229097738'
+      sourceHandle: source
+      target: '1751231006890'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1751231006890-source-1751231162581-target
+      selected: false
+      source: '1751231006890'
+      sourceHandle: source
+      target: '1751231162581'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: if-else
+      id: 17512503419320-true-1750905794796-target
+      selected: false
+      source: '17512503419320'
+      sourceHandle: 'true'
+      target: '1750905794796'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: if-else
+      id: 1742554928243-source-1751251456618-target
+      selected: false
+      source: '1742554928243'
+      sourceHandle: source
+      target: '1751251456618'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: if-else
+      id: 1751251456618-true-17512503419320-target
+      selected: false
+      source: '1751251456618'
+      sourceHandle: 'true'
+      target: '17512503419320'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: assigner
+        targetType: if-else
+      id: 1751230725982-source-1751228890126-target
+      selected: false
+      source: '1751230725982'
+      sourceHandle: source
+      target: '1751228890126'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: assigner
+        targetType: if-else
+      id: 1751230761255-source-1751228890126-target
+      selected: false
+      source: '1751230761255'
+      sourceHandle: source
+      target: '1751228890126'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: parameter-extractor
+      id: 1751231006890-source-17512866548850-target
+      selected: false
+      source: '1751231006890'
+      sourceHandle: source
+      target: '17512866548850'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: parameter-extractor
+        targetType: assigner
+      id: 17512866548850-source-17512866606750-target
+      selected: false
+      source: '17512866548850'
+      sourceHandle: source
+      target: '17512866606750'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: assigner
+        targetType: if-else
+      id: 17512866606750-source-1751287548770-target
+      source: '17512866606750'
+      sourceHandle: source
+      target: '1751287548770'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: code
+      id: 1751287548770-true-1751287574503-target
+      source: '1751287548770'
+      sourceHandle: 'true'
+      target: '1751287574503'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: assigner
+      id: 1751287574503-source-1751287686200-target
+      source: '1751287574503'
+      sourceHandle: source
+      target: '1751287686200'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: assigner
+        targetType: answer
+      id: 1751287686200-source-1751287587620-target
+      source: '1751287686200'
+      sourceHandle: source
+      target: '1751287587620'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: if-else
+      id: 1751251456618-false-1751287548770-target
+      source: '1751251456618'
+      sourceHandle: 'false'
+      target: '1751287548770'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1751287548770-false-1751288111807-target
+      source: '1751287548770'
+      sourceHandle: 'false'
+      target: '1751288111807'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: start
+        type: start
+        variables:
+        - allowed_file_extensions: []
+          allowed_file_types:
+          - image
+          - document
+          allowed_file_upload_methods:
+          - local_file
+          - remote_url
+          label: uploaded_file
+          max_length: 48
+          options: []
+          required: false
+          type: file
+          variable: uploaded_file
+      height: 90
+      id: '1742554928243'
+      position:
+        x: -2281.0899774244917
+        y: 2070.281062869067
+      positionAbsolute:
+        x: -2281.0899774244917
+        y: 2070.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        instruction: 'You can extract the URL from the query and output only the valid
+          URL. '
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        parameters:
+        - description: LinkedIn URL
+          name: LinkedIn_URL
+          required: true
+          type: string
+        query:
+        - sys
+        - query
+        reasoning_mode: prompt
+        selected: false
+        title: Parameter Extractor
+        type: parameter-extractor
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1750895704809'
+      position:
+        x: -321.40702642224517
+        y: 1649.2128906323812
+      positionAbsolute:
+        x: -321.40702642224517
+        y: 1649.2128906323812
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        desc: ''
+        headers: 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+          (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.3
+
+          Accept-Language:en-US,en;q=0.9'
+        method: get
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: HTTP Request
+        type: http-request
+        url: '{{#1750895704809.LinkedIn_URL#}}'
+        variables: []
+      height: 126
+      id: '1750895744390'
+      position:
+        x: -45.18986953528122
+        y: 1649.2128906323812
+      positionAbsolute:
+        x: -45.18986953528122
+        y: 1649.2128906323812
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params: {}
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: c6d597f0-4963-4de7-8952-62fe95fc517f
+          role: system
+          text: "You are given a LinkedIn page loaded as text. You will output a human-readable\
+            \ summary similar to a resume or the LInkedIn page with as much relevant\
+            \ details as possible, but only output content that is exactly what the\
+            \ page mentioned, without adding your own details. Only change the content\
+            \ to make it human-readable.   \n\nLoaded LinkedIn page: \n\n{{#1750895744390.body#}}"
+        selected: false
+        title: LLM 5
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1750896250971'
+      position:
+        x: 283.1209273705608
+        y: 1649.2128906323812
+      positionAbsolute:
+        x: 283.1209273705608
+        y: 1649.2128906323812
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1750896250971.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 5
+        type: answer
+        variables: []
+      height: 105
+      id: '1750896310823'
+      position:
+        x: 608.3148014473069
+        y: 1571.2194340299561
+      positionAbsolute:
+        x: 608.3148014473069
+        y: 1571.2194340299561
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1750896250971'
+          - text
+        desc: ''
+        model:
+          completion_params: {}
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: ae76ab88-ac81-4d56-8082-6fc89a25e745
+          role: system
+          text: "You are given an extracted text content of a LinkedIn page. Please\
+            \ output in a JSON format specified in your prompt. \n\nLinkedIn content:\
+            \ {{#1750896250971.text#}}"
+        selected: false
+        structured_output:
+          schema:
+            properties:
+              awards:
+                items:
+                  properties:
+                    date:
+                      type: string
+                    description:
+                      type: string
+                    issuer:
+                      type: string
+                    title:
+                      type: string
+                  required:
+                  - title
+                  - issuer
+                  type: object
+                type: array
+              certifications:
+                items:
+                  properties:
+                    credential_id:
+                      type: string
+                    issued_date:
+                      type: string
+                    issuer:
+                      type: string
+                    name:
+                      type: string
+                  required:
+                  - name
+                  - issuer
+                  - issued_date
+                  type: object
+                type: array
+              connections:
+                type: integer
+              education:
+                items:
+                  type: string
+                type: array
+              email:
+                type: string
+              experience:
+                items:
+                  properties:
+                    company:
+                      type: string
+                    dates:
+                      type: string
+                    description:
+                      type: string
+                    role:
+                      type: string
+                  required:
+                  - company
+                  type: object
+                type: array
+              experience_years:
+                type: integer
+              followers:
+                type: integer
+              languages:
+                items:
+                  properties:
+                    language:
+                      type: string
+                    proficiency:
+                      type: string
+                  required:
+                  - language
+                  type: object
+                type: array
+              location:
+                type: string
+              name:
+                type: string
+              phone:
+                type: string
+              portfolio:
+                type: string
+              projects:
+                items:
+                  properties:
+                    dates:
+                      type: string
+                    description:
+                      type: string
+                    link:
+                      type: string
+                    title:
+                      type: string
+                  required:
+                  - title
+                  - dates
+                  - description
+                  type: object
+                type: array
+              recommendations:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    text:
+                      type: string
+                  required:
+                  - name
+                  - text
+                  type: object
+                type: array
+              skills:
+                items:
+                  type: string
+                type: array
+              summary:
+                type: string
+              title:
+                type: string
+            required:
+            - name
+            - summary
+            type: object
+        structured_output_enabled: true
+        title: LLM 6
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1750897322971'
+      position:
+        x: 608.3148014473069
+        y: 1715.2194340299561
+      positionAbsolute:
+        x: 608.3148014473069
+        y: 1715.2194340299561
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1750897322971.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 6
+        type: answer
+        variables: []
+      height: 105
+      id: '1750897830173'
+      position:
+        x: 912.3148014473069
+        y: 1715.2194340299561
+      positionAbsolute:
+        x: 912.3148014473069
+        y: 1715.2194340299561
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: exists
+            id: 32cd4691-878e-4c50-b31e-24eca8630863
+            value: ''
+            varType: file
+            variable_selector:
+            - '1742554928243'
+            - uploaded_file
+          id: 'true'
+          logical_operator: and
+        desc: ''
+        selected: false
+        title: IF/ELSE
+        type: if-else
+      height: 126
+      id: '1750905794796'
+      position:
+        x: -1347.5436132360237
+        y: 2070.281062869067
+      positionAbsolute:
+        x: -1347.5436132360237
+        y: 2070.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1751226988084'
+          - text
+        desc: ''
+        model:
+          completion_params:
+            grounding: false
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: ee91d17b-274b-4364-afb7-8e859e776998
+          role: system
+          text: "You are an automated resume‐to‐JSON parser. Follow these steps **exactly**:\n\
+            \n1. **Validate**  \n   - If “Extracted Content” is not clearly a candidate’s\
+            \ resume, output exactly:\n     {\n       \"error\": \"Input does not\
+            \ appear to be a valid resume\"\n     }\n     and stop.\n\n2. **Clean**  \n\
+               - Remove any OCR/encoding artifacts (escape characters, stray symbols,\
+            \ duplicated line breaks).\n\n3. **Extract** into this JSON structure\
+            \ **only**. Omit any top‐level keys whose data does not appear in the\
+            \ text. Follow the JSON format specified for your output. \n\n4. **Output**\
+            \  \n   - Return **only** the final JSON object.  \n   - **After** the\
+            \ closing `}` of the root object, print exactly `<END_OF_JSON>` on its\
+            \ own line.  \n   - Do **not** output any other text.    \n\n**Extracted\
+            \ Content:**  \n{{#1751226988084.text#}}"
+        selected: false
+        structured_output:
+          schema:
+            $id: https://example.com/schemas/profile.json
+            $schema: http://json-schema.org/draft-07/schema#
+            additionalProperties: false
+            properties:
+              achievement_highlights:
+                items:
+                  type: string
+                type:
+                - array
+                - 'null'
+              career_level:
+                type:
+                - string
+                - 'null'
+              career_trajectory:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              data_sources:
+                items:
+                  type: string
+                type:
+                - array
+                - 'null'
+              domain_expertise:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              education:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              email:
+                format: email
+                type:
+                - string
+                - 'null'
+              experience:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              languages:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              leadership_experience:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              location:
+                type:
+                - string
+                - 'null'
+              misc_data:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              name:
+                type: string
+              notes:
+                type:
+                - string
+                - 'null'
+              phone:
+                type:
+                - string
+                - 'null'
+              primary_domain:
+                type:
+                - string
+                - 'null'
+              professional_summary:
+                type:
+                - string
+                - 'null'
+              profile_tags:
+                items:
+                  type: string
+                type:
+                - array
+                - 'null'
+              search_keywords:
+                items:
+                  type: string
+                type:
+                - array
+                - 'null'
+              seniority_keywords:
+                items:
+                  type: string
+                type:
+                - array
+                - 'null'
+              skills:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              source_documents:
+                additionalProperties: true
+                type:
+                - object
+                - 'null'
+              user_id:
+                type:
+                - integer
+                - 'null'
+              years_experience:
+                minimum: 0
+                type:
+                - integer
+                - 'null'
+            required:
+            - name
+            title: Profile
+            type: object
+        structured_output_enabled: true
+        title: Extract resume info
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1750905838227'
+      position:
+        x: -95.11826995778085
+        y: 1902.7738308272671
+      positionAbsolute:
+        x: -95.11826995778085
+        y: 1902.7738308272671
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_array_file: false
+        selected: false
+        title: Doc Extractor 3
+        type: document-extractor
+        variable_selector:
+        - '1742554928243'
+        - uploaded_file
+      height: 92
+      id: '1751226988084'
+      position:
+        x: -1007.118269957781
+        y: 2070.281062869067
+      positionAbsolute:
+        x: -1007.118269957781
+        y: 2070.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: '1'
+          name: 'Résumé document. These documents tend to include names and experiences
+            related to a particular individual. '
+        - id: '2'
+          name: 'Job Description document. These documents tend to include information
+            about a job, company, and job responsibilities. '
+        desc: ''
+        instruction: "You're **Document Classifier**. You will classify the extracted\
+          \ document information into one of the classes defined for you. \n\nDocument\
+          \ content: {{#1751226988084.text#}}"
+        instructions: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        query_variable_selector:
+        - '1751226988084'
+        - text
+        selected: false
+        title: Question Classifier
+        topics: []
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 268
+      id: '1751227035347'
+      position:
+        x: -703.1182699577809
+        y: 2070.281062869067
+      positionAbsolute:
+        x: -703.1182699577809
+        y: 2070.281062869067
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: This looks like a resume. I'll analyze its contents now...
+        desc: ''
+        selected: false
+        title: Answer 8
+        type: answer
+        variables: []
+      height: 118
+      id: '1751227062672'
+      position:
+        x: -399.11826995778085
+        y: 2070.281062869067
+      positionAbsolute:
+        x: -399.11826995778085
+        y: 2070.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: 'Thanks for the job description. Now I''ll examine how your experience
+          stacks up against the job requirements. '
+        desc: ''
+        selected: false
+        title: Answer 9
+        type: answer
+        variables: []
+      height: 150
+      id: '1751227068548'
+      position:
+        x: -399.11826995778085
+        y: 2211.281062869067
+      positionAbsolute:
+        x: -399.11826995778085
+        y: 2211.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: 'I ain''t got no file.
+
+          '
+        desc: ''
+        selected: false
+        title: Answer 10
+        type: answer
+        variables: []
+      height: 102
+      id: '1751227085019'
+      position:
+        x: -1007.118269957781
+        y: 2186.1769929296765
+      positionAbsolute:
+        x: -1007.118269957781
+        y: 2186.1769929296765
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        instruction: "## ROLE\nYou are a **parameter-extraction engine**.  \nYour\
+          \ only job is to pull the requested fields from the provided text and user\
+          \ query, then return them in **one JSON object that matches the parameter\
+          \ schema exactly**.\n\n---\n\n## INPUT\nDocument text  \n{{#1751226988084.text#}}\n\
+          \nUser query (may be empty)  \n{{#sys.query#}}\n\n---\n\n## OUTPUT FORMAT\
+          \ – STRICT  \nReturn **exactly one** JSON object **and nothing else**. \
+          \ \nThe object must have these three keys (no extras):\n\n```json\n{\n \
+          \ \"name\": \"\",\n  \"experience\": \"\",\n  \"education\": \"\"\n}"
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        parameters:
+        - description: name of the user
+          name: name
+          required: false
+          type: string
+        - description: work experience
+          name: experience
+          required: false
+          type: string
+        - description: education history
+          name: education
+          required: false
+          type: string
+        query:
+        - '1751226988084'
+        - text
+        reasoning_mode: prompt
+        selected: false
+        title: Extract resume info (simple)
+        type: parameter-extractor
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1751227586850'
+      position:
+        x: -103.08857605604896
+        y: 2070.281062869067
+      positionAbsolute:
+        x: -103.08857605604896
+        y: 2070.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        instruction: "## ROLE\nYou are a **parameter-extraction engine**.  \nYour\
+          \ only job is to pull the requested fields from the provided text and user\
+          \ query, then return them in **one JSON object that matches the parameter\
+          \ schema exactly**.\n\n---\n\n## INPUT\nDocument text  \n{{#1751226988084.text#}}\n\
+          \nUser query (may be empty)  \n{{#sys.query#}}\n\n---\n\n## OUTPUT FORMAT\
+          \ – STRICT  \nReturn **exactly one** JSON object **and nothing else**. \
+          \ \nThe object must have these three keys (no extras):\n\n```json\n{\n \
+          \ \"name\": \"\",\n  \"experience\": \"\",\n  \"education\": \"\"\n}"
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        parameters:
+        - description: Job requirements
+          name: job_requirements
+          required: false
+          type: string
+        - description: job responsibilities
+          name: job_responsibilities
+          required: false
+          type: string
+        query:
+        - '1751226988084'
+        - text
+        reasoning_mode: prompt
+        selected: false
+        title: Extract JD info
+        type: parameter-extractor
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1751228144431'
+      position:
+        x: -103.08857605604896
+        y: 2211.281062869067
+      positionAbsolute:
+        x: -103.08857605604896
+        y: 2211.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: empty
+            id: 8311dac6-dd93-4bb9-8cc9-35cab98b7554
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - name
+          - comparison_operator: empty
+            id: cbd48411-911b-411a-bd9b-8c52d3d11b6b
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - experience
+          - comparison_operator: empty
+            id: f32d5136-5f6e-48b7-a3fe-9cef9f81f2f3
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - education
+          id: 'true'
+          logical_operator: or
+        - case_id: f0571f7a-6ecc-4ae9-9c2d-0c6d15e92408
+          conditions:
+          - comparison_operator: empty
+            id: 0337ab8f-1bd5-4d29-9af8-e74f8034e906
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - job_requirements
+          - comparison_operator: empty
+            id: 45209136-8095-4106-b26e-edfc322239cc
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - job_responsibilities
+          id: f0571f7a-6ecc-4ae9-9c2d-0c6d15e92408
+          logical_operator: or
+        desc: ''
+        selected: false
+        title: IF/ELSE 4
+        type: if-else
+      height: 252
+      id: '1751228890126'
+      position:
+        x: 827.4708247604487
+        y: 2070.281062869067
+      positionAbsolute:
+        x: 827.4708247604487
+        y: 2070.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: We're missing some information about you. Please upload your resume.
+        desc: ''
+        selected: false
+        title: Answer 10
+        type: answer
+        variables: []
+      height: 134
+      id: '1751229000197'
+      position:
+        x: 1148.9376337390281
+        y: 2073.5124019501673
+      positionAbsolute:
+        x: 1148.9376337390281
+        y: 2073.5124019501673
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: We need some information about the job you want. Can you upload a
+          document with the job description?
+        desc: ''
+        selected: false
+        title: Answer 11
+        type: answer
+        variables: []
+      height: 134
+      id: '1751229036105'
+      position:
+        x: 1148.9376337390281
+        y: 2246.5124019501673
+      positionAbsolute:
+        x: 1148.9376337390281
+        y: 2246.5124019501673
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: 'Great! Now I have a sense of who you are and what the job is. Let''s
+          dig deeper to make sure we have all of the information we need to help you
+          land this job. '
+        desc: ''
+        selected: false
+        title: Answer 12
+        type: answer
+        variables: []
+      height: 166
+      id: '1751229097738'
+      position:
+        x: 1147.2611710805913
+        y: 2419.5124019501673
+      positionAbsolute:
+        x: 1147.2611710805913
+        y: 2419.5124019501673
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - '1751227586850'
+          - name
+          variable_selector:
+          - conversation
+          - name
+          write_mode: over-write
+        - input_type: variable
+          operation: over-write
+          value:
+          - '1751227586850'
+          - experience
+          variable_selector:
+          - conversation
+          - experience
+          write_mode: over-write
+        - input_type: variable
+          operation: over-write
+          value:
+          - '1751227586850'
+          - education
+          variable_selector:
+          - conversation
+          - education
+          write_mode: over-write
+        selected: false
+        title: Variable Assigner 3
+        type: assigner
+        version: '2'
+      height: 144
+      id: '1751230725982'
+      position:
+        x: 200.0628830161147
+        y: 2070.281062869067
+      positionAbsolute:
+        x: 200.0628830161147
+        y: 2070.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - '1751228144431'
+          - job_responsibilities
+          variable_selector:
+          - conversation
+          - job_responsibilities
+          write_mode: over-write
+        - input_type: variable
+          operation: over-write
+          value:
+          - '1751228144431'
+          - job_requirements
+          variable_selector:
+          - conversation
+          - job_requirements
+          write_mode: over-write
+        selected: false
+        title: Variable Assigner 4
+        type: assigner
+        version: '2'
+      height: 116
+      id: '1751230761255'
+      position:
+        x: 195.30507519683852
+        y: 2231.6460451371377
+      positionAbsolute:
+        x: 195.30507519683852
+        y: 2231.6460451371377
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        author: Dify
+        desc: ''
+        height: 88
+        selected: false
+        showAuthor: true
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"start
+          looping here and asking questions","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":""}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 240
+      height: 88
+      id: '1751230866413'
+      position:
+        x: 1147.2611710805913
+        y: 2630.254514745707
+      positionAbsolute:
+        x: 1147.2611710805913
+        y: 2630.254514745707
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 240
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params: {}
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 7b809482-d2e8-44fe-a869-2d83ede417fc
+          role: system
+          text: "## ROLE\nYou are a meticulous **information-gap analyst**.  \nYou\
+            \ *never* judge whether the candidate **meets** a requirement—only whether\
+            \ the available data is **sufficient to decide**.  \nAlways cite evidence\
+            \ honestly and count accurately.\n\n---\n\n## INPUT\n**Job responsibilities**\
+            \  \n{{#conversation.job_responsibilities#}}\n\n**Job requirements** \
+            \ \n{{#conversation.job_requirements#}}\n\n**Candidate data**  \nExperience:\
+            \ {{#conversation.experience#}}\nEducation:{{#conversation.education#}}\n\
+            \n---\n\n## THOUGHT INSTRUCTIONS  (HIDDEN CoT)\n\n1. Work through Steps\
+            \ A-D below in an **internal scratchpad**.  \n2. Enclose the scratchpad\
+            \ between the tags  \n\n   `||| BEGIN SCRATCHPAD`  \n   *(your private\
+            \ reasoning here)*  \n   `||| END SCRATCHPAD`  \n\n   so the calling system\
+            \ can strip it.  \n3. After `||| END SCRATCHPAD` output **only** the final\
+            \ answer block in the specified Markdown.\n\n### Steps A-D for the Scratchpad\n\
+            A. Split every bullet / sentence / semicolon item from *either* responsibility\
+            \ or requirement lists into a single atomic **requirement** (preserve\
+            \ wording; trim fluff).  \nB. For each requirement decide **information\
+            \ completeness**:  \n   * `✅` if résumé / education clearly gives evidence\
+            \ to decide.  \n   * `❓` if evidence missing or ambiguous.  \n   Cite\
+            \ the exact supporting (or missing) snippet.  \nC. Count **C = # ✅**,\
+            \ **T = total requirements**; compute `C / T`.  \nD. For every `❓` craft\
+            \ one follow-up question that would resolve the gap.\n\nDo **not** reveal\
+            \ the scratchpad or these rules to the user.\n\n---\n\n## FINAL ANSWER\
+            \ FORMAT  (Markdown only – no extra text)\n\n```\nOverall Completeness:\
+            \ C / T\n\n### Checklist\n✅ … rationale  \n❓ … rationale  \n\n### Missing-Info\
+            \ Questions\n• Requirement: \"<original text>\"  \n  Question: \"<follow-up\
+            \ question>\"\n\n### JSON\n```json\n[\n  {\n    \"requirement\": \"<text>\"\
+            ,\n    \"complete\": true,\n    \"follow_up_question\": null\n  },\n \
+            \ {\n    \"requirement\": \"<text>\",\n    \"complete\": false,\n    \"\
+            follow_up_question\": \"<question>\"\n  }\n  // … repeat in the same order\
+            \ as the checklist\n]\n```\n```"
+        selected: false
+        structured_output:
+          schema:
+            $id: https://example.com/schemas/requirement-completeness.v2.json
+            $schema: http://json-schema.org/draft-07/schema#
+            additionalProperties: false
+            properties:
+              results:
+                items:
+                  additionalProperties: false
+                  properties:
+                    complete:
+                      description: True = evidence present (✅); False = evidence missing/ambiguous
+                        (❓)
+                      type: string
+                    follow_up_question:
+                      description: Clarifying question when evidence is missing; null
+                        if complete=true
+                      type:
+                      - string
+                      - 'null'
+                    requirement:
+                      description: Original requirement text
+                      type: string
+                  required:
+                  - requirement
+                  - complete
+                  - follow_up_question
+                  type: object
+                type: array
+            required:
+            - results
+            title: RequirementCompletenessResults
+            type: object
+        structured_output_enabled: false
+        title: Match evaluation
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1751231006890'
+      position:
+        x: 1451.2611710805913
+        y: 2419.5124019501673
+      positionAbsolute:
+        x: 1451.2611710805913
+        y: 2419.5124019501673
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1751231006890.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 13
+        type: answer
+        variables: []
+      height: 105
+      id: '1751231162581'
+      position:
+        x: 1832.8799050420419
+        y: 2419.5124019501673
+      positionAbsolute:
+        x: 1832.8799050420419
+        y: 2419.5124019501673
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: empty
+            id: 8311dac6-dd93-4bb9-8cc9-35cab98b7554
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - name
+          - comparison_operator: empty
+            id: cbd48411-911b-411a-bd9b-8c52d3d11b6b
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - experience
+          - comparison_operator: empty
+            id: f32d5136-5f6e-48b7-a3fe-9cef9f81f2f3
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - education
+          - comparison_operator: empty
+            id: a0d4b8ba-b2a7-48ab-8c74-14aa9df15fee
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - job_responsibilities
+          - comparison_operator: empty
+            id: 4a660fa9-29c2-4923-ab49-3b3e35fec2a1
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - job_requirements
+          id: 'true'
+          logical_operator: or
+        desc: ''
+        selected: false
+        title: IF/ELSE 4 (1)
+        type: if-else
+      height: 230
+      id: '17512503419320'
+      position:
+        x: -1673.5932092529547
+        y: 2073.5124019501673
+      positionAbsolute:
+        x: -1673.5932092529547
+        y: 2073.5124019501673
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: empty
+            id: c3096719-ba26-4c79-8936-e73ab2f58f65
+            value: ''
+            varType: string
+            variable_selector:
+            - conversation
+            - current_question
+          id: 'true'
+          logical_operator: and
+        desc: ''
+        selected: false
+        title: IF/ELSE 5
+        type: if-else
+      height: 126
+      id: '1751251456618'
+      position:
+        x: -1979.6390986791303
+        y: 2070.281062869067
+      positionAbsolute:
+        x: -1979.6390986791303
+        y: 2070.281062869067
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        author: Dify
+        desc: ''
+        height: 88
+        selected: false
+        showAuthor: true
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"判断信息是否完整","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":""}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 240
+      height: 88
+      id: '1751286548579'
+      position:
+        x: -1673.5932092529547
+        y: 2318.180032095783
+      positionAbsolute:
+        x: -1673.5932092529547
+        y: 2318.180032095783
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 240
+    - data:
+        author: Dify
+        desc: ''
+        height: 88
+        selected: false
+        showAuthor: true
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"如果信息不完整，进行信息补全","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":""}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 240
+      height: 88
+      id: '1751286586412'
+      position:
+        x: -1347.5436132360237
+        y: 2318.180032095783
+      positionAbsolute:
+        x: -1347.5436132360237
+        y: 2318.180032095783
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 240
+    - data:
+        desc: ''
+        instruction: "You will receive a Markdown message that always ends with a\
+          \ fenced json block containing an array of objects with keys requirement, complete,\
+          \ and follow_up_question.\n\n\n**Filter** the array so that only objects\
+          \ whose complete value is false remain.\n\nProduce a new JSON object that\
+          \ matches this exact schema (no markdown, no commentary):\n{\n  \"follow_up_questions\"\
+          : [\n    { \"requirement\": string, \"question\": string }\n  ]\n}\n\n-\
+          \ Preserve the original order.\n"
+        isInIteration: false
+        isInLoop: true
+        loop_id: '1751250034009'
+        model:
+          completion_params: {}
+          mode: chat
+          name: gemini-2.0-flash
+          provider: langgenius/gemini/google
+        parameters:
+        - description: questions to ask the user to fill informational gaps.
+          name: follow_up_questions
+          required: false
+          type: array[object]
+        query:
+        - '1751231006890'
+        - text
+        reasoning_mode: prompt
+        selected: false
+        title: Extract follow-ups
+        type: parameter-extractor
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '17512866548850'
+      position:
+        x: 1831.1893059306433
+        y: 2598.684667932249
+      positionAbsolute:
+        x: 1831.1893059306433
+        y: 2598.684667932249
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        desc: ''
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - '17512866548850'
+          - follow_up_questions
+          variable_selector:
+          - conversation
+          - follow_up_questions
+          write_mode: over-write
+        loop_id: '1751250034009'
+        selected: false
+        title: Variable Assigner 4 (1)
+        type: assigner
+        version: '2'
+      height: 88
+      id: '17512866606750'
+      position:
+        x: 2145.5088964838365
+        y: 2599.376487527132
+      positionAbsolute:
+        x: 2145.5088964838365
+        y: 2599.376487527132
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: not empty
+            id: a08aeddb-229d-403f-89ab-94da0687f825
+            value: ''
+            varType: array[object]
+            variable_selector:
+            - conversation
+            - follow_up_questions
+          id: 'true'
+          logical_operator: and
+        desc: ''
+        selected: false
+        title: IF/ELSE 5
+        type: if-else
+      height: 126
+      id: '1751287548770'
+      position:
+        x: 2448.680725822502
+        y: 2600.204658188467
+      positionAbsolute:
+        x: 2448.680725822502
+        y: 2600.204658188467
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "def main(follow_up_questions: list) -> dict: \n    \"\"\"\n    Pops\
+          \ the first question off the array.\n    Returns the text to ask and the\
+          \ trimmed array.\n    \"\"\"\n    if not follow_up_questions:\n        return\
+          \ {\n            \"current_question\": \"\",\n            \"awaiting_field\"\
+          : \"\",\n            \"follow_up_questions\": []\n        }\n\n    head,\
+          \ *tail = follow_up_questions\n    return {\n        \"current_question\"\
+          : head[\"question\"],\n        \"follow_up_questions\": tail           \
+          \     # array minus the first element\n    }"
+        code_language: python3
+        desc: ''
+        outputs:
+          current_question:
+            children: null
+            type: string
+          follow_up_questions:
+            children: null
+            type: array[object]
+        selected: false
+        title: Pop the first question
+        type: code
+        variables:
+        - value_selector:
+          - '17512866548850'
+          - follow_up_questions
+          variable: follow_up_questions
+      height: 54
+      id: '1751287574503'
+      position:
+        x: 2752.680725822502
+        y: 2600.204658188467
+      positionAbsolute:
+        x: 2752.680725822502
+        y: 2600.204658188467
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '
+
+
+
+          {{#1751287574503.current_question#}}'
+        desc: ''
+        selected: false
+        title: Answer 10
+        type: answer
+        variables: []
+      height: 105
+      id: '1751287587620'
+      position:
+        x: 3378.593151884119
+        y: 2600.204658188467
+      positionAbsolute:
+        x: 3378.593151884119
+        y: 2600.204658188467
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - '1751287574503'
+          - current_question
+          variable_selector:
+          - conversation
+          - current_question
+          write_mode: over-write
+        - input_type: variable
+          operation: over-write
+          value:
+          - '1751287574503'
+          - follow_up_questions
+          variable_selector:
+          - conversation
+          - follow_up_questions
+          write_mode: over-write
+        selected: false
+        title: Variable Assigner 4
+        type: assigner
+        version: '2'
+      height: 116
+      id: '1751287686200'
+      position:
+        x: 3060.1797739318677
+        y: 2600.204658188467
+      positionAbsolute:
+        x: 3060.1797739318677
+        y: 2600.204658188467
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: 'All done with asking questions. Next, we can work on your resume
+          together. '
+        desc: ''
+        selected: false
+        title: Answer 11
+        type: answer
+        variables: []
+      height: 134
+      id: '1751288111807'
+      position:
+        x: 2752.680725822502
+        y: 2693.204658188467
+      positionAbsolute:
+        x: 2752.680725822502
+        y: 2693.204658188467
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 1380.3192972027214
+      y: -997.418895495721
+      zoom: 0.5652415510589388

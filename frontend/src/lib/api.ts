@@ -20,13 +20,48 @@ export interface Resume {
   name: string
   email: string
   phone?: string
-  title: string
-  experience_years: number
-  skills: string[]
-  education?: string
-  summary?: string
+  professional_summary?: string
+  years_experience: number
+  skills: { raw_skills?: string[] }
+  education: { degrees?: any[] }
   user_id?: number
   created_at: string
+}
+
+export interface Profile {
+  id: number
+  user_id: number
+  name: string
+  email?: string
+  phone?: string
+  location?: string
+  open_to_relocate?: boolean
+  professional_summary?: string
+  career_level?: string
+  years_experience?: number
+  primary_domain?: string
+  seniority_keywords?: Record<string, any>
+  experience?: Record<string, any>
+  education?: Record<string, any>
+  skills?: Record<string, any>
+  languages?: Record<string, any>
+  career_trajectory?: Record<string, any>
+  domain_expertise?: Record<string, any>
+  leadership_experience?: Record<string, any>
+  achievement_highlights?: Record<string, any>
+  source_documents?: Record<string, any>
+  processing_quality?: number
+  last_resume_update?: string
+  processing_history?: Record<string, any>
+  enhancement_status: string
+  confidence_score?: number
+  data_sources?: Record<string, any>
+  keywords?: Record<string, any>
+  completeness_metadata?: Record<string, any>
+  misc_data?: Record<string, any>
+  notes?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface ApiResponse<T> {
@@ -99,10 +134,10 @@ class ApiClient {
    * Sync user data with backend after OAuth login
    * This will create or update the user in the backend database
    */
-  async syncUser(supabaseUser: Record<string, any>): Promise<User> {
+  async syncUser(_supabaseUser: Record<string, any>): Promise<User> {
     try {
-      // First try to get existing user
-      const existingUser = await this.request<{ user: User }>(`/users/by-email/${supabaseUser.email}`)
+      // Use the /me endpoint to get current authenticated user
+      const existingUser = await this.request<{ user: User }>('/me')
       return existingUser.user
     } catch (error: any) {
       console.error('❌ User sync failed:', error)
@@ -111,12 +146,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * Get current user profile
-   */
-  async getCurrentUser(): Promise<{ user: User; message: string }> {
-    return this.request('/me')
-  }
 
   /**
    * Get user's resumes
@@ -126,78 +155,65 @@ class ApiClient {
   }
 
   /**
-   * Get all resumes (public endpoint)
+   * Get user's profile
    */
-  async getAllResumes(params?: {
-    limit?: number
-    skill?: string
-    min_experience?: number
-  }): Promise<{
-    resumes: Resume[]
-    total_in_db: number
-    returned: number
-    filters_applied: any
-    user_authenticated: boolean
-  }> {
-    const searchParams = new URLSearchParams()
-    if (params?.limit) searchParams.append('limit', params.limit.toString())
-    if (params?.skill) searchParams.append('skill', params.skill)
-    if (params?.min_experience) searchParams.append('min_experience', params.min_experience.toString())
-    
-    const endpoint = `/resumes${searchParams.toString() ? `?${searchParams}` : ''}`
-    return this.request(endpoint)
+  async getUserProfile(): Promise<{ profile: Profile | null; user_email: string; message?: string }> {
+    return this.request('/my-profile')
   }
 
   /**
-   * Get specific resume by ID
+   * Delete resume by ID
    */
-  async getResume(id: number): Promise<{ success: boolean; resume: Resume; user_authenticated: boolean }> {
-    return this.request(`/resumes/${id}`)
-  }
-
-  /**
-   * Create new resume
-   */
-  async createResume(resumeData: Omit<Resume, 'id' | 'created_at' | 'user_id'>): Promise<{
+  async deleteResume(id: number): Promise<{
     success: boolean
-    resume: Resume
     message: string
   }> {
-    return this.request('/resumes', {
-      method: 'POST',
-      body: JSON.stringify(resumeData),
+    return this.request(`/resumes/${id}`, {
+      method: 'DELETE',
     })
   }
 
   /**
-   * Search resumes by skill
+   * Parse resume PDF and create profile
    */
-  async searchResumesBySkill(skill: string): Promise<{
-    skill_searched: string
-    resumes: Resume[]
-    count: number
-    user_authenticated: boolean
+  async parseResume(file: File): Promise<{
+    success: boolean
+    profile?: any
+    error?: string
+    message?: string
   }> {
-    return this.request(`/resumes/search/skills?skill=${encodeURIComponent(skill)}`)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const url = `${this.baseUrl}/parse-resume`
+    
+    const headers: HeadersInit = {}
+
+    // Add auth header if token is available
+    if (this.token) {
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`API Error ${response.status}: ${errorText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error(`API request failed for /parse-resume:`, error)
+      throw error
+    }
   }
 
-  /**
-   * Get database statistics
-   */
-  async getStats(): Promise<{
-    total_resumes: number
-    total_users: number
-    average_experience_years: number
-  }> {
-    return this.request('/stats')
-  }
 
-  /**
-   * Test backend connection
-   */
-  async healthCheck(): Promise<{ status: string }> {
-    return this.request('/health')
-  }
 
   /**
    * Add email to waitlist
@@ -278,8 +294,23 @@ class ApiClient {
       prompt_tokens: number
       total_tokens: number
     }
+    workflow_metadata?: {
+      action?: string
+      gap_info?: any
+      attempt?: number
+      workflow_complete?: boolean
+      identified_gaps?: any[]
+    }
   }> {
-    return this.request('/chat/completions', {
+    console.log('Making chat completion request:', {
+      messages,
+      model: options?.model || 'gemini/gemini-1.5-flash',
+      temperature: options?.temperature || 0.7,
+      max_tokens: options?.max_tokens || 1000,
+      stream: options?.stream || false,
+    });
+    
+    const result = await this.request('/chat/completions', {
       method: 'POST',
       body: JSON.stringify({
         messages,
@@ -288,7 +319,10 @@ class ApiClient {
         max_tokens: options?.max_tokens || 1000,
         stream: options?.stream || false,
       })
-    })
+    });
+    
+    console.log('Chat completion response received:', result);
+    return result;
   }
 
   /**
@@ -405,4 +439,10 @@ export async function syncUserWithBackend(supabaseUser: Record<string, any>, acc
 export async function getUserResumes(accessToken: string) {
   apiClient.setToken(accessToken)
   return await apiClient.getUserResumes()
+}
+
+// Helper function to get user profile
+export async function getUserProfile(accessToken: string) {
+  apiClient.setToken(accessToken)
+  return await apiClient.getUserProfile()
 } 

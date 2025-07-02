@@ -2,7 +2,7 @@ import React from 'react';
 
 // import { Check } from 'lucide-react';
 
-import Chat from '@/components/Chat';
+import ModernChat from '@/components/ModernChat';
 // import { Button } from '@/components/ui/button';
 const MainContent: React.FC = (props) => {
   return (
@@ -97,7 +97,7 @@ const MainContent: React.FC = (props) => {
       </div> */}
 
       <div className="flex-1 overflow-y-auto scrollbar-custom">
-        <Chat />
+        <ModernChat />
       </div>
     </div>
   );

@@ -8,6 +8,9 @@ python-jose[cryptography]>=3.3.0  # JWT token verification
 python-multipart>=0.0.6
 httpx>=0.24.0
 litellm>=1.0.0  # AI model integration
+langgraph>=0.0.40  # LangGraph for resume parsing DAG
+grandalf>=0.8  # Graph visualization for LangGraph ASCII diagrams
+PyPDF2>=3.0.0  # PDF text extraction
 boto3>=1.26.0
 nanoid>=2.0.0  # AWS S3 integration
 

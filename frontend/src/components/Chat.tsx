@@ -180,12 +180,12 @@ export default function Chat() {
         <ChatContainer>
           <ConversationHeader>
             <ConversationHeader.Content
-              userName="Splash AI Assistant"
-              info="I can help you search resumes and answer questions"
+              userName="Tally AI"
+              info="Career co-pilot at your serrvice! Chat about how to improve your resume, get refeerals and land jobs"
             />
           </ConversationHeader>
 
-          <MessageList typingIndicator={isTyping ? <TypingIndicator content="Splash AI is typing" /> : null}>
+          <MessageList typingIndicator={isTyping ? <TypingIndicator content="Tally AI is typing" /> : null}>
             {messages.map((msg, index) => (
               <Message
                 key={index}

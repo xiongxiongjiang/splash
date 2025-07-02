@@ -5,7 +5,7 @@ import { Button } from 'antd';
 import { Upload, Link } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-const ChatInput: React.FC<{ handleSend: (content: string) => void }> = ({ handleSend }) => {
+const ChatInput: React.FC<{ handleSend: (content: string, attachments?: any[]) => void }> = ({ handleSend }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [value, setValue] = useState<string>('');
   const [open, setOpen] = useState(false);
@@ -26,7 +26,7 @@ const ChatInput: React.FC<{ handleSend: (content: string) => void }> = ({ handle
 
   const senderHeader = (
     <Sender.Header
-      title="附件"
+      title="Attachments"
       styles={{
         content: {
           padding: 0,
@@ -44,12 +44,12 @@ const ChatInput: React.FC<{ handleSend: (content: string) => void }> = ({ handle
         placeholder={(type) =>
           type === 'drop'
             ? {
-                title: '拖拽文件到这里',
+                title: 'Drop files here',
               }
             : {
                 icon: <Upload />,
-                title: '上传文件',
-                description: '点击或拖拽文件到此区域上传',
+                title: 'Upload files',
+                description: 'Click or drag files to this area to upload',
               }
         }
       />
@@ -82,7 +82,7 @@ const ChatInput: React.FC<{ handleSend: (content: string) => void }> = ({ handle
             );
           }}
           onSubmit={() => {
-            handleSend(value);
+            handleSend(value, items);
             setLoading(true);
             setItems([]);
             setValue('');

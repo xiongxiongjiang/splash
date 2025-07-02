@@ -7,6 +7,52 @@ set -e  # Exit on error
 
 echo "🚀 Starting Splash Backend Deployment..."
 
+# Function to validate environment variables
+validate_env_vars() {
+    echo "🔍 Validating environment variables..."
+    
+    # Read required variables from .env.local.template
+    TEMPLATE_FILE=".env.local.template"
+    if [ ! -f "$TEMPLATE_FILE" ]; then
+        echo "❌ Error: $TEMPLATE_FILE not found"
+        exit 1
+    fi
+    
+    # Extract variable names from template (lines that contain = and don't start with #)
+    REQUIRED_VARS=$(grep -E '^[^#]*=' "$TEMPLATE_FILE" | cut -d'=' -f1)
+    
+    # Check .env.local exists
+    if [ ! -f ".env.local" ]; then
+        echo "❌ Error: .env.local not found. Copy from .env.local.template and fill in values."
+        exit 1
+    fi
+    
+    # Check each required variable
+    MISSING_VARS=""
+    for var in $REQUIRED_VARS; do
+        # Get value from .env.local
+        value=$(grep "^$var=" .env.local 2>/dev/null | cut -d'=' -f2- | tr -d '"'"'"'')
+        
+        # Check if variable is missing or has placeholder value
+        if [ -z "$value" ] || [[ "$value" == *"your_"* ]] || [[ "$value" == *"YOUR_"* ]]; then
+            MISSING_VARS="$MISSING_VARS\n   - $var"
+        fi
+    done
+    
+    if [ -n "$MISSING_VARS" ]; then
+        echo "❌ Error: Missing or incomplete environment variables in .env.local:"
+        echo -e "$MISSING_VARS"
+        echo ""
+        echo "Please update .env.local with proper values before deploying."
+        exit 1
+    fi
+    
+    echo "✅ All environment variables validated"
+}
+
+# Validate environment variables first
+validate_env_vars
+
 # Check if AWS CLI is configured
 if ! aws sts get-caller-identity &> /dev/null; then
     echo "❌ Error: AWS CLI not configured. Run 'aws configure' first."
@@ -126,7 +172,10 @@ else
     echo "             \"SUPABASE_URL\": \"https://your-project-id.supabase.co\","
     echo "             \"SUPABASE_SERVICE_ROLE_KEY\": \"YOUR_SUPABASE_SERVICE_ROLE_KEY\","
     echo "             \"SUPABASE_JWT_SECRET\": \"YOUR_SUPABASE_JWT_SECRET\","
-    echo "             \"SUPABASE_AUDIENCE\": \"authenticated\""
+    echo "             \"SUPABASE_AUDIENCE\": \"authenticated\","
+    echo "             \"GEMINI_API_KEY\": \"YOUR_GEMINI_API_KEY\","
+    echo "             \"ADMIN_USERNAME\": \"admin\","
+    echo "             \"ADMIN_PASSWORD\": \"YOUR_ADMIN_PASSWORD\""
     echo "           }"
     echo "         },"
     echo "         \"ImageRepositoryType\": \"ECR\""

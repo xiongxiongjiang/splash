@@ -102,4 +102,4 @@ The project has the infrastructure set up but needs the core functionality imple
 - The MCP integration uses `fastapi_mcp` to auto-convert REST endpoints to MCP tools
 - Authentication is handled by Supabase on the frontend
 - The backend has a separate admin interface for data management
-- SQLite is used for development; consider PostgreSQL for production
+- when you make a commit, do not mention it's coauthored by you

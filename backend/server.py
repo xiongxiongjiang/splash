@@ -1,5 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException, Depends, status
-from typing import Optional
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
 import uvicorn
 import logging
 import asyncio
@@ -14,12 +13,13 @@ from fastapi_mcp import FastApiMCP
 
 # Import our modules
 from database import (
-    init_db, seed_initial_data, get_session, get_all_resumes, get_resume_by_id,
-    get_resumes_by_email, create_resume, get_database_stats, get_user_by_email, 
-    add_to_waitlist, update_waitlist_info, SupabaseSession
+    init_db, get_session,
+    get_resumes_by_email, create_resume, delete_resume, get_database_stats, 
+    add_to_waitlist, update_waitlist_info, SupabaseSession, create_profile, clear_profile, get_profile_by_user_id
 )
-from auth import get_current_user, get_optional_user, get_admin_user
-from models import User, UserRead, ResumeCreate, ResumeRead, WaitlistCreate, WaitlistUpdate, WaitlistRead
+from auth import get_current_user
+from models import User, UserRead, ResumeRead, WaitlistCreate, WaitlistUpdate, WaitlistRead, ProfileRead
+from resume_parser import parse_resume_pdf
 from admin import create_admin
 from klaviyo_integration import subscribe_to_klaviyo_from_waitlist, update_klaviyo_from_waitlist
 from middleware import custom_cors_middleware, https_redirect_middleware
@@ -29,6 +29,7 @@ from chat import (
     create_chat_completion, 
     create_chat_completion_stream
 )
+from workflows import workflow_visualizer
 from controllers import upload_router, resume_router
 
 # Setup logging
@@ -81,11 +82,23 @@ async def lifespan(app: FastAPI):
         logger.info("Starting up...")
         await init_db()
         
-        async with SupabaseSession() as session:
-            await seed_initial_data(session)
+        # Note: Seed data is now handled via .seed.sql file
+        # Run manually in Supabase dashboard when needed
         
         await asyncio.sleep(1)  # Ensure database is ready
         await initialize_mcp_server(app)
+        
+        # Generate workflow system documentation
+        logger.info("🔄 Generating workflow system documentation...")
+        
+        # Temporarily reduce logging level to avoid noise during visualization
+        original_level = logging.getLogger("workflows.workflow_visualizer").level
+        logging.getLogger("workflows.workflow_visualizer").setLevel(logging.ERROR)
+        
+        workflow_visualizer.generate_full_report()
+        
+        # Restore original logging level
+        logging.getLogger("workflows.workflow_visualizer").setLevel(original_level)
         
     except Exception as e:
         logger.error("Startup failed: %s", e)
@@ -105,6 +118,21 @@ app = FastAPI(
     version=APP_VERSION,
     lifespan=lifespan
 )
+
+# ==================== ENDPOINT ORGANIZATION ====================
+# 
+# PUBLIC ENDPOINTS: No authentication required
+# BASIC CRUD ENDPOINTS: Basic user/profile/resume operations (most MCP exposed)
+# HIGH LEVEL WORKFLOW ENDPOINTS: AI-powered workflows (select endpoints MCP exposed)
+# ADMIN ENDPOINTS: Admin interface (not MCP exposed)
+# CHAT ENDPOINTS: AI chat with function calling (MCP enabled)
+#
+# MCP Exposure Policy:
+# - Basic CRUD operations: Exposed for chat agent access
+# - Analysis/gap identification: Exposed for chat agent access  
+# - File uploads: Not exposed (handled via direct API calls)
+# - Generation endpoints: Not exposed (called directly by frontend)
+# ====================================================================
 
 # Add middleware
 app.middleware("http")(custom_cors_middleware)
@@ -240,79 +268,10 @@ async def update_waitlist_info_endpoint(
     return WaitlistRead.model_validate(waitlist_entry)
 
 
-# ==================== RESUME ENDPOINTS ====================
+# ==================== BASIC CRUD ENDPOINTS ====================
 
-@app.get("/resumes", response_model=dict, operation_id="search_all_resumes")
-async def search_resumes(
-    limit: Optional[int] = Query(None, ge=1, description="Maximum number of resumes to return"),
-    skill: Optional[str] = Query(None, description="Filter by skill"),
-    min_experience: Optional[int] = Query(None, ge=0, description="Minimum years of experience"),
-    current_user: Optional[User] = Depends(get_optional_user),
-    session: SupabaseSession = Depends(get_session)
-):
-    """Get a list of resumes with optional filtering and limiting."""
-    logger.info("GET /resumes - limit=%s, skill=%s, min_experience=%s", limit, skill, min_experience)
-    logger.info("User: %s", current_user.email if current_user else "Anonymous")
-    
-    resumes = await get_all_resumes(session, limit=limit, skill=skill, min_experience=min_experience)
-    stats = await get_database_stats(session)
-    
-    return {
-        "resumes": [ResumeRead.model_validate(resume) for resume in resumes],
-        "total_in_db": stats["total_resumes"],
-        "returned": len(resumes),
-        "filters_applied": {
-            "skill": skill,
-            "min_experience": min_experience,
-            "limit": limit
-        },
-        "user_authenticated": current_user is not None
-    }
+# Basic user and data management endpoints (MCP exposed)
 
-
-@app.get("/resumes/{resume_id}", operation_id="get_resume_details")
-async def get_resume_details(
-    resume_id: int,
-    current_user: Optional[User] = Depends(get_optional_user),
-    session: SupabaseSession = Depends(get_session)
-):
-    """Get a specific resume by ID."""
-    logger.info("GET /resumes/%d", resume_id)
-    
-    resume = await get_resume_by_id(session, resume_id)
-    if not resume:
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Resume with ID {resume_id} not found"
-        )
-    
-    return {
-        "success": True, 
-        "resume": ResumeRead.model_validate(resume),
-        "user_authenticated": current_user is not None
-    }
-
-
-@app.get("/resumes/search/skills", operation_id="find_resumes_by_skill")
-async def find_resumes_by_skill(
-    skill: str = Query(..., description="Skill to search for"),
-    current_user: Optional[User] = Depends(get_optional_user),
-    session: SupabaseSession = Depends(get_session)
-):
-    """Search resumes by skill."""
-    logger.info("GET /resumes/search/skills - skill=%s", skill)
-    
-    resumes = await get_all_resumes(session, skill=skill)
-    
-    return {
-        "skill_searched": skill,
-        "resumes": [ResumeRead.model_validate(resume) for resume in resumes],
-        "count": len(resumes),
-        "user_authenticated": current_user is not None
-    }
-
-
-# ==================== PROTECTED ENDPOINTS ====================
 
 @app.get("/me", response_model=dict, operation_id="get_current_user_info")
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
@@ -340,80 +299,261 @@ async def get_user_resumes(
     }
 
 
-@app.post("/resumes", response_model=dict, operation_id="create_resume")
-async def create_new_resume(
-    resume_data: ResumeCreate,
+@app.get("/my-profile", response_model=dict, operation_id="get_user_profile")
+async def get_user_profile(
     current_user: User = Depends(get_current_user),
     session: SupabaseSession = Depends(get_session)
 ):
-    """Create a new resume. Requires authentication."""
-    logger.info("POST /resumes for user: %s", current_user.email)
+    """Get profile for the current user. Requires authentication."""
+    logger.info("GET /my-profile for user: %s", current_user.email)
     
-    # Convert ResumeCreate to dict and add user_id
-    resume_dict = resume_data.model_dump()
-    resume_dict["user_id"] = current_user.id
+    profile = await get_profile_by_user_id(session, current_user.id)
     
-    created_resume = await create_resume(session, resume_dict)
+    if profile:
+        return {
+            "profile": ProfileRead.model_validate(profile),
+            "user_email": current_user.email
+        }
+    else:
+        return {
+            "profile": None,
+            "user_email": current_user.email,
+            "message": "No profile found for user"
+        }
+
+
+@app.delete("/resumes/{resume_id}", operation_id="delete_resume")
+async def delete_resume_endpoint(
+    resume_id: int,
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Delete a resume by ID. Requires authentication and ownership."""
+    logger.info("DELETE /resumes/%d for user: %s", resume_id, current_user.email)
+    
+    success = await delete_resume(session, resume_id, current_user.id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Resume not found or you don't have permission to delete it"
+        )
     
     return {
         "success": True,
-        "resume": ResumeRead.model_validate(created_resume),
-        "message": "Resume created successfully"
+        "message": "Resume deleted successfully"
     }
 
 
-@app.get("/users/by-email/{email}", operation_id="get_user_by_email")
-async def get_user_by_email_endpoint(
-    email: str,
+@app.delete("/clear-profile", operation_id="clear_profile")
+async def clear_profile_endpoint(
     current_user: User = Depends(get_current_user),
     session: SupabaseSession = Depends(get_session)
 ):
-    """Get user information by email. Requires authentication."""
-    # Security check: users can only access their own data, admins can access anyone's
-    if current_user.email != email and current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only access your own user information"
-        )
+    """Clear user's profile and all associated resumes (for testing/reset). Requires authentication."""
+    logger.info("DELETE /clear-profile for user: %s", current_user.email)
     
-    user = await get_user_by_email(session, email)
-    if not user:
-        raise HTTPException(
-            status_code=404, 
-            detail=f"User with email {email} not found"
-        )
+    success = await clear_profile(session, current_user.id)
     
-    resumes = await get_resumes_by_email(session, email)
-    
-    return {
-        "user": UserRead.model_validate(user),
-        "resumes": [ResumeRead.model_validate(resume) for resume in resumes],
-        "resume_count": len(resumes)
-    }
+    if success:
+        return {
+            "success": True,
+            "message": "Profile and all associated resumes cleared successfully"
+        }
+    else:
+        return {
+            "success": True,
+            "message": "No profile found to clear"
+        }
 
 
-# ==================== ADMIN ENDPOINTS ====================
-
-@app.get("/admin/users", operation_id="get_all_users")
-async def get_all_users_admin(
-    admin_user: User = Depends(get_admin_user)
+@app.patch("/my-profile", response_model=dict, operation_id="update_user_profile")
+async def update_user_profile(
+    profile_updates: dict,
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
 ):
-    """Get all users (admin only)."""
-    logger.info("GET /admin/users by admin: %s", admin_user.email)
+    """Update user's profile with provided changes. Requires authentication."""
+    logger.info("PATCH /my-profile for user: %s", current_user.email)
+    raise NotImplementedError("Profile updating not yet implemented")
+
+
+@app.patch("/my-resumes/{resume_id}", response_model=dict, operation_id="update_resume")
+async def update_resume(
+    resume_id: int,
+    resume_updates: dict,
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Update a specific resume with provided changes. Requires authentication and ownership."""
+    logger.info("PATCH /my-resumes/%d for user: %s", resume_id, current_user.email)
+    raise NotImplementedError("Resume updating not yet implemented")
+
+
+# ==================== HIGH LEVEL WORKFLOW ENDPOINTS ====================
+
+# Advanced AI-powered workflows (select endpoints MCP exposed)
+
+
+@app.post("/parse-job-posting", response_model=dict, operation_id="parse_job_posting")
+async def parse_job_posting(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Parse uploaded job posting PDF and extract requirements, responsibilities, and qualifications."""
+    logger.info("POST /parse-job-posting for user: %s", current_user.email)
+    raise NotImplementedError("Job posting parsing not yet implemented")
+
+
+@app.get("/identify-profile-gaps", response_model=dict, operation_id="identify_profile_gaps")
+async def identify_profile_gaps(
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Analyze user's profile to identify missing skills, experience gaps, and improvement areas."""
+    logger.info("GET /identify-profile-gaps for user: %s", current_user.email)
+    raise NotImplementedError("Profile gap analysis not yet implemented")
+
+
+@app.post("/identify-gaps-per-job", response_model=dict, operation_id="identify_gaps_per_job")
+async def identify_gaps_per_job(
+    job_posting_id: int,
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Compare user's profile against a specific job posting to identify skill/experience gaps."""
+    logger.info("POST /identify-gaps-per-job job=%d for user: %s", job_posting_id, current_user.email)
+    raise NotImplementedError("Job-specific gap analysis not yet implemented")
+
+
+@app.post("/generate-resume", response_model=dict, operation_id="generate_resume")
+async def generate_resume(
+    job_posting_id: int,
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Generate a customized resume tailored to a specific job posting. Validates no critical gaps exist."""
+    logger.info("POST /generate-resume job=%d for user: %s", job_posting_id, current_user.email)
+    raise NotImplementedError("Resume generation not yet implemented")
+
+
+@app.post("/generate-referral", response_model=dict, operation_id="generate_referral")
+async def generate_referral(
+    job_posting_id: int,
+    referrer_info: dict,
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Generate personalized referral request message for a specific job and referrer. Validates profile completeness."""
+    logger.info("POST /generate-referral job=%d for user: %s", job_posting_id, current_user.email)
+    raise NotImplementedError("Referral generation not yet implemented")
+
+
+@app.get("/get-context", response_model=dict, operation_id="get_context")
+async def get_context(
+    job_posting_id: int = None,
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Get relevant context data including user profile, job details (if provided), and static reference data."""
+    logger.info("GET /get-context job=%s for user: %s", job_posting_id, current_user.email)
+    raise NotImplementedError("Context retrieval not yet implemented")
+
+
+@app.post("/parse-resume", response_model=dict, operation_id="parse_resume")
+async def parse_resume_endpoint(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Parse uploaded resume PDF and create profile. Requires authentication."""
+    logger.info("POST /parse-resume for user: %s", current_user.email)
     
-    # TODO: Implement get_all_users function in database module
-    return {
-        "message": "Admin endpoint - would return all users",
-        "admin_user": admin_user.email,
-        "note": "This endpoint needs implementation in the database module"
-    }
+    # Validate file type
+    if not file.content_type == "application/pdf":
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are supported"
+        )
+    
+    try:
+        # Read PDF content
+        pdf_bytes = await file.read()
+        
+        # Parse resume using LLM DAG
+        parse_result = await parse_resume_pdf(pdf_bytes)
+        
+        if not parse_result["success"]:
+            return {
+                "success": False,
+                "error": parse_result["error"]
+            }
+        
+        # Create profile from parsed data
+        parsed_data = parse_result["profile"]
+        
+        # Convert parsed resume data to profile format
+        profile_data = {
+            "name": parsed_data.get("name"),
+            "email": parsed_data.get("email"),
+            "phone": parsed_data.get("phone"),
+            "location": parsed_data.get("location"),
+            "professional_summary": parsed_data.get("summary"),
+            "years_experience": len(parsed_data.get("experience", [])),
+            "skills": {"raw_skills": parsed_data.get("skills", [])},
+            "experience": {"jobs": parsed_data.get("experience", [])},
+            "education": {"degrees": parsed_data.get("education", [])},
+            "languages": {"spoken": parsed_data.get("languages", [])},
+            "source_documents": {"original_resume": file.filename},
+            "processing_quality": 0.85,  # Default quality score
+            "user_id": current_user.id,
+            "enhancement_status": "basic",
+            "data_sources": {"sources": ["resume_upload"]}
+        }
+        
+        # Create profile in database
+        profile = await create_profile(session, profile_data)
+        
+        # Also create a resume entry for backward compatibility with dashboard
+        resume_data = {
+            "name": parsed_data.get("name"),
+            "email": parsed_data.get("email"),
+            "phone": parsed_data.get("phone"),
+            "professional_summary": parsed_data.get("summary"),
+            "years_experience": len(parsed_data.get("experience", [])),
+            "skills": {"raw_skills": parsed_data.get("skills", [])},
+            "education": {"degrees": parsed_data.get("education", [])},
+            "user_id": current_user.id
+        }
+        
+        resume = await create_resume(session, resume_data)
+        
+        return {
+            "success": True,
+            "profile": ProfileRead.model_validate(profile),
+            "resume": ResumeRead.model_validate(resume),
+            "message": "Resume parsed and saved successfully"
+        }
+        
+    except Exception as e:
+        import traceback
+        logger.error("Error parsing resume: %s", e)
+        logger.error("Full traceback: %s", traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse resume: {str(e)}"
+        )
 
 
 # ==================== CHAT ENDPOINTS ====================
 
+# AI chat completions with function calling (MCP enabled)
+
 @app.post("/chat/completions", operation_id="create_chat_completion")
 async def create_chat_completion_endpoint(
     request: ChatCompletionRequest,
+    current_user: User = Depends(get_current_user),
     session: SupabaseSession = Depends(get_session)
 ):
     """Create a chat completion with function calling support"""
@@ -424,7 +564,7 @@ async def create_chat_completion_endpoint(
         import json
         
         async def generate_stream():
-            async for chunk in create_chat_completion_stream(request, session):
+            async for chunk in create_chat_completion_stream(request, session, current_user):
                 yield f"data: {json.dumps(chunk)}\n\n"
             yield "data: [DONE]\n\n"
         
@@ -438,7 +578,7 @@ async def create_chat_completion_endpoint(
             }
         )
     
-    response = await create_chat_completion(request, session)
+    response = await create_chat_completion(request, session, current_user)
     return response
 
 
@@ -451,11 +591,11 @@ async def list_chat_models():
             {
                 "id": "gemini/gemini-1.5-flash",
                 "object": "model",
-                "created": 1677610602,
+                "created": 1640995200,
                 "owned_by": "google",
-                "permission": [],
                 "root": "gemini/gemini-1.5-flash",
-                "parent": None
+                "parent": None,
+                "permission": []
             }
         ]
     }

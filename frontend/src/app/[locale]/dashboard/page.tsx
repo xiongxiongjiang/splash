@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import Chat from '@/components/Chat';
+import ModernChat from '@/components/ModernChat';
+import ResumeUpload from '@/components/ResumeUpload';
 
 import { syncUserWithBackend, getUserResumes, apiClient, User, Resume } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
@@ -16,6 +17,17 @@ interface DashboardState {
   isLoading: boolean;
   error: string | null;
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
+  showOnboarding: boolean;
+}
+
+interface ParsedResume {
+  name: string;
+  email: string;
+  phone?: string;
+  professional_summary: string;
+  years_experience: number;
+  skills: { raw_skills?: string[] };
+  education: { degrees?: any[] };
 }
 
 export default function DashboardPage() {
@@ -29,6 +41,7 @@ export default function DashboardPage() {
     isLoading: true,
     error: null,
     syncStatus: 'idle',
+    showOnboarding: false,
   });
 
   useEffect(() => {
@@ -82,12 +95,14 @@ export default function DashboardPage() {
             ...prev,
             resumes: resumesData.resumes,
             isLoading: false,
+            showOnboarding: resumesData.resumes.length === 0,
           }));
         } catch (resumeError: any) {
           setState((prev) => ({
             ...prev,
             resumes: [],
             isLoading: false,
+            showOnboarding: true,
           }));
         }
       } catch (error) {
@@ -113,6 +128,94 @@ export default function DashboardPage() {
   const handleCreateResume = () => {
     // TODO: Navigate to resume creation page
   };
+
+  const handleClearProfile = async () => {
+    if (!confirm('Are you sure you want to clear your profile and all resumes? This action cannot be undone.')) {
+      return;
+    }
+
+    setState((prev) => ({ ...prev, isLoading: true }));
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Clear profile and all associated resumes
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clear-profile`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to clear profile');
+      }
+      
+      // Reset to onboarding state
+      setState((prev) => ({
+        ...prev,
+        resumes: [],
+        isLoading: false,
+        showOnboarding: true,
+      }));
+      
+      console.log('✅ Profile cleared successfully');
+    } catch (error) {
+      console.error('Error clearing profile:', error);
+      setState((prev) => ({
+        ...prev,
+        error: 'Failed to clear profile',
+        isLoading: false,
+      }));
+    }
+  };
+
+  const handleResumeUploadSuccess = async (parsedResume: ParsedResume) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Refetch resumes from backend to get the newly created one
+      try {
+        const resumesData = await getUserResumes(session.access_token);
+        setState((prev) => ({
+          ...prev,
+          resumes: resumesData.resumes,
+          showOnboarding: false,
+        }));
+      } catch (resumeError) {
+        // If fetching fails, add to local state temporarily
+        const newResume: Resume = {
+          id: Date.now(), // Temporary ID
+          name: parsedResume.name,
+          email: parsedResume.email,
+          phone: parsedResume.phone,
+          professional_summary: parsedResume.professional_summary,
+          years_experience: parsedResume.years_experience,
+          skills: parsedResume.skills,
+          education: parsedResume.education,
+          user_id: state.backendUser?.id,
+          created_at: new Date().toISOString(),
+        };
+
+        setState((prev) => ({
+          ...prev,
+          resumes: [newResume],
+          showOnboarding: false,
+        }));
+      }
+
+      console.log('✅ Resume uploaded successfully');
+    } catch (error) {
+      console.error('Error handling resume upload:', error);
+    }
+  };
+
+  // Show onboarding flow if no resumes and not loading
+  if (state.showOnboarding && !state.isLoading) {
+    return <ResumeUpload onSuccess={handleResumeUploadSuccess} />;
+  }
 
   if (state.isLoading) {
     return (
@@ -190,12 +293,24 @@ export default function DashboardPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">Your Resumes</h2>
-              <button
-                onClick={handleCreateResume}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                + Create Resume
-              </button>
+              <div className="flex gap-2">
+                {state.resumes.length > 0 && (
+                  <button
+                    onClick={handleClearProfile}
+                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    Clear Profile
+                  </button>
+                )}
+                {state.resumes.length === 0 && (
+                  <button
+                    onClick={handleCreateResume}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    + Create Resume
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -226,21 +341,21 @@ export default function DashboardPage() {
 
                     <div className="space-y-2 mb-4">
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Title:</span> {resume.title}
+                        <span className="font-medium">Summary:</span> {resume.professional_summary?.slice(0, 50) || 'Professional'}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Experience:</span> {resume.experience_years} years
+                        <span className="font-medium">Experience:</span> {resume.years_experience} years
                       </p>
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Email:</span> {resume.email}
                       </p>
                     </div>
 
-                    {resume.skills && resume.skills.length > 0 && (
+                    {resume.skills?.raw_skills && resume.skills.raw_skills.length > 0 && (
                       <div className="mb-4">
                         <p className="text-sm font-medium text-gray-700 mb-2">Skills:</p>
                         <div className="flex flex-wrap gap-1">
-                          {resume.skills.slice(0, 3).map((skill, index) => (
+                          {resume.skills.raw_skills.slice(0, 3).map((skill, index) => (
                             <span
                               key={index}
                               className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
@@ -248,9 +363,9 @@ export default function DashboardPage() {
                               {skill}
                             </span>
                           ))}
-                          {resume.skills.length > 3 && (
+                          {resume.skills.raw_skills.length > 3 && (
                             <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
-                              +{resume.skills.length - 3} more
+                              +{resume.skills.raw_skills.length - 3} more
                             </span>
                           )}
                         </div>
@@ -288,7 +403,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium text-gray-600">Avg Experience</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {state.resumes.length > 0
-                      ? Math.round(state.resumes.reduce((sum, r) => sum + r.experience_years, 0) / state.resumes.length)
+                      ? Math.round(state.resumes.reduce((sum, r) => sum + r.years_experience, 0) / state.resumes.length)
                       : 0}{' '}
                     years
                   </p>
@@ -302,7 +417,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Unique Skills</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {new Set(state.resumes.flatMap((r) => r.skills || [])).size}
+                    {new Set(state.resumes.flatMap((r) => r.skills?.raw_skills || [])).size}
                   </p>
                 </div>
               </div>
@@ -317,8 +432,8 @@ export default function DashboardPage() {
               <h2 className="text-xl font-semibold text-gray-900">AI Assistant</h2>
               <p className="text-sm text-gray-600 mt-1">Ask questions about resumes or get help with your job search</p>
             </div>
-            <div className="p-6">
-              <Chat />
+            <div className="p-6 h-[800px]">
+              <ModernChat resumes={state.resumes} />
             </div>
           </div>
         </div>

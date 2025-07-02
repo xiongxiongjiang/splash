@@ -10,11 +10,9 @@ services:
       - ./backend:/app
       - backend-data:/app/data
     environment:
-      - DATABASE_URL=postgresql+asyncpg://splash:splash@postgres:5432/splash
       - PYTHONPATH=/app
       - RELOAD_FLAG=--reload
       - LOG_LEVEL=debug
-      - GEMINI_API_KEY=AIzaSyD1WlO2hJMzDZx2jqlNOzee4J7yuccvYUs
     networks:
       - splash-network
     healthcheck:

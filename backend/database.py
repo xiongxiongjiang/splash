@@ -171,9 +171,25 @@ async def get_resume_by_id(session: SupabaseSession, resume_id: int) -> Optional
         return None
 
 async def get_resumes_by_email(session: SupabaseSession, email: str) -> List[Dict[str, Any]]:
-    """Get resumes by email"""
+    """Get resumes by user email (V2 schema: user → profile → resumes)"""
     try:
-        result = session.client.table('resumes').select('*').eq('email', email).order('created_at', desc=True).execute()
+        # First get the user by email
+        user_result = session.client.table('users').select('*').eq('email', email).execute()
+        if not user_result.data:
+            return []
+        
+        user_id = user_result.data[0]['id']
+        
+        # Get profile by user_id
+        profile_result = session.client.table('profiles_v2').select('id').eq('user_id', user_id).execute()
+        
+        if not profile_result.data:
+            return []  # No profile means no resumes
+        
+        profile_id = profile_result.data[0]['id']
+        
+        # Then get resumes by profile_id
+        result = session.client.table('resumes_v2').select('*').eq('profile_id', profile_id).order('created_at', desc=True).execute()
         
         resumes = []
         for record in result.data:
@@ -184,24 +200,68 @@ async def get_resumes_by_email(session: SupabaseSession, email: str) -> List[Dic
         logger.error(f"Error getting resumes by email: {e}")
         return []
 
-async def create_resume(session: SupabaseSession, resume_data: dict) -> Dict[str, Any]:
-    """Create a new resume"""
+async def get_resumes_by_user_id(session: SupabaseSession, user_id: int) -> List[Dict[str, Any]]:
+    """Get resumes by user ID"""
     try:
-        # Prepare data for Supabase
+        result = session.client.table('resumes').select('*').eq('user_id', user_id).order('created_at', desc=True).execute()
+        
+        resumes = []
+        for record in result.data:
+            resumes.append(_convert_supabase_record_to_dict(record))
+        
+        return resumes
+    except Exception as e:
+        logger.error(f"Error getting resumes by user_id: {e}")
+        return []
+
+async def create_resume(session: SupabaseSession, resume_data: dict) -> Dict[str, Any]:
+    """Create a new resume (V2 schema)"""
+    try:
+        # For backward compatibility, if user_id is provided, convert to profile_id
+        if 'user_id' in resume_data and 'profile_id' not in resume_data:
+            profile = await get_profile_by_user_id(session, resume_data['user_id'])
+            if not profile:
+                raise Exception(f"No profile found for user_id {resume_data['user_id']}")
+            profile_id = profile['id']
+        else:
+            profile_id = resume_data.get('profile_id')
+            
+        if not profile_id:
+            raise Exception("profile_id is required for creating resume")
+        
+        # Prepare data for Supabase V2 schema
         insert_data = {
             'name': resume_data['name'],
-            'email': resume_data['email'],
+            'email': resume_data.get('email'),
             'phone': resume_data.get('phone'),
-            'title': resume_data.get('title'),
-            'experience_years': resume_data.get('experience_years'),
+            'location': resume_data.get('location'),
+            'professional_summary': resume_data.get('professional_summary'),
+            'career_level': resume_data.get('career_level'),
+            'years_experience': resume_data.get('years_experience'),
+            'primary_domain': resume_data.get('primary_domain'),
+            'seniority_keywords': resume_data.get('seniority_keywords'),
+            'experience': resume_data.get('experience'),
             'education': resume_data.get('education'),
-            'summary': resume_data.get('summary'),
-            'skills': resume_data.get('skills', []),
-            'user_id': resume_data.get('user_id'),
-            'created_at': datetime.now().isoformat()
+            'skills': resume_data.get('skills'),
+            'languages': resume_data.get('languages'),
+            'career_trajectory': resume_data.get('career_trajectory'),
+            'domain_expertise': resume_data.get('domain_expertise'),
+            'leadership_experience': resume_data.get('leadership_experience'),
+            'achievement_highlights': resume_data.get('achievement_highlights'),
+            'source_documents': resume_data.get('source_documents'),
+            'misc_data': resume_data.get('misc_data'),
+            'file_path': resume_data.get('file_path'),
+            'file_type': resume_data.get('file_type', 'generated'),
+            'version': resume_data.get('version', 1),
+            'is_active': resume_data.get('is_active', True),
+            'customization_notes': resume_data.get('customization_notes'),
+            'job_posting_id': resume_data.get('job_posting_id'),
+            'profile_id': profile_id,
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
         }
         
-        result = session.client.table('resumes').insert(insert_data).execute()
+        result = session.client.table('resumes_v2').insert(insert_data).execute()
         
         if result.data:
             return _convert_supabase_record_to_dict(result.data[0])
@@ -209,6 +269,128 @@ async def create_resume(session: SupabaseSession, resume_data: dict) -> Dict[str
             raise Exception("Failed to create resume")
     except Exception as e:
         logger.error(f"Error creating resume: {e}")
+        raise
+
+async def delete_resume(session: SupabaseSession, resume_id: int, user_id: int) -> bool:
+    """Delete a resume by ID (only if it belongs to the user) - V2 schema"""
+    try:
+        # Get user's profile first
+        profile = await get_profile_by_user_id(session, user_id)
+        if not profile:
+            return False  # No profile for user
+            
+        profile_id = profile['id']
+        
+        # Check if resume exists and belongs to user's profile
+        result = session.client.table('resumes_v2').select('*').eq('id', resume_id).eq('profile_id', profile_id).execute()
+        
+        if not result.data:
+            return False  # Resume not found or doesn't belong to user's profile
+        
+        # Delete the resume
+        delete_result = session.client.table('resumes_v2').delete().eq('id', resume_id).eq('profile_id', profile_id).execute()
+        
+        return len(delete_result.data) > 0
+    except Exception as e:
+        logger.error(f"Error deleting resume: {e}")
+        raise
+
+# Profile CRUD operations
+async def create_profile(session: SupabaseSession, profile_data: dict) -> Dict[str, Any]:
+    """Create a new profile"""
+    try:
+        # Prepare data for Supabase V2 schema
+        insert_data = {
+            'name': profile_data['name'],
+            'email': profile_data.get('email'),
+            'phone': profile_data.get('phone'),
+            'location': profile_data.get('location'),
+            'open_to_relocate': profile_data.get('open_to_relocate', False),
+            'professional_summary': profile_data.get('professional_summary'),
+            'career_level': profile_data.get('career_level'),
+            'years_experience': profile_data.get('years_experience'),
+            'primary_domain': profile_data.get('primary_domain'),
+            'seniority_keywords': profile_data.get('seniority_keywords'),
+            'experience': profile_data.get('experience'),
+            'education': profile_data.get('education'),
+            'skills': profile_data.get('skills'),
+            'languages': profile_data.get('languages'),
+            'career_trajectory': profile_data.get('career_trajectory'),
+            'domain_expertise': profile_data.get('domain_expertise'),
+            'leadership_experience': profile_data.get('leadership_experience'),
+            'achievement_highlights': profile_data.get('achievement_highlights'),
+            'source_documents': profile_data.get('source_documents'),
+            'processing_quality': profile_data.get('processing_quality'),
+            'last_resume_update': profile_data.get('last_resume_update'),
+            'processing_history': profile_data.get('processing_history'),
+            'enhancement_status': profile_data.get('enhancement_status', 'basic'),
+            'confidence_score': profile_data.get('confidence_score'),
+            'data_sources': profile_data.get('data_sources'),
+            'keywords': profile_data.get('keywords'),  # Simplified from search_keywords and profile_tags
+            'completeness_metadata': profile_data.get('completeness_metadata'),
+            'misc_data': profile_data.get('misc_data'),
+            'notes': profile_data.get('notes'),
+            'user_id': profile_data['user_id'],  # Required field
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
+        }
+        
+        result = session.client.table('profiles_v2').insert(insert_data).execute()
+        
+        if result.data:
+            return _convert_supabase_record_to_dict(result.data[0])
+        else:
+            raise Exception("Failed to create profile")
+    except Exception as e:
+        logger.error(f"Error creating profile: {e}")
+        raise
+
+async def get_profile_by_user_id(session: SupabaseSession, user_id: int) -> Optional[Dict[str, Any]]:
+    """Get profile by user ID"""
+    try:
+        result = session.client.table('profiles_v2').select('*').eq('user_id', user_id).execute()
+        if result.data:
+            return _convert_supabase_record_to_dict(result.data[0])
+        return None
+    except Exception as e:
+        logger.error(f"Error getting profile by user_id: {e}")
+        return None
+
+async def update_profile(session: SupabaseSession, profile_id: int, profile_data: dict) -> Optional[Dict[str, Any]]:
+    """Update an existing profile"""
+    try:
+        update_data = {**profile_data, 'updated_at': datetime.now().isoformat()}
+        
+        result = session.client.table('profiles_v2').update(update_data).eq('id', profile_id).execute()
+        
+        if result.data:
+            return _convert_supabase_record_to_dict(result.data[0])
+        return None
+    except Exception as e:
+        logger.error(f"Error updating profile: {e}")
+        return None
+
+async def clear_profile(session: SupabaseSession, user_id: int) -> bool:
+    """Delete user's profile and all associated resumes (for testing/reset functionality)"""
+    try:
+        # Get user's profile
+        profile = await get_profile_by_user_id(session, user_id)
+        if not profile:
+            return True  # No profile to clear
+            
+        profile_id = profile['id']
+        
+        # Delete all resumes associated with the profile (CASCADE should handle this automatically)
+        # But let's be explicit for clarity
+        resumes_result = session.client.table('resumes_v2').delete().eq('profile_id', profile_id).execute()
+        logger.info(f"Deleted {len(resumes_result.data) if resumes_result.data else 0} resumes for profile {profile_id}")
+        
+        # Delete the profile
+        profile_result = session.client.table('profiles_v2').delete().eq('id', profile_id).execute()
+        
+        return len(profile_result.data) > 0
+    except Exception as e:
+        logger.error(f"Error clearing profile: {e}")
         raise
 
 # Waitlist CRUD operations
@@ -274,23 +456,28 @@ async def update_waitlist_info(session: SupabaseSession, email: str, new_info: d
 
 # Statistics
 async def get_database_stats(session: SupabaseSession) -> dict:
-    """Get database statistics"""
+    """Get database statistics (V2 schema)"""
     try:
-        # Count resumes
-        resume_result = session.client.table('resumes').select('id', count='exact').execute()
+        # Count resumes (V2)
+        resume_result = session.client.table('resumes_v2').select('id', count='exact').execute()
         total_resumes = resume_result.count or 0
         
-        # Count users
+        # Count profiles (V2)
+        profile_result = session.client.table('profiles_v2').select('id', count='exact').execute()
+        total_profiles = profile_result.count or 0
+        
+        # Count users (unchanged)
         user_result = session.client.table('users').select('id', count='exact').execute()
         total_users = user_result.count or 0
         
-        # Get average experience (this is more complex with Supabase, so we'll calculate it)
-        resumes_result = session.client.table('resumes').select('experience_years').is_('experience_years', 'not.null').execute()
-        experience_values = [r['experience_years'] for r in resumes_result.data if r['experience_years'] is not None]
+        # Get average experience from profiles (V2)
+        profiles_result = session.client.table('profiles_v2').select('years_experience').is_('years_experience', 'not.null').execute()
+        experience_values = [r['years_experience'] for r in profiles_result.data if r['years_experience'] is not None]
         avg_experience = sum(experience_values) / len(experience_values) if experience_values else 0
         
         return {
             "total_resumes": total_resumes,
+            "total_profiles": total_profiles,
             "total_users": total_users,
             "average_experience_years": round(float(avg_experience), 1)
         }
@@ -298,89 +485,10 @@ async def get_database_stats(session: SupabaseSession) -> dict:
         logger.error(f"Error getting database stats: {e}")
         return {
             "total_resumes": 0,
+            "total_profiles": 0,
             "total_users": 0,
             "average_experience_years": 0
         }
 
-# Seed data
-async def seed_initial_data(session: SupabaseSession):
-    """Seed the database with initial sample data"""
-    try:
-        # Check if we already have data
-        result = session.client.table('resumes').select('id', count='exact').execute()
-        count = result.count or 0
-        
-        if count > 0:
-            logger.info("Database already contains data, skipping seed")
-            return
-        
-        # Sample resumes data
-        sample_resumes = [
-            {
-                "name": "Peiyun Zeng",
-                "email": "cdzengpeiyun@gmail.com",
-                "phone": "(555) 100-2024",
-                "title": "Full Stack Engineer",
-                "experience_years": 5,
-                "skills": ["Python", "FastAPI", "React", "TypeScript", "Next.js", "SQLModel", "Supabase", "AWS"],
-                "education": "BS Computer Science - University of Technology",
-                "summary": "Passionate full-stack engineer with expertise in modern web technologies and backend systems. Experience building scalable applications with Python, React, and cloud technologies."
-            },
-            {
-                "name": "John Doe",
-                "email": "john.doe@email.com",
-                "phone": "(555) 123-4567",
-                "title": "Senior Software Engineer",
-                "experience_years": 8,
-                "skills": ["Python", "JavaScript", "React", "FastAPI", "PostgreSQL"],
-                "education": "BS Computer Science - Stanford University",
-                "summary": "Experienced full-stack developer with expertise in Python and modern web technologies."
-            },
-            {
-                "name": "Jane Smith",
-                "email": "jane.smith@email.com",
-                "phone": "(555) 987-6543",
-                "title": "Product Manager",
-                "experience_years": 6,
-                "skills": ["Product Strategy", "Agile", "Data Analysis", "SQL", "Figma"],
-                "education": "MBA - Harvard Business School",
-                "summary": "Results-driven product manager with proven track record of launching successful products."
-            },
-            {
-                "name": "Mike Johnson",
-                "email": "mike.johnson@email.com",
-                "phone": "(555) 456-7890",
-                "title": "UX Designer",
-                "experience_years": 4,
-                "skills": ["UI/UX Design", "Figma", "Adobe Creative Suite", "User Research", "Prototyping"],
-                "education": "BFA Design - Art Center College of Design",
-                "summary": "Creative UX designer focused on user-centered design and accessibility."
-            },
-            {
-                "name": "Sarah Wilson",
-                "email": "sarah.wilson@email.com",
-                "phone": "(555) 321-9876",
-                "title": "Data Scientist",
-                "experience_years": 5,
-                "skills": ["Python", "Machine Learning", "TensorFlow", "SQL", "Statistics"],
-                "education": "PhD Statistics - MIT",
-                "summary": "Data scientist specializing in machine learning and predictive analytics."
-            },
-            {
-                "name": "David Chen",
-                "email": "david.chen@email.com",
-                "phone": "(555) 654-3210",
-                "title": "DevOps Engineer",
-                "experience_years": 7,
-                "skills": ["AWS", "Docker", "Kubernetes", "Terraform", "Python", "CI/CD"],
-                "education": "BS Computer Engineering - UC Berkeley",
-                "summary": "DevOps engineer with expertise in cloud infrastructure and automation."
-            }
-        ]
-        
-        for resume_data in sample_resumes:
-            await create_resume(session, resume_data)
-        
-        logger.info(f"Seeded database with {len(sample_resumes)} sample resumes") 
-    except Exception as e:
-        logger.error(f"Error seeding data: {e}") 
+# Note: Seed data is now handled via .seed.sql file
+# Run the .seed.sql file manually in Supabase dashboard or via psql when needed 

@@ -2,64 +2,72 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-class ResumeBase(BaseModel):
-    # Core Identity (same as profile)
+class ProfileBase(BaseModel):
+    # Core Identity
     name: str
     email: Optional[str] = None
     phone: Optional[str] = None
     location: Optional[str] = None
+    open_to_relocate: Optional[bool] = False
     
-    # Career Profile (same as profile)
+    # Career Profile
     professional_summary: Optional[str] = None
     career_level: Optional[str] = None
     years_experience: Optional[int] = None
     primary_domain: Optional[str] = None
     
-    # JSON fields for flexible data storage (same as profile)
+    # JSON fields for flexible data storage
     seniority_keywords: Optional[Dict[str, Any]] = None
     experience: Optional[Dict[str, Any]] = None
     education: Optional[Dict[str, Any]] = None
     skills: Optional[Dict[str, Any]] = None
     languages: Optional[Dict[str, Any]] = None
     
-    # Enhanced Profile Data (same as profile)
+    # Enhanced Profile Data
     career_trajectory: Optional[Dict[str, Any]] = None
     domain_expertise: Optional[Dict[str, Any]] = None
     leadership_experience: Optional[Dict[str, Any]] = None
     achievement_highlights: Optional[Dict[str, Any]] = None
     
-    # Resume specific fields
-    source_documents: Optional[Dict[str, Any]] = None  # references to profile version used
+    # Resume Processing Metadata
+    source_documents: Optional[Dict[str, Any]] = None
+    processing_quality: Optional[float] = None
+    last_resume_update: Optional[datetime] = None
+    processing_history: Optional[Dict[str, Any]] = None
+    
+    # Profile Enhancement Tracking
+    enhancement_status: str = "basic"
+    confidence_score: Optional[float] = None
+    data_sources: Optional[Dict[str, Any]] = None
+    
+    # Search & Discovery (simplified from search_keywords and profile_tags)
+    keywords: Optional[Dict[str, Any]] = None
+    
+    # Profile Completeness Tracking
+    completeness_metadata: Optional[Dict[str, Any]] = None
+    
+    # Misc
     misc_data: Optional[Dict[str, Any]] = None
-    
-    # File storage (local for now, S3 later)
-    file_path: Optional[str] = None  # local path to generated/uploaded PDF (will become S3 URL)
-    file_type: str = "generated"  # generated, uploaded
-    
-    # Resume metadata
-    version: int = 1  # for tracking resume versions
-    is_active: bool = True
-    customization_notes: Optional[str] = None  # notes about customizations for specific job
+    notes: Optional[str] = None
 
-class Resume(ResumeBase):
+class Profile(ProfileBase):
     model_config = ConfigDict(from_attributes=True)
     
     id: int
-    profile_id: int
-    job_posting_id: Optional[int] = None  # optional link to specific job posting
+    user_id: int
     created_at: datetime
     updated_at: datetime
 
-class ResumeCreate(BaseModel):
+class ProfileCreate(BaseModel):
     # Required fields for creation
     name: str
-    profile_id: int
+    user_id: int
     
     # Optional fields for creation
-    job_posting_id: Optional[int] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     location: Optional[str] = None
+    open_to_relocate: Optional[bool] = False
     professional_summary: Optional[str] = None
     career_level: Optional[str] = None
     years_experience: Optional[int] = None
@@ -74,19 +82,23 @@ class ResumeCreate(BaseModel):
     leadership_experience: Optional[Dict[str, Any]] = None
     achievement_highlights: Optional[Dict[str, Any]] = None
     source_documents: Optional[Dict[str, Any]] = None
+    processing_quality: Optional[float] = None
+    processing_history: Optional[Dict[str, Any]] = None
+    enhancement_status: str = "basic"
+    confidence_score: Optional[float] = None
+    data_sources: Optional[Dict[str, Any]] = None
+    keywords: Optional[Dict[str, Any]] = None
+    completeness_metadata: Optional[Dict[str, Any]] = None
     misc_data: Optional[Dict[str, Any]] = None
-    file_path: Optional[str] = None
-    file_type: str = "generated"
-    version: int = 1
-    is_active: bool = True
-    customization_notes: Optional[str] = None
+    notes: Optional[str] = None
 
-class ResumeUpdate(BaseModel):
+class ProfileUpdate(BaseModel):
     # All fields optional for updates
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     location: Optional[str] = None
+    open_to_relocate: Optional[bool] = None
     professional_summary: Optional[str] = None
     career_level: Optional[str] = None
     years_experience: Optional[int] = None
@@ -101,12 +113,15 @@ class ResumeUpdate(BaseModel):
     leadership_experience: Optional[Dict[str, Any]] = None
     achievement_highlights: Optional[Dict[str, Any]] = None
     source_documents: Optional[Dict[str, Any]] = None
+    processing_quality: Optional[float] = None
+    processing_history: Optional[Dict[str, Any]] = None
+    enhancement_status: Optional[str] = None
+    confidence_score: Optional[float] = None
+    data_sources: Optional[Dict[str, Any]] = None
+    keywords: Optional[Dict[str, Any]] = None
+    completeness_metadata: Optional[Dict[str, Any]] = None
     misc_data: Optional[Dict[str, Any]] = None
-    file_path: Optional[str] = None
-    file_type: Optional[str] = None
-    version: Optional[int] = None
-    is_active: Optional[bool] = None
-    customization_notes: Optional[str] = None
+    notes: Optional[str] = None
 
-class ResumeRead(Resume):
+class ProfileRead(Profile):
     pass
