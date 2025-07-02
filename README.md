@@ -53,3 +53,4 @@ This monorepo deploys frontend and backend as separate services:
 ## 🔧 Manual Setup (Optional)
 
 For development without Docker, see [Local Development Guide](./local_dev_guide.md). 
+
