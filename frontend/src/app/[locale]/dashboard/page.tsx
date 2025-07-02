@@ -9,6 +9,7 @@ import ResumeUpload from '@/components/ResumeUpload';
 
 import { syncUserWithBackend, getUserResumes, apiClient, User, Resume } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
+import { ParsedResume } from '@/lib/types';
 
 interface DashboardState {
   supabaseUser: Record<string, any> | null;
@@ -18,16 +19,6 @@ interface DashboardState {
   error: string | null;
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
   showOnboarding: boolean;
-}
-
-interface ParsedResume {
-  name: string;
-  email: string;
-  phone?: string;
-  professional_summary: string;
-  years_experience: number;
-  skills: { raw_skills?: string[] };
-  education: { degrees?: any[] };
 }
 
 export default function DashboardPage() {

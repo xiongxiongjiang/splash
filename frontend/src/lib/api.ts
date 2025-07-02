@@ -3,6 +3,8 @@
  * Handles user sync and resume management
  */
 
+import { ChatCompletionResponse } from './types';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface User {
@@ -274,34 +276,7 @@ class ApiClient {
     temperature?: number
     max_tokens?: number
     stream?: boolean
-  }): Promise<{
-    id: string
-    object: string
-    created: number
-    model: string
-    choices: Array<{
-      finish_reason: string
-      index: number
-      message: {
-        content: string
-        role: string
-        tool_calls: any
-        function_call: any
-      }
-    }>
-    usage: {
-      completion_tokens: number
-      prompt_tokens: number
-      total_tokens: number
-    }
-    workflow_metadata?: {
-      action?: string
-      gap_info?: any
-      attempt?: number
-      workflow_complete?: boolean
-      identified_gaps?: any[]
-    }
-  }> {
+  }): Promise<ChatCompletionResponse> {
     console.log('Making chat completion request:', {
       messages,
       model: options?.model || 'gemini/gemini-1.5-flash',
@@ -310,7 +285,7 @@ class ApiClient {
       stream: options?.stream || false,
     });
     
-    const result = await this.request('/chat/completions', {
+    const result = await this.request<ChatCompletionResponse>('/chat/completions', {
       method: 'POST',
       body: JSON.stringify({
         messages,

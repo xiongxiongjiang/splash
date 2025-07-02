@@ -5,17 +5,7 @@ import { Upload, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-reac
 import { useRouter, useParams } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
-
-interface ParsedResume {
-  name: string;
-  email: string;
-  phone?: string;
-  title: string;
-  experience_years: number;
-  skills: string[];
-  education?: string;
-  summary?: string;
-}
+import { ParsedResume } from '@/lib/types';
 
 interface ResumeUploadProps {
   onSuccess?: (parsedResume: ParsedResume) => void;
@@ -53,11 +43,10 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
             name: profile.name,
             email: profile.email,
             phone: profile.phone,
-            title: profile.professional_summary || 'Professional',
-            experience_years: profile.years_experience || 0,
-            skills: profile.skills?.raw_skills || [],
-            education: profile.education?.degrees?.[0]?.degree || '',
-            summary: profile.professional_summary || ''
+            professional_summary: profile.professional_summary || 'Professional',
+            years_experience: profile.years_experience || 0,
+            skills: profile.skills || { raw_skills: [] },
+            education: profile.education || { degrees: [] }
           }
         };
       } else {
