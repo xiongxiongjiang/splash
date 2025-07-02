@@ -189,7 +189,7 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Upload Your Resume</h1>
           <p className="text-gray-600">
-            Let's get started by uploading your resume. We'll analyze it and help you create personalized applications.
+            Let&apos;s get started by uploading your resume. We&apos;ll analyze it and help you create personalized applications.
           </p>
         </div>
 
