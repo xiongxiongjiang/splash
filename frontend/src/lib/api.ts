@@ -358,12 +358,18 @@ class ApiClient {
   /**
    * Parse resume from URL using streaming response
    */
-  async parseResume(fileUrl: string): Promise<ReadableStream<Uint8Array>> {
+  async parseResumeFromUrl(fileUrl: string): Promise<ReadableStream<Uint8Array>> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`
+    }
+
     const response = await fetch(`${this.baseUrl}/resume-parse`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ file_url: fileUrl })
     })
 
@@ -389,7 +395,7 @@ class ApiClient {
     onError?: (error: Error) => void
   ): Promise<void> {
     try {
-      const stream = await this.parseResume(fileUrl)
+      const stream = await this.parseResumeFromUrl(fileUrl)
       const reader = stream.getReader()
       const decoder = new TextDecoder()
 
