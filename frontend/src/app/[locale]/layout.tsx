@@ -5,6 +5,7 @@ import AntdClientProvider from '../antdClientProvider'
 
 import {routing} from '@/i18n/routing'
 import {Metadata} from 'next'
+import VideoBackground from '@/components/VideoBackground'
 
 export const metadata: Metadata = {
   title: 'Tally.ai - Your career copilot',
@@ -42,6 +43,7 @@ export default async function LocaleLayout({children, params}: {children: React.
 
   return (
     <NextIntlClientProvider>
+      <VideoBackground />
       <AntdClientProvider>{children}</AntdClientProvider>
     </NextIntlClientProvider>
   )
