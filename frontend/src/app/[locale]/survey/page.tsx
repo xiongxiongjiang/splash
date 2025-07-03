@@ -1,31 +1,31 @@
-'use client';
+'use client'
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, {useEffect, useState, useRef} from 'react'
 
-import { Alert, ConfigProvider } from 'antd';
-import gsap from 'gsap';
-import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
-import { CircleCheck } from 'lucide-react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import {Alert, ConfigProvider} from 'antd'
+import gsap from 'gsap'
+import {ChevronDownIcon, ChevronUpIcon} from 'lucide-react'
+import {CircleCheck} from 'lucide-react'
+import Image from 'next/image'
+import {useRouter} from 'next/navigation'
 
-import Header from '@/components/Header';
-import LandingPageBg from '@/components/LandingPageBg';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import Header from '@/components/Header'
+import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form'
+import {Input} from '@/components/ui/input'
 
-import ErrorIcon from '@/assets/images/icon_erro_info.svg';
-import IconLoading from '@/assets/images/icon_loading.svg';
-import TallyLogo from '@/assets/logos/tally_logo.svg';
-import { useSurvey } from '@/hooks/useSurvey';
+import ErrorIcon from '@/assets/images/icon_erro_info.svg'
+import IconLoading from '@/assets/images/icon_loading.svg'
+import TallyLogo from '@/assets/logos/tally_logo.svg'
+import {useSurvey} from '@/hooks/useSurvey'
+import VideoBackground from '@/components/VideoBackground'
 
 interface SurveySubmitButtonProps {
-  type?: 'submit' | 'button';
-  disabled?: boolean;
-  isLoading?: boolean;
-  onClick?: () => void;
-  className?: string;
-  children?: React.ReactNode;
+  type?: 'submit' | 'button'
+  disabled?: boolean
+  isLoading?: boolean
+  onClick?: () => void
+  className?: string
+  children?: React.ReactNode
 }
 
 const SurveySubmitButton: React.FC<SurveySubmitButtonProps> = ({
@@ -49,7 +49,7 @@ const SurveySubmitButton: React.FC<SurveySubmitButtonProps> = ({
     disabled:text-white
     disabled:cursor-not-allowed
     flex-1 tablet:flex-none
-  `;
+  `
 
   return (
     <button
@@ -63,28 +63,28 @@ const SurveySubmitButton: React.FC<SurveySubmitButtonProps> = ({
         {children}
       </span>
     </button>
-  );
-};
+  )
+}
 
 interface StepConfig {
-  title: string;
-  description: string;
-  placeholder: string;
-  fieldName: 'email' | 'linkedin';
-  inputType: 'email' | 'url';
-  onSubmit: (values: any) => Promise<void>;
-  form: any;
-  watchField: string;
-  showError?: boolean;
-  error?: string | null;
-  buttonText?: string;
-  onTransition: (nextStep: number) => void;
-  btnLoading?: boolean;
-  setBtnLoading?: React.Dispatch<React.SetStateAction<boolean>>;
+  title: string
+  description: string
+  placeholder: string
+  fieldName: 'email' | 'linkedin'
+  inputType: 'email' | 'url'
+  onSubmit: (values: any) => Promise<void>
+  form: any
+  watchField: string
+  showError?: boolean
+  error?: string | null
+  buttonText?: string
+  onTransition: (nextStep: number) => void
+  btnLoading?: boolean
+  setBtnLoading?: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export default function SurveyPage() {
-  const router = useRouter();
+  const router = useRouter()
   const {
     isSubmitting,
     isTransitioning, // 我们将用它来防止动画期间的重复点击
@@ -96,73 +96,64 @@ export default function SurveyPage() {
     submitLinkedin,
     handleStepTransition: originalHandleStepTransition,
     storeEmail,
-  } = useSurvey();
+  } = useSurvey()
 
-  const [loading, setLoading] = useState(true);
-  const errorRef = useRef<HTMLDivElement>(null);
-  const [emailBtnLoading, setEmailBtnLoading] = useState(false);
-  const [linkedinBtnLoading, setLinkedinBtnLoading] = useState(false);
-  // 添加状态用于控制 LandingPageBg 的显示
-  const [showBg, setShowBg] = useState(true);
+  const [loading, setLoading] = useState(true)
+  const errorRef = useRef<HTMLDivElement>(null)
+  const [emailBtnLoading, setEmailBtnLoading] = useState(false)
+  const [linkedinBtnLoading, setLinkedinBtnLoading] = useState(false)
 
   // 新增：一个 ref 用于指向动画容器
-  const stepContainerRef = useRef<HTMLDivElement>(null);
+  const stepContainerRef = useRef<HTMLDivElement>(null)
   // 新增：一个 ref 用于跟踪上一步，以判断动画方向
-  const prevStepRef = useRef(0);
+  const prevStepRef = useRef(0)
   // 动画移动距离，使用具体的像素值
-  const animationDistance = '142px';
+  const animationDistance = '142px'
 
   useEffect(() => {
     if (storeEmail) {
-      emailForm.reset({ email: storeEmail });
+      emailForm.reset({email: storeEmail})
     }
     const timeout = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [storeEmail, emailForm]);
+      setLoading(false)
+    }, 1000)
+    return () => clearTimeout(timeout)
+  }, [storeEmail, emailForm])
 
   useEffect(() => {
     if (error && errorRef.current) {
-      gsap.fromTo(errorRef.current, { y: -80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' });
+      gsap.fromTo(errorRef.current, {y: -80, opacity: 0}, {y: 0, opacity: 1, duration: 0.6, ease: 'power2.out'})
     } else if (!error && errorRef.current) {
-      gsap.to(errorRef.current, { y: -80, opacity: 0, duration: 0.6, ease: 'power2.in' });
+      gsap.to(errorRef.current, {y: -80, opacity: 0, duration: 0.6, ease: 'power2.in'})
     }
-  }, [error]);
+  }, [error])
 
   // **核心动画逻辑**
   // 1. 入场动画: 每当 currentStep 变化后执行
   useEffect(() => {
-    const container = stepContainerRef.current;
+    const container = stepContainerRef.current
     if (container) {
       // 首次加载动画
       if (prevStepRef.current === 0) {
-        gsap.fromTo(
-          container,
-          { y: animationDistance, opacity: 0 },
-          { y: '0%', opacity: 1, duration: 0.4, ease: 'ease.in' },
-        );
+        gsap.fromTo(container, {y: animationDistance, opacity: 0}, {y: '0%', opacity: 1, duration: 0.4, ease: 'ease.in'})
       } else {
         // 后续切换的入场动画
         // 当步骤增加时（如1->2），新元素从下方进入（正值）
         // 当步骤减少时（如2->1），新元素从上方进入（负值）
-        const direction = currentStep > prevStepRef.current ? 'forward' : 'backward';
-        const startY = direction === 'forward' ? animationDistance : `-${animationDistance}`;
-        gsap.fromTo(container, { y: startY, opacity: 0 }, { y: '0%', opacity: 1, duration: 0.4, ease: 'ease.out' });
+        const direction = currentStep > prevStepRef.current ? 'forward' : 'backward'
+        const startY = direction === 'forward' ? animationDistance : `-${animationDistance}`
+        gsap.fromTo(container, {y: startY, opacity: 0}, {y: '0%', opacity: 1, duration: 0.4, ease: 'ease.out'})
       }
     }
-  }, [currentStep]); // 依赖 currentStep
+  }, [currentStep]) // 依赖 currentStep
 
   // 2. 出场动画: 点击按钮时触发
   const handleTransition = (nextStep: number) => {
-    if (isTransitioning || !stepContainerRef.current) return;
+    if (isTransitioning || !stepContainerRef.current) return
     // 当步骤增加时（如1->2），当前元素向上退出（负值）
     // 当步骤减少时（如2->1），当前元素向下退出（正值）
-    const direction = nextStep > currentStep ? 'forward' : 'backward';
-    const exitY = direction === 'forward' ? `-${animationDistance}` : animationDistance;
-
-    // 在动画开始前隐藏背景，减少页面卡顿
-    setShowBg(false);
+    const direction = nextStep > currentStep ? 'forward' : 'backward'
+    const exitY = direction === 'forward' ? `-${animationDistance}` : animationDistance
 
     // 执行出场动画
     gsap.to(stepContainerRef.current, {
@@ -172,27 +163,22 @@ export default function SurveyPage() {
       ease: 'ease.in',
       onComplete: () => {
         // 动画结束后，更新 prevStep 并切换真正的 state
-        prevStepRef.current = currentStep;
-        originalHandleStepTransition(nextStep);
-
-        // 动画完成后，延迟一小段时间再显示背景
-        setTimeout(() => {
-          setShowBg(true);
-        }, 400);
+        prevStepRef.current = currentStep
+        originalHandleStepTransition(nextStep)
       },
-    });
-  };
+    })
+  }
 
   if (loading) {
     return (
       <>
-        {showBg && <LandingPageBg />}
+        <VideoBackground />
         <div className="min-h-screen w-full flex items-center justify-center gap-2">
           <Image src={TallyLogo} alt="Tally Logo" width={24} height={24} />
           <span className="font-bold text-[28px] chroma-animate-once">Tally AI</span>
         </div>
       </>
-    );
+    )
   }
 
   // renderStep 函数现在接收 onTransition prop
@@ -201,19 +187,15 @@ export default function SurveyPage() {
     <div className={`flex-1 h-full flex flex-col justify-center`}>
       <div className="flex-1 justify-start tablet:pt-0 tablet:justify-center flex flex-col gap-[50px]">
         <div className="space-y-4">
-          <h2 className="tablet:text-[32px] text-[24px] font-medium tablet:font-semibold text-[rgba(0,0,0,0.8)]">
-            {config.title}
-          </h2>
-          <p className="text-[rgba(0,0,0,0.4)] text-base font-medium tablet:font-normal tablet:text-[20px]">
-            {config.description}
-          </p>
+          <h2 className="tablet:text-[32px] text-[24px] font-medium tablet:font-semibold text-[rgba(0,0,0,0.8)]">{config.title}</h2>
+          <p className="text-[rgba(0,0,0,0.4)] text-base font-medium tablet:font-normal tablet:text-[20px]">{config.description}</p>
         </div>
         <Form {...config.form} key={`${config.fieldName}-form`}>
           <form onSubmit={config.form.handleSubmit(config.onSubmit)} className=" flex flex-col justify-center">
             <FormField
               control={config.form.control}
               name={config.fieldName}
-              render={({ field }) => (
+              render={({field}) => (
                 <FormItem>
                   <FormControl>
                     <Input
@@ -236,12 +218,12 @@ export default function SurveyPage() {
             disabled={isSubmitting || !config.form.watch(config.watchField)}
             className="h-[44px]"
             onClick={async () => {
-              const setLoading = config.fieldName === 'email' ? setEmailBtnLoading : setLinkedinBtnLoading;
-              setLoading(true);
+              const setLoading = config.fieldName === 'email' ? setEmailBtnLoading : setLinkedinBtnLoading
+              setLoading(true)
               try {
-                await config.form.handleSubmit(config.onSubmit)();
+                await config.form.handleSubmit(config.onSubmit)()
               } finally {
-                setLoading(false);
+                setLoading(false)
               }
             }}
           >
@@ -250,7 +232,7 @@ export default function SurveyPage() {
         </div>
       </div>
     </div>
-  );
+  )
 
   // renderStep1, renderStep2, renderStep3 定义保持不变，但要传入 onTransition
   const renderStep1 = () => {
@@ -262,12 +244,12 @@ export default function SurveyPage() {
       inputType: 'email',
       onSubmit: async (values: any) => {
         try {
-          await submitEmail(values);
+          await submitEmail(values)
           // 只有在成功提交后才触发动画切换
-          handleTransition(2);
+          handleTransition(2)
         } catch (error) {
           // 错误处理已经在 submitEmail 中完成
-          console.error('Submit email error:', error);
+          console.error('Submit email error:', error)
         }
       },
       form: emailForm,
@@ -276,8 +258,8 @@ export default function SurveyPage() {
       btnLoading: emailBtnLoading,
       setBtnLoading: setEmailBtnLoading,
       onTransition: handleTransition, // 传入动画函数
-    });
-  };
+    })
+  }
 
   const renderStep2 = () => {
     return renderStep({
@@ -288,10 +270,10 @@ export default function SurveyPage() {
       inputType: 'url',
       onSubmit: async (values: any) => {
         try {
-          await submitLinkedin(values);
-          handleTransition(3);
+          await submitLinkedin(values)
+          handleTransition(3)
         } catch (error) {
-          console.error('Submit linkedin error:', error);
+          console.error('Submit linkedin error:', error)
         }
       },
       form: linkedinForm,
@@ -301,15 +283,11 @@ export default function SurveyPage() {
       btnLoading: linkedinBtnLoading,
       setBtnLoading: setLinkedinBtnLoading,
       onTransition: () => handleTransition(3),
-    });
-  };
+    })
+  }
 
   const renderStep3 = () => (
-    <div
-      className={`transition-all duration-300 mb-[35%] ${
-        isTransitioning ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
-      }`}
-    >
+    <div className={`transition-all duration-300 mb-[35%] ${isTransitioning ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}`}>
       <div className="space-y-2 flex flex-col items-center">
         <h2 className="text-[24px] font-semibold text-[rgba(0,0,0,0.8)] tablet:text-[32px] flex items-center gap-2">
           <CircleCheck size={32} color="#00b900" />
@@ -325,24 +303,24 @@ export default function SurveyPage() {
         </SurveySubmitButton>
       </div>
     </div>
-  );
+  )
 
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 1:
-        return renderStep1();
+        return renderStep1()
       case 2:
-        return renderStep2();
+        return renderStep2()
       case 3:
-        return renderStep3();
+        return renderStep3()
       default:
-        return renderStep1();
+        return renderStep1()
     }
-  };
+  }
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center transparent">
-      {showBg && <LandingPageBg />}
+      <VideoBackground />
       <div className="w-full">
         <Header showBackButton={true} fixed={true} />
       </div>
@@ -390,8 +368,7 @@ export default function SurveyPage() {
             </button>
           </div>
         )}
-
       </div>
     </div>
-  );
+  )
 }

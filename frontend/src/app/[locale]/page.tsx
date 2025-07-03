@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { useEffect, useRef, useState } from 'react';
+import {useEffect, useRef, useState} from 'react'
 
-import { gsap } from 'gsap';
-import { TextPlugin } from 'gsap/TextPlugin';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import {gsap} from 'gsap'
+import {TextPlugin} from 'gsap/TextPlugin'
+import Image from 'next/image'
+import {useRouter} from 'next/navigation'
 
-import Header from '@/components/Header';
-import InfiniteLogoScroller from '@/components/InfiniteLogoScroller';
-import LandingPageBg from '@/components/LandingPageBg';
+import Header from '@/components/Header'
+import InfiniteLogoScroller from '@/components/InfiniteLogoScroller'
+import VideoBackground from '@/components/VideoBackground'
 
-import BgBubble from '@/assets/images/bg_copilot.png';
-import { supabase } from '@/lib/supabase';
-import { useSurveyStore } from '@/store/survey';
+import BgBubble from '@/assets/images/bg_copilot.png'
+import {supabase} from '@/lib/supabase'
+import {useSurveyStore} from '@/store/survey'
 
 if (typeof window !== 'undefined') {
-  gsap.registerPlugin(TextPlugin);
+  gsap.registerPlugin(TextPlugin)
 }
 
 const jobQuestions = [
@@ -30,41 +30,41 @@ const jobQuestions = [
   'Summarize my GitHub projects into my résumé.',
   'Which of these five startups is my best fit?',
   'Draft a friendly referral request to a Netflix engineer.',
-];
+]
 
 export default function TallyAILanding() {
-  const textRef = useRef<HTMLHeadingElement>(null);
-  const router = useRouter();
-  const hasAnimated = useRef(false); // 防止动画重复执行
-  const [hasClickedSignUp, setHasClickedSignUp] = useState(false);
-  const { isCompleted } = useSurveyStore();
-  const chromaTextRef = useRef<HTMLSpanElement>(null);
-  const [locale, setLocale] = useState('en');
+  const textRef = useRef<HTMLHeadingElement>(null)
+  const router = useRouter()
+  const hasAnimated = useRef(false) // 防止动画重复执行
+  const [hasClickedSignUp, setHasClickedSignUp] = useState(false)
+  const {isCompleted} = useSurveyStore()
+  const chromaTextRef = useRef<HTMLSpanElement>(null)
+  const [locale, setLocale] = useState('en')
 
   // Dashboard redirect functionality - checking for authenticated users
   useEffect(() => {
     // Get locale from URL path
-    const pathSegments = window.location.pathname.split('/');
-    const currentLocale = pathSegments[1] || 'en';
-    setLocale(currentLocale);
-    supabase.auth.getSession().then(({ data }) => {
-      console.log('session data', data);
+    const pathSegments = window.location.pathname.split('/')
+    const currentLocale = pathSegments[1] || 'en'
+    setLocale(currentLocale)
+    supabase.auth.getSession().then(({data}) => {
+      console.log('session data', data)
       // If user is already logged in, redirect to dashboard
       if (data.session?.user) {
-        console.log('User already authenticated, redirecting to dashboard');
-        router.push(`/${currentLocale}/dashboard`);
+        console.log('User already authenticated, redirecting to dashboard')
+        router.push(`/${currentLocale}/dashboard`)
       }
-    });
-  }, [router]);
+    })
+  }, [router])
 
   useEffect(() => {
-    if (hasAnimated.current) return;
-    hasAnimated.current = true;
+    if (hasAnimated.current) return
+    hasAnimated.current = true
 
     const ctx = gsap.context(() => {
-      const textTimeline = gsap.timeline({ repeat: -1 });
+      const textTimeline = gsap.timeline({repeat: -1})
 
-      jobQuestions.forEach((question) => {
+      jobQuestions.forEach(question => {
         textTimeline
           .to(textRef.current, {
             duration: 0.5,
@@ -72,7 +72,7 @@ export default function TallyAILanding() {
             ease: 'power1.inOut',
             onComplete: () => {
               if (textRef.current) {
-                textRef.current.innerText = '';
+                textRef.current.innerText = ''
               }
             },
           })
@@ -82,23 +82,22 @@ export default function TallyAILanding() {
             ease: 'none',
             opacity: 1,
           })
-          .to({}, { duration: 5 });
-      });
-    });
+          .to({}, {duration: 5})
+      })
+    })
 
-    return () => ctx.revert();
-  }, []);
+    return () => ctx.revert()
+  }, [])
 
   const toSurvey = () => {
     // 设置点击状态为 true
-    setHasClickedSignUp(true);
+    setHasClickedSignUp(true)
     setTimeout(() => {
-      router.push(`/${locale}/survey`);
-    }, 300);
-  };
+      router.push(`/${locale}/survey`)
+    }, 300)
+  }
   return (
     <>
-      <LandingPageBg animationSpeed={hasClickedSignUp ? 'fast' : 'slow'} />
       <div className="min-h-screen transparent flex flex-col">
         {/* Header */}
         <Header />
@@ -164,5 +163,5 @@ export default function TallyAILanding() {
         </main>
       </div>
     </>
-  );
+  )
 }
