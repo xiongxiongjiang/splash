@@ -178,12 +178,7 @@ class ApiClient {
   /**
    * Parse resume PDF and create profile
    */
-  async parseResume(file: File): Promise<{
-    success: boolean
-    profile?: any
-    error?: string
-    message?: string
-  }> {
+  async parseResume(file: File): Promise<import('@/types/resume').ParseResumeResponse> {
     const formData = new FormData()
     formData.append('file', file)
 

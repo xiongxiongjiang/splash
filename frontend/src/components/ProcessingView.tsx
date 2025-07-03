@@ -1,24 +1,14 @@
 'use client'
 
-import {useState, useEffect} from 'react'
+import {useState, useEffect, use} from 'react'
 
 import {Skeleton} from 'antd'
 import {ChevronDown, File, Link} from 'lucide-react'
 import Image from 'next/image'
 import {useTranslations} from 'next-intl'
 
+import type {ExtractedData, PersonalExtra, EducationExtra, ParseResumeResponse} from '@/types/resume'
 import Logo from '@/assets/logos/tally_logo.svg'
-
-interface PersonalExtra {
-  label: string
-  value: string
-}
-
-interface EducationExtra {
-  university: string
-  degreeType: string
-  major: string
-}
 
 interface AnalysisBlockProps {
   title: string
@@ -76,52 +66,6 @@ const AnalysisBlock = ({title, description, detail, extra, extraType}: AnalysisB
   )
 }
 
-interface Job {
-  title: string
-  years: string
-  company: string
-  location: string
-  description: string
-}
-
-interface Degree {
-  gpa?: string
-  years: string
-  degree: string
-  courses?: string
-  location: string
-  university: string
-}
-
-interface ExtractedData {
-  name: string
-  email: string
-  phone: string
-  location: string
-  open_to_relocate?: boolean
-  professional_summary?: string
-  career_level?: string | null
-  years_experience?: number
-  primary_domain?: string | null
-  seniority_keywords?: string | null
-  experience?: {
-    jobs: Job[]
-  }
-  education?: {
-    degrees: Degree[]
-  }
-  skills?: {
-    raw_skills: string[]
-  }
-  languages?: {
-    spoken: string[]
-  }
-  // 兼容旧版本字段
-  title?: string
-  linkedin?: string
-  sponsorship?: string
-}
-
 const ResumeCardSkeleton = () => {
   return (
     <div className="p-8 w-[353px] flex flex-col gap-2 bg-[rgba(255,255,255,0.5)] rounded-[16px]">
@@ -132,18 +76,24 @@ const ResumeCardSkeleton = () => {
 
 interface ProcessingViewProps {
   linkedinUrl?: string
-  parseResult?: string
-  extractedData?: Partial<ExtractedData>
+  parseResult?: ParseResumeResponse
   resumeFile?: {
     name: string
     size?: number
   }
 }
 
-export default function ProcessingView({linkedinUrl, parseResult = '', extractedData, resumeFile}: ProcessingViewProps) {
+export default function ProcessingView({linkedinUrl, parseResult, resumeFile}: ProcessingViewProps) {
   const [showSkeleton, setShowSkeleton] = useState(true)
   const [showAnalysis, setShowAnalysis] = useState(false)
   const t = useTranslations('HomePage')
+
+  useEffect(() => {
+    console.log('parseResult:', parseResult)
+  }, [parseResult])
+
+  // 从parseResult中提取profile数据
+  const profileData = parseResult?.profile
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -211,13 +161,13 @@ export default function ProcessingView({linkedinUrl, parseResult = '', extracted
                 description="Extracting personal information from resume"
                 detail="Personal Details"
                 extra={[
-                  {label: 'Name', value: extractedData?.name || 'N/A'},
-                  {label: 'Title', value: extractedData?.title || 'N/A'},
-                  {label: 'Email', value: extractedData?.email || 'N/A'},
-                  {label: 'Phone', value: extractedData?.phone || 'N/A'},
-                  {label: 'Location', value: extractedData?.location || 'N/A'},
-                  {label: 'LinkedIn', value: extractedData?.linkedin || 'N/A'},
-                  {label: 'Sponsorship', value: extractedData?.sponsorship || 'N/A'},
+                  {label: 'Name', value: profileData?.name || 'N/A'},
+                  {label: 'Title', value: (profileData as any)?.title || 'N/A'},
+                  {label: 'Email', value: profileData?.email || 'N/A'},
+                  {label: 'Phone', value: profileData?.phone || 'N/A'},
+                  {label: 'Location', value: profileData?.location || 'N/A'},
+                  {label: 'LinkedIn', value: (profileData as any)?.linkedin || 'N/A'},
+                  {label: 'Sponsorship', value: (profileData as any)?.sponsorship || 'N/A'},
                 ]}
                 extraType="personal"
               />
@@ -226,21 +176,21 @@ export default function ProcessingView({linkedinUrl, parseResult = '', extracted
                 description="Extracting education details from resume"
                 detail="Education Section"
                 extra={
-                  extractedData?.education?.degrees?.[0]
+                  profileData?.education?.degrees?.[0]
                     ? {
-                        university: extractedData.education.degrees[0].university,
-                        degreeType: extractedData.education.degrees[0].degree,
-                        major: extractedData.education.degrees[0].degree,
+                        university: profileData.education.degrees[0].university,
+                        degreeType: profileData.education.degrees[0].degree,
+                        major: profileData.education.degrees[0].degree,
                       }
                     : undefined
                 }
                 extraType="education"
               />
               <AnalysisBlock
-                title={`Your skills list (${extractedData?.skills?.raw_skills?.length || 0})`}
+                title={`Your skills list (${profileData?.skills?.raw_skills?.length || 0})`}
                 description="Extracting technical and soft skills"
                 detail="Skills Section"
-                extra={extractedData?.skills?.raw_skills || []}
+                extra={profileData?.skills?.raw_skills || []}
                 extraType="skills"
               />
             </div>

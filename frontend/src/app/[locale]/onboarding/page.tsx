@@ -12,6 +12,7 @@ import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {apiClient} from '@/lib/api'
 import ProcessingView from '@/components/ProcessingView'
+import type {ParseResumeResponse, ProfileData} from '@/types/resume'
 import IconClose from '@/assets/images/icon_close.svg'
 import IconFiles from '@/assets/images/icon_files.png'
 import IconLink from '@/assets/images/icon_link.png'
@@ -33,7 +34,7 @@ export default function WelcomePage() {
   const [linkedinError, setLinkedinError] = useState('')
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [parseResult, setParseResult] = useState('')
+  const [parseResult, setParseResult] = useState<ParseResumeResponse | undefined>()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const {userInfo, updateUserInfo, updateToken} = useUserStore()
 
@@ -124,10 +125,11 @@ export default function WelcomePage() {
 
         // 加载mock数据
         const mockData = await import('./mock.json')
-        const response = mockData.default
+        const response = mockData.default as ParseResumeResponse
+        console.log('Mock data loaded:', response)
 
         if (response.success && response.profile) {
-          setParseResult(JSON.stringify(response.profile, null, 2))
+          setParseResult(response)
           return true
         }
       }
@@ -137,7 +139,7 @@ export default function WelcomePage() {
 
       if (response.success && response.profile) {
         // 解析成功，保存结果
-        setParseResult(JSON.stringify(response.profile, null, 2))
+        setParseResult(response)
         return true
       } else {
         // 解析失败
@@ -356,13 +358,17 @@ export default function WelcomePage() {
   // 如果正在处理，显示ProcessingView
   if (isProcessing) {
     return (
-      <ProcessingView 
-        linkedinUrl={activeKey === 'linkedin' ? linkedinUrl : undefined} 
+      <ProcessingView
+        linkedinUrl={activeKey === 'linkedin' ? linkedinUrl : undefined}
         parseResult={parseResult}
-        resumeFile={activeKey === 'resume' && fileList.length > 0 ? {
-          name: fileList[0].name,
-          size: fileList[0].size
-        } : undefined}
+        resumeFile={
+          activeKey === 'resume' && fileList.length > 0
+            ? {
+                name: fileList[0].name,
+                size: fileList[0].size,
+              }
+            : undefined
+        }
       />
     )
   }
