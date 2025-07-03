@@ -281,7 +281,7 @@ export default function SurveyPage() {
 
   const renderStep2 = () => {
     return renderStep({
-      title: "What's your LinkedIn?",
+      title: "✓ You're on the waitlist, What's your LinkedIn?",
       description: "Optional. We'll use this information to tailor your career guidance.",
       placeholder: 'https://linkedin.com/in/',
       fieldName: 'linkedin',
@@ -289,10 +289,8 @@ export default function SurveyPage() {
       onSubmit: async (values: any) => {
         try {
           await submitLinkedin(values);
-          // 只有在成功提交后才触发动画切换
           handleTransition(3);
         } catch (error) {
-          // 错误处理已经在 submitLinkedin 中完成
           console.error('Submit linkedin error:', error);
         }
       },
@@ -302,7 +300,7 @@ export default function SurveyPage() {
       buttonText: 'CONTINUE',
       btnLoading: linkedinBtnLoading,
       setBtnLoading: setLinkedinBtnLoading,
-      onTransition: () => handleTransition(3), // 传入动画函数
+      onTransition: () => handleTransition(3),
     });
   };
 
@@ -377,7 +375,7 @@ export default function SurveyPage() {
           </div>
         </div>
 
-        {/* 导航按钮移到动画区域外面 */}
+        {/* Navigation buttons - show after user has entered email in current session */}
         {storeEmail && currentStep < 3 && (
           <div className="flex justify-center mt-4">
             <button
@@ -392,6 +390,7 @@ export default function SurveyPage() {
             </button>
           </div>
         )}
+
       </div>
     </div>
   );
