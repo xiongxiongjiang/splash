@@ -1,24 +1,16 @@
 'use client'
 
-import {useState, useEffect} from 'react'
+import {useState, useEffect, useRef} from 'react'
 
 import {Skeleton} from 'antd'
-import {ChevronDown, Check, Link} from 'lucide-react'
+import {ChevronDown, File, Link} from 'lucide-react'
 import Image from 'next/image'
 import {useTranslations} from 'next-intl'
 
+import type {ExtractedData, PersonalExtra, EducationExtra, ParseResumeResponse} from '@/types/resume'
+import {ParsedResume} from '@/lib/types'
+import {supabase} from '@/lib/supabase'
 import Logo from '@/assets/logos/tally_logo.svg'
-
-interface PersonalExtra {
-  label: string
-  value: string
-}
-
-interface EducationExtra {
-  university: string
-  degreeType: string
-  major: string
-}
 
 interface AnalysisBlockProps {
   title: string
@@ -76,23 +68,6 @@ const AnalysisBlock = ({title, description, detail, extra, extraType}: AnalysisB
   )
 }
 
-interface ExtractedData {
-  name: string
-  title: string
-  email: string
-  phone: string
-  location: string
-  linkedin: string
-  sponsorship: string
-  education: {
-    university: string
-    degreeType: string
-    major: string
-    location?: string
-  }
-  skills: string[]
-}
-
 const ResumeCardSkeleton = () => {
   return (
     <div className="p-8 w-[353px] flex flex-col gap-2 bg-[rgba(255,255,255,0.5)] rounded-[16px]">
@@ -101,52 +76,151 @@ const ResumeCardSkeleton = () => {
   )
 }
 
-interface ProcessingViewProps {
-  linkedinUrl?: string
-  parseResult?: string
-  extractedData?: Partial<ExtractedData>
+interface ProgressEvent {
+  step: string
+  progress: number
+  message: string
+  timestamp: string
 }
 
-export default function ProcessingView({
-  linkedinUrl = 'https://linkedin.com/in/example',
-  parseResult = '',
-  extractedData,
-}: ProcessingViewProps) {
+interface ProcessingViewProps {
+  linkedinUrl?: string
+  resumeFile?: File
+  onComplete?: (result: ParsedResume) => void
+  onError?: (error: string) => void
+}
+
+export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onError}: ProcessingViewProps) {
   const [showSkeleton, setShowSkeleton] = useState(true)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [progress, setProgress] = useState<ProgressEvent | null>(null)
+  const [parseResult, setParseResult] = useState<ParsedResume | null>(null)
+  const isProcessing = useRef(false)
   const t = useTranslations('HomePage')
 
-  // 模拟数据，实际使用时会被 extractedData 替换
-  const mockData: ExtractedData = {
-    name: 'Alex Chen',
-    title: 'Senior UX Designer',
-    email: 'alex.chen.ux@gmail.com',
-    phone: '(415) 555-0123',
-    location: 'San Francisco, CA 94105',
-    linkedin: 'linkedin.com/in/alexchenux',
-    sponsorship: 'Never Needed',
-    education: {
-      university: 'Carnegie Mellon University',
-      degreeType: 'Master of Science',
-      major: 'Human-Computer Interaction',
-    },
-    skills: [
-      'UX design',
-      'accessibility consulting',
-      'digital accessibility',
-      'Figma',
-      'WCAG 2.1',
-      'ARIA',
-      'WCAG 2.2',
-      'Storybook',
-      'Jira',
-      'Confluence',
-      'AirTable',
-    ],
+  // 使用ref存储回调函数，避免useEffect重复执行
+  const onCompleteRef = useRef(onComplete)
+  const onErrorRef = useRef(onError)
+
+  // 更新ref
+  onCompleteRef.current = onComplete
+  onErrorRef.current = onError
+
+  useEffect(() => {
+    if (isProcessing.current || !resumeFile) {
+      return
+    }
+    isProcessing.current = true
+    parseResumeStream(resumeFile)
+      .then(result => {
+        if (result.success && result.data) {
+          setParseResult(result.data)
+          onCompleteRef.current?.(result.data)
+        } else {
+          onErrorRef.current?.(result.error || 'Failed to parse resume')
+        }
+        isProcessing.current = false
+      })
+      .catch(error => {
+        console.error('Parse error:', error)
+        onErrorRef.current?.(error.message || 'Unknown error')
+        isProcessing.current = false
+      })
+  }, [resumeFile])
+
+  // 解析简历的流式处理函数
+  const parseResumeStream = async (file: File): Promise<{success: boolean; data?: ParsedResume; error?: string}> => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Get the auth token
+      const {
+        data: {session},
+      } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('No authentication session')
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/parse-resume-stream`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('No response body')
+      }
+
+      const decoder = new TextDecoder()
+      let result: {success: boolean; data?: ParsedResume; error?: string} = {
+        success: false,
+        error: 'No data received',
+      }
+
+      while (true) {
+        const {done, value} = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData = JSON.parse(line.slice(6))
+
+              if (eventData.event === 'progress') {
+                setProgress(eventData.data)
+              } else if (eventData.event === 'complete') {
+                const data = eventData.data
+                if (data.success && data.profile) {
+                  result = {
+                    success: true,
+                    data: {
+                      name: data.profile.name,
+                      email: data.profile.email,
+                      phone: data.profile.phone || '',
+                      location: data.profile.location || '',
+                      professional_summary: data.profile.professional_summary || 'Professional',
+                      years_experience: data.profile.years_experience || 0,
+                      skills: data.profile.skills || {raw_skills: []},
+                      education: data.profile.education || {degrees: []},
+                    },
+                  }
+                }
+              } else if (eventData.event === 'error') {
+                result = {
+                  success: false,
+                  error: eventData.data.error || 'Failed to parse resume',
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e)
+            }
+          }
+        }
+      }
+
+      return result
+    } catch (error) {
+      console.error('Resume parsing error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
   }
 
-  // 合并提取的数据和模拟数据
-  const displayData = {...mockData, ...extractedData}
+  // 从parseResult中提取profile数据
+  const profileData = parseResult
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -158,38 +232,40 @@ export default function ProcessingView({
 
   return (
     <div className="h-screen onboarding-bg flex gap-6 justify-between p-10">
-      <div>
-        <div className="flex justify-center items-center gap-2">
+      <div className="w-[150px]">
+        <div className="flex flex-1 justify-center items-center gap-2">
           <Image src={Logo} alt={t('appName')} width={24} height={24} />
-          <span className="font-bold text-[20px]">{t('appName')}</span>
+          <span className="font-bold text-[20px] text-nowrap">{t('appName')}</span>
         </div>
       </div>
 
-      <div className="transition-all hide-scrollbar flex flex-col gap-8 duration-500 ease-in-out max-h-screen overflow-y-auto ">
-        <div className="space-y-4 text-base text-[rgba(0,0,0,0.8)]">
+      <div className="transition-all hide-scrollbar flex flex-col gap-8 duration-500 ease-in-out max-h-screen overflow-y-auto mt-36">
+        <div className="space-y-6 text-base text-[rgba(0,0,0,0.8)] text-[20px]">
           <h1 className="font-bold">Welcome</h1>
-          <p className="font-normal text-[20px]">{`I'm Tally, your career wingman. Let's land your dream job together.`}</p>
-          <p className="font-bold">Processing your resume...</p>
+          <p className="font-normal">I'm Tally, your career wingman. Let's land your dream job together. </p>
+          <p className="font-bold">Start by sharing your LinkedIn or résumé.</p>
         </div>
 
         <div className="flex justify-end">
           <div className="bg-white flex gap-2 px-4 py-2 rounded-[8px] justify-center items-center">
-            <Link size={16} />
-            <span>{linkedinUrl}</span>
+            {resumeFile ? (
+              <>
+                <File size={16} />
+                <span>{resumeFile.name}</span>
+              </>
+            ) : (
+              <>
+                <Link size={16} />
+                <span>{linkedinUrl}</span>
+              </>
+            )}
           </div>
         </div>
 
         <p className="text-base font-medium">
-          {`I'm analyzing your resume and extracting personal background information, education background information, and skills for further analysis.`}
+          I will extract your resume's personal background information, education background information, and skills based on the LinkedIn
+          link for further analysis.
         </p>
-
-        {/* 显示解析结果 */}
-        {parseResult && (
-          <div className="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto">
-            <h3 className="text-sm font-semibold mb-2 text-gray-700">Analysis Progress:</h3>
-            <div className="text-sm text-gray-600 whitespace-pre-wrap">{parseResult}</div>
-          </div>
-        )}
 
         <div className="space-y-3">
           <div className="flex items-center space-x-[7px]">
@@ -212,13 +288,13 @@ export default function ProcessingView({
                 description="Extracting personal information from resume"
                 detail="Personal Details"
                 extra={[
-                  {label: 'Name', value: displayData.name},
-                  {label: 'Title', value: displayData.title},
-                  {label: 'Email', value: displayData.email},
-                  {label: 'Phone', value: displayData.phone},
-                  {label: 'Location', value: displayData.location},
-                  {label: 'LinkedIn', value: displayData.linkedin},
-                  {label: 'Sponsorship', value: displayData.sponsorship},
+                  {label: 'Name', value: profileData?.name || 'N/A'},
+                  {label: 'Title', value: (profileData as any)?.title || 'N/A'},
+                  {label: 'Email', value: profileData?.email || 'N/A'},
+                  {label: 'Phone', value: profileData?.phone || 'N/A'},
+                  {label: 'Location', value: profileData?.location || 'N/A'},
+                  {label: 'LinkedIn', value: (profileData as any)?.linkedin || 'N/A'},
+                  {label: 'Sponsorship', value: (profileData as any)?.sponsorship || 'N/A'},
                 ]}
                 extraType="personal"
               />
@@ -226,18 +302,22 @@ export default function ProcessingView({
                 title="Your Education background information"
                 description="Extracting education details from resume"
                 detail="Education Section"
-                extra={{
-                  university: displayData.education.university,
-                  degreeType: displayData.education.degreeType,
-                  major: displayData.education.major,
-                }}
+                extra={
+                  profileData?.education?.degrees?.[0]
+                    ? {
+                        university: profileData.education.degrees[0].university,
+                        degreeType: profileData.education.degrees[0].degree,
+                        major: profileData.education.degrees[0].degree,
+                      }
+                    : undefined
+                }
                 extraType="education"
               />
               <AnalysisBlock
-                title={`Your skills list (${displayData.skills.length})`}
+                title={`Your skills list (${profileData?.skills?.raw_skills?.length || 0})`}
                 description="Extracting technical and soft skills"
                 detail="Skills Section"
-                extra={displayData.skills}
+                extra={profileData?.skills?.raw_skills || []}
                 extraType="skills"
               />
             </div>

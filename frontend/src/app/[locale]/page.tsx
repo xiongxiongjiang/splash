@@ -47,14 +47,14 @@ export default function TallyAILanding() {
     const pathSegments = window.location.pathname.split('/')
     const currentLocale = pathSegments[1] || 'en'
     setLocale(currentLocale)
-    supabase.auth.getSession().then(({data}) => {
-      console.log('session data', data)
-      // If user is already logged in, redirect to dashboard
-      if (data.session?.user) {
-        console.log('User already authenticated, redirecting to dashboard')
-        router.push(`/${currentLocale}/dashboard`)
-      }
-    })
+    // supabase.auth.getSession().then(({data}) => {
+    //   console.log('session data', data)
+    //   // If user is already logged in, redirect to dashboard
+    //   if (data.session?.user) {
+    //     console.log('User already authenticated, redirecting to dashboard')
+    //     router.push(`/${currentLocale}/dashboard`)
+    //   }
+    // })
   }, [router])
 
   useEffect(() => {

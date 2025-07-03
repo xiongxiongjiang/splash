@@ -1,11 +1,12 @@
 export interface ParsedResume {
   name: string;
   email: string;
-  phone?: string;
+  phone: string;
+  location: string;
   professional_summary: string;
   years_experience: number;
-  skills: { raw_skills?: string[] };
-  education: { degrees?: any[] };
+  skills: { raw_skills: string[] };
+  education: { degrees: any[] };
 }
 
 export interface User {

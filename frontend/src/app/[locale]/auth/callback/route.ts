@@ -67,8 +67,44 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ OAuth successful, user:', data.user.email);
     
-    // Only redirect to dashboard on complete success
-    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    // Check if user has a profile to determine redirect destination
+    try {
+      console.log('Checking user profile...');
+      
+      // Check profile via API
+      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/my-profile`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${data.session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        console.log('Profile check result:', { hasProfile: !!profileData.profile });
+        
+        if (profileData.profile && profileData.profile.id) {
+          // User has a profile, redirect to dashboard
+          console.log('User has profile, redirecting to dashboard');
+          return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+        } else {
+          // User doesn't have a profile, redirect to onboarding
+          console.log('User has no profile, redirecting to onboarding');
+          return NextResponse.redirect(new URL(`/${locale}/onboarding`, request.url));
+        }
+      } else {
+        // Profile check failed, default to onboarding for safety
+        console.warn('Profile check failed, defaulting to onboarding:', profileResponse.status);
+        return NextResponse.redirect(new URL(`/${locale}/onboarding`, request.url));
+      }
+      
+    } catch (profileError) {
+      // Profile check error, default to onboarding for safety
+      console.error('Error checking user profile:', profileError);
+      console.log('Profile check error, defaulting to onboarding');
+      return NextResponse.redirect(new URL(`/${locale}/onboarding`, request.url));
+    }
     
   } catch (error) {
     console.error('Unexpected error in OAuth callback:', error);
