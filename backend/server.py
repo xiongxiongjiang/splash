@@ -464,11 +464,10 @@ async def get_context(
 @app.post("/parse-resume", response_model=dict, operation_id="parse_resume")
 async def parse_resume_endpoint(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
     session: SupabaseSession = Depends(get_session)
 ):
-    """Parse uploaded resume PDF and create profile. Requires authentication."""
-    logger.info("POST /parse-resume for user: %s", current_user.email)
+    """Parse uploaded resume PDF. This is a public endpoint."""
+    logger.info("POST /parse-resume - public endpoint")
     
     # Validate file type
     if not file.content_type == "application/pdf":
@@ -544,6 +543,146 @@ async def parse_resume_endpoint(
             status_code=500,
             detail=f"Failed to parse resume: {str(e)}"
         )
+
+
+@app.post("/parse-resume-stream", operation_id="parse_resume_stream")
+async def parse_resume_stream_endpoint(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Parse uploaded resume PDF with streaming progress updates. Requires authentication."""
+    logger.info("POST /parse-resume-stream for user: %s", current_user.email)
+    
+    # Validate file type
+    if not file.content_type == "application/pdf":
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are supported"
+        )
+    
+    from fastapi.responses import StreamingResponse
+    import json
+    from resume_parser_stream import parse_resume_pdf_stream
+    
+    # Read PDF content before starting the generator
+    pdf_bytes = await file.read()
+    
+    async def generate_events():
+        try:
+            # Create a queue to collect progress events
+            import asyncio
+            progress_queue = asyncio.Queue()
+            
+            # Progress callback that adds to queue
+            async def progress_callback(progress_data):
+                await progress_queue.put(progress_data)
+            
+            # Parse resume in background task
+            async def parse_task():
+                result = await parse_resume_pdf_stream(pdf_bytes, progress_callback)
+                await progress_queue.put({"done": True, "result": result})
+            
+            # Start parsing task
+            task = asyncio.create_task(parse_task())
+            
+            # Yield progress events as they come
+            while True:
+                item = await progress_queue.get()
+                
+                if "done" in item:
+                    result = item["result"]
+                    break
+                    
+                # Yield progress event
+                event = {
+                    "event": "progress",
+                    "data": item
+                }
+                yield f"data: {json.dumps(event)}\n\n"
+            
+            if result["success"]:
+                # Get parsed data
+                parsed_data = result["profile"]
+                
+                # Convert parsed resume data to profile format
+                profile_data = {
+                    "name": parsed_data.get("name"),
+                    "email": parsed_data.get("email"),
+                    "phone": parsed_data.get("phone"),
+                    "location": parsed_data.get("location"),
+                    "professional_summary": parsed_data.get("summary"),
+                    "years_experience": len(parsed_data.get("experience", [])),
+                    "skills": {"raw_skills": parsed_data.get("skills", [])},
+                    "experience": {"jobs": parsed_data.get("experience", [])},
+                    "education": {"degrees": parsed_data.get("education", [])},
+                    "languages": {"spoken": parsed_data.get("languages", [])},
+                    "source_documents": {"original_resume": file.filename},
+                    "processing_quality": 0.85,  # Default quality score
+                    "user_id": current_user.id,
+                    "enhancement_status": "basic",
+                    "data_sources": {"sources": ["resume_upload"]}
+                }
+                
+                # Create profile in database
+                profile = await create_profile(session, profile_data)
+                
+                # Also create a resume entry for backward compatibility with dashboard
+                resume_data = {
+                    "name": parsed_data.get("name"),
+                    "email": parsed_data.get("email"),
+                    "phone": parsed_data.get("phone"),
+                    "professional_summary": parsed_data.get("summary"),
+                    "years_experience": len(parsed_data.get("experience", [])),
+                    "skills": {"raw_skills": parsed_data.get("skills", [])},
+                    "education": {"degrees": parsed_data.get("education", [])},
+                    "user_id": current_user.id
+                }
+                
+                resume = await create_resume(session, resume_data)
+                
+                # Send final result
+                final_event = {
+                    "event": "complete",
+                    "data": {
+                        "success": True,
+                        "profile": ProfileRead.model_validate(profile).model_dump(mode='json'),
+                        "resume": ResumeRead.model_validate(resume).model_dump(mode='json'),
+                        "message": "Resume parsed and saved successfully"
+                    }
+                }
+                yield f"data: {json.dumps(final_event)}\n\n"
+            else:
+                # Send error event
+                error_event = {
+                    "event": "error",
+                    "data": {
+                        "success": False,
+                        "error": result["error"]
+                    }
+                }
+                yield f"data: {json.dumps(error_event)}\n\n"
+                
+        except Exception as e:
+            logger.error("Error in resume stream: %s", e)
+            error_event = {
+                "event": "error",
+                "data": {
+                    "success": False,
+                    "error": str(e)
+                }
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+    
+    return StreamingResponse(
+        generate_events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 
 # ==================== CHAT ENDPOINTS ====================
