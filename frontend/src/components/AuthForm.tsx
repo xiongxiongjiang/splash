@@ -25,7 +25,11 @@ interface AuthError {
   name?: string;
 }
 
-const AuthForm: React.FC = () => {
+interface AuthFormProps {
+  onSuccess?: () => void;
+}
+
+const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { updateUserInfo, updateToken } = useUserStore();
@@ -139,7 +143,11 @@ const AuthForm: React.FC = () => {
       if (error) throw error;
       savaUserInfo();
       message.success(t('login.success') + (data.user?.user_metadata?.first_name || ''));
-      router.push('/');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/');
+      }
     } catch (error: unknown) {
       const authError = error as AuthError;
       message.error(authError.message || '登录失败');

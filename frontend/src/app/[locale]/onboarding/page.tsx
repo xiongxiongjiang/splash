@@ -1,12 +1,13 @@
 'use client'
 
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 
 import {Tabs, ConfigProvider, Upload, message, Button as AntButton} from 'antd'
 import {Upload as UploadIcon} from 'lucide-react'
 import Image from 'next/image'
 
 import Header from '@/components/Header'
+import AuthForm from '@/components/AuthForm'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {apiClient} from '@/lib/api'
@@ -17,6 +18,8 @@ import IconLink from '@/assets/images/icon_link.png'
 import IconLoading from '@/assets/images/icon_loading_dark.svg'
 import IconTick from '@/assets/images/icon_tick.svg'
 import useBreakpoint from '@/hooks/useBreakpoint'
+import useUserStore from '@/store/user'
+import {supabase} from '@/lib/supabase'
 
 import type {TabsProps, UploadProps} from 'antd'
 import type {UploadFile} from 'antd/es/upload/interface'
@@ -31,7 +34,32 @@ export default function WelcomePage() {
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [parseResult, setParseResult] = useState('')
-  const [uploadedFileUrl, setUploadedFileUrl] = useState('')
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const {userInfo, updateUserInfo, updateToken} = useUserStore()
+
+  // 检查用户session并更新状态
+  useEffect(() => {
+    const checkUserSession = async () => {
+      try {
+        const {
+          data: {session},
+        } = await supabase.auth.getSession()
+        if (session && session.user && !userInfo) {
+          // 如果有session但store中没有用户信息，更新store
+          updateUserInfo(session.user)
+          updateToken({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at as number,
+          })
+        }
+      } catch (error) {
+        console.error('检查用户session失败:', error)
+      }
+    }
+
+    checkUserSession()
+  }, [userInfo, updateUserInfo, updateToken])
 
   // 检查是否可以继续
   const canContinue = () => {
@@ -44,6 +72,16 @@ export default function WelcomePage() {
       return true
     }
     return false
+  }
+
+  // 处理上传按钮点击
+  const handleUploadClick = () => {
+    // 检查用户是否已登录
+    if (!userInfo) {
+      setShowAuthModal(true)
+      return false
+    }
+    return true
   }
 
   const beforeUpload = (file: UploadFile) => {
@@ -66,29 +104,47 @@ export default function WelcomePage() {
     return true
   }
 
-  const uploadCustomRequest = async (options: UploadRequestOption) => {
-    const {file, onProgress, onSuccess, onError} = options
-
+  // 上传和解析文件的函数
+  const uploadAndParseFile = async (file: File) => {
     try {
-      // 使用API客户端上传文件
-      const response = await apiClient.uploadFile(file as File)
+      // 设置认证token
+      const {
+        data: {session},
+      } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        apiClient.setToken(session.access_token)
+      } else {
+        throw new Error('用户未登录')
+      }
 
-      // 保存上传的文件URL
-      setUploadedFileUrl(response.file_url)
+      // 直接使用parseResume方法解析文件
+      const response = await apiClient.parseResume(file)
 
-      // 调用成功回调
-      onSuccess?.(response)
+      if (response.success && response.profile) {
+        // 解析成功，保存结果
+        setParseResult(JSON.stringify(response.profile, null, 2))
+        return true
+      } else {
+        // 解析失败
+        const errorMessage = response.error || response.message || 'Parse failed'
+        setUploadError(errorMessage)
+        return false
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Upload failed'
       setUploadError(errorMessage)
-      onError?.(new Error(errorMessage))
+      return false
     }
+  }
 
-    // 返回一个取消函数（对于fetch请求，这里是空实现）
+  const uploadCustomRequest = async (options: UploadRequestOption) => {
+    const {file, onSuccess} = options
+    console.log('uploadCustomRequest called with file:', file)
+    // 文件选择后不立即上传，只是标记为完成状态
+    onSuccess?.({file, message: 'File selected'})
+
     return {
-      abort: () => {
-        // Fetch API 不支持直接取消，这里是空实现
-      },
+      abort: () => {},
     }
   }
 
@@ -124,23 +180,21 @@ export default function WelcomePage() {
       const isUploading = file.status === 'uploading'
       const isDone = file.status === 'done'
 
-      // 调试信息
-      console.log('Rendering file:', file.name, 'status:', file.status, 'isUploading:', isUploading, 'isDone:', isDone)
-
       return (
         <div key={file.uid} className="flex w-full items-center py-2 relative group rounded px-2">
           <div className="flex w-full items-center justify-center">
             {/* 上传中显示 loading */}
-            {isUploading ? (
+            {/* {isUploading ? (
               <span className="w-5 h-5 flex items-center justify-center mr-2">
                 <Image src={IconLoading} alt="loading" className="animate-spin" />
               </span>
             ) : (
               <Image src={IconTick} alt="icon_check" className="w-5 h-5 mr-2" />
-            )}
+            )} */}
+            <Image src={IconTick} alt="icon_check" className="w-5 h-5 mr-2" />
             <span className="text-center truncate">{file.name}</span>
             {/* 上传成功时显示移除按钮 */}
-            {isDone && (
+            {/* {isDone && (
               <button
                 type="button"
                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
@@ -154,7 +208,20 @@ export default function WelcomePage() {
               >
                 <Image src={IconClose} alt="icon_close" className="w-4 h-4" />
               </button>
-            )}
+            )} */}
+            <button
+              type="button"
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
+              onClick={() => {
+                const newFileList = fileList.filter(f => f.uid !== file.uid)
+                setFileList(newFileList)
+                // 清除错误信息
+                setUploadError('')
+              }}
+              title="移除"
+            >
+              <Image src={IconClose} alt="icon_close" className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )
@@ -173,8 +240,49 @@ export default function WelcomePage() {
           </div>
 
           <div className="mobile:hidden tablet:w-[400px] web:w-[400px] tablet:flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)] relative mt-6">
-            <Upload {...uploadProps} style={{opacity: fileList.length === 0 ? 1 : 0}}>
-              <Button variant="outline" className="bg-transparent">
+            <Upload {...uploadProps} style={{opacity: fileList.length === 0 ? 1 : 0}} openFileDialogOnClick={false}>
+              <Button
+                variant="outline"
+                className="bg-transparent"
+                onClick={e => {
+                  e.preventDefault()
+                  if (handleUploadClick()) {
+                    // 只有在用户已登录时才打开文件对话框
+                    const input = document.createElement('input')
+                    input.type = 'file'
+                    input.accept = '.pdf,.doc,.docx'
+                    input.onchange = event => {
+                      const file = (event.target as HTMLInputElement).files?.[0]
+                      if (file) {
+                        const uploadFile = {
+                          uid: Date.now().toString(),
+                          name: file.name,
+                          size: file.size,
+                          type: file.type,
+                          originFileObj: file,
+                        } as UploadFile
+
+                        if (beforeUpload(uploadFile)) {
+                          uploadCustomRequest({
+                            file,
+                            action: '',
+                            method: 'POST',
+                            onProgress: () => {},
+                            onSuccess: response => {
+                              setFileList([{...uploadFile, status: 'done', response}])
+                            },
+                            onError: error => {
+                              setFileList([{...uploadFile, status: 'error', error}])
+                            },
+                          })
+                          setFileList([{...uploadFile, status: 'uploading'}])
+                        }
+                      }
+                    }
+                    input.click()
+                  }
+                }}
+              >
                 <UploadIcon />
                 Upload resume
               </Button>
@@ -220,39 +328,30 @@ export default function WelcomePage() {
     setActiveKey(key)
   }
 
-  // 处理简历解析
-  const handleResumeParseAsync = async (fileUrl: string) => {
-    setIsProcessing(true)
-    setParseResult('')
-
-    try {
-      await apiClient.parseResumeWithCallback(
-        fileUrl,
-        (data: string) => {
-          // 实时接收解析数据
-          setParseResult(prev => prev + data)
-        },
-        () => {
-          console.log('Resume parsing completed')
-        },
-        (error: Error) => {
-          setUploadError(`Resume parsing failed: ${error.message}`)
-        }
-      )
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Resume parsing failed'
-      setUploadError(errorMessage)
-    }
-  }
-
   // 处理Continue按钮点击
   const handleContinue = async () => {
     if (activeKey === 'resume') {
-      // 简历模式：开始解析简历
-      if (uploadedFileUrl) {
-        await handleResumeParseAsync(uploadedFileUrl)
-      } else {
+      // 简历模式：现在才真正上传和解析文件
+      console.log('Current fileList:', fileList)
+
+      if (fileList.length === 0) {
         setUploadError('No file uploaded')
+        return
+      }
+
+      const selectedFile = fileList[0] // 获取第一个文件
+      console.log('Selected file:', selectedFile)
+
+      // 检查文件对象
+      const fileToUpload = selectedFile.originFileObj || selectedFile
+      console.log('File to upload:', fileToUpload)
+
+      if (fileToUpload && fileToUpload instanceof File) {
+        setIsProcessing(true)
+        await uploadAndParseFile(fileToUpload)
+      } else {
+        console.error('No valid file found:', {selectedFile, fileToUpload})
+        setUploadError('No valid file found')
       }
     } else if (activeKey === 'linkedin') {
       // LinkedIn模式：验证URL格式
@@ -262,6 +361,7 @@ export default function WelcomePage() {
       }
       // TODO: 处理LinkedIn导入逻辑
       console.log('Processing LinkedIn URL:', linkedinUrl)
+      setIsProcessing(true)
     }
   }
   // 如果正在处理，显示ProcessingView
@@ -378,6 +478,20 @@ export default function WelcomePage() {
           </div>
         </div>
       </div>
+
+      {/* 登录蒙层 */}
+      {showAuthModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/10 backdrop-blur-[10px]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative">
+            <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+              <Image src={IconClose} alt="close" className="w-6 h-6" />
+            </button>
+            <div className="mt-4">
+              <AuthForm onSuccess={() => setShowAuthModal(false)} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

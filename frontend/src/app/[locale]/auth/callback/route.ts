@@ -68,7 +68,8 @@ export async function GET(request: NextRequest) {
     console.log('✅ OAuth successful, user:', data.user.email);
     
     // Only redirect to dashboard on complete success
-    return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    // return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    return NextResponse.redirect(new URL(`/${locale}/onboarding`, request.url));
     
   } catch (error) {
     console.error('Unexpected error in OAuth callback:', error);
