@@ -11,6 +11,13 @@ interface ResumeUploadProps {
   onSuccess?: (parsedResume: ParsedResume) => void;
 }
 
+interface ProgressEvent {
+  step: string;
+  progress: number;
+  message: string;
+  timestamp: string;
+}
+
 export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
   const router = useRouter();
   const params = useParams();
@@ -21,6 +28,7 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<ProgressEvent | null>(null);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -28,33 +36,85 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
     router.push(`/${locale}/login`);
   };
 
-  // Real backend endpoint
-  const parseResume = async (file: File): Promise<{ success: boolean; data?: ParsedResume; error?: string }> => {
+  // Streaming backend endpoint
+  const parseResumeStream = async (file: File): Promise<{ success: boolean; data?: ParsedResume; error?: string }> => {
     try {
-      // Call real API - auth token should already be set by dashboard
-      const result = await apiClient.parseResume(file);
-      
-      if (result.success && result.profile) {
-        // Convert profile to ParsedResume format
-        const profile = result.profile;
-        return {
-          success: true,
-          data: {
-            name: profile.name,
-            email: profile.email,
-            phone: profile.phone,
-            professional_summary: profile.professional_summary || 'Professional',
-            years_experience: profile.years_experience || 0,
-            skills: profile.skills || { raw_skills: [] },
-            education: profile.education || { degrees: [] }
-          }
-        };
-      } else {
-        return {
-          success: false,
-          error: result.error || 'Failed to parse resume'
-        };
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Get the auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No authentication session');
       }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/parse-resume-stream`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      const decoder = new TextDecoder();
+      let result: { success: boolean; data?: ParsedResume; error?: string } = {
+        success: false,
+        error: 'No data received'
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData = JSON.parse(line.slice(6));
+              
+              if (eventData.event === 'progress') {
+                setProgress(eventData.data);
+              } else if (eventData.event === 'complete') {
+                const data = eventData.data;
+                if (data.success && data.resume) {
+                  result = {
+                    success: true,
+                    data: {
+                      name: data.resume.name,
+                      email: data.resume.email,
+                      phone: data.resume.phone,
+                      professional_summary: data.resume.professional_summary || 'Professional',
+                      years_experience: data.resume.years_experience || 0,
+                      skills: data.resume.skills || { raw_skills: [] },
+                      education: data.resume.education || { degrees: [] }
+                    }
+                  };
+                }
+              } else if (eventData.event === 'error') {
+                result = {
+                  success: false,
+                  error: eventData.data.error || 'Failed to parse resume'
+                };
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
+
+      return result;
     } catch (error) {
       console.error('Resume parsing error:', error);
       return {
@@ -102,9 +162,10 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
 
     setUploadState('uploading');
     setErrorMessage('');
+    setProgress(null);
 
     try {
-      const result = await parseResume(selectedFile);
+      const result = await parseResumeStream(selectedFile);
       
       if (result.success && result.data) {
         setUploadState('success');
@@ -132,6 +193,7 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
     setSelectedFile(null);
     setUploadState('idle');
     setErrorMessage('');
+    setProgress(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -244,6 +306,24 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
               </div>
             )}
 
+            {uploadState === 'uploading' && progress && (
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <Loader2 size={16} className="animate-spin mr-2 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">{progress.message}</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progress.progress}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-xs text-blue-700">
+                  Step: {progress.step} • {progress.progress}%
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleUpload}
               disabled={uploadState === 'uploading'}
@@ -252,7 +332,7 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
               {uploadState === 'uploading' ? (
                 <>
                   <Loader2 size={20} className="animate-spin mr-2" />
-                  Analyzing Resume...
+                  {progress ? 'Processing...' : 'Starting...'}
                 </>
               ) : (
                 'Upload and Parse Resume'
