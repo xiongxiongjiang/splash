@@ -119,20 +119,20 @@ export default function WelcomePage() {
       }
 
       // 本地开发环境使用mock数据
-      if (process.env.NODE_ENV === 'development') {
-        // 模拟加载时间
-        await new Promise(resolve => setTimeout(resolve, 2000))
+      // if (process.env.NODE_ENV === 'development') {
+      //   // 模拟加载时间
+      //   await new Promise(resolve => setTimeout(resolve, 2000))
 
-        // 加载mock数据
-        const mockData = await import('./mock.json')
-        const response = mockData.default as ParseResumeResponse
-        console.log('Mock data loaded:', response)
+      //   // 加载mock数据
+      //   const mockData = await import('./mock.json')
+      //   const response = mockData.default as ParseResumeResponse
+      //   console.log('Mock data loaded:', response)
 
-        if (response.success && response.profile) {
-          setParseResult(response)
-          return true
-        }
-      }
+      //   if (response.success && response.profile) {
+      //     setParseResult(response)
+      //     return true
+      //   }
+      // }
 
       // 生产环境使用真实API
       const response = await apiClient.parseResume(file)
