@@ -3,7 +3,7 @@
 import {useState, useEffect} from 'react'
 
 import {Skeleton} from 'antd'
-import {ChevronDown, Check, Link} from 'lucide-react'
+import {ChevronDown, File, Link} from 'lucide-react'
 import Image from 'next/image'
 import {useTranslations} from 'next-intl'
 
@@ -76,21 +76,50 @@ const AnalysisBlock = ({title, description, detail, extra, extraType}: AnalysisB
   )
 }
 
+interface Job {
+  title: string
+  years: string
+  company: string
+  location: string
+  description: string
+}
+
+interface Degree {
+  gpa?: string
+  years: string
+  degree: string
+  courses?: string
+  location: string
+  university: string
+}
+
 interface ExtractedData {
   name: string
-  title: string
   email: string
   phone: string
   location: string
-  linkedin: string
-  sponsorship: string
-  education: {
-    university: string
-    degreeType: string
-    major: string
-    location?: string
+  open_to_relocate?: boolean
+  professional_summary?: string
+  career_level?: string | null
+  years_experience?: number
+  primary_domain?: string | null
+  seniority_keywords?: string | null
+  experience?: {
+    jobs: Job[]
   }
-  skills: string[]
+  education?: {
+    degrees: Degree[]
+  }
+  skills?: {
+    raw_skills: string[]
+  }
+  languages?: {
+    spoken: string[]
+  }
+  // 兼容旧版本字段
+  title?: string
+  linkedin?: string
+  sponsorship?: string
 }
 
 const ResumeCardSkeleton = () => {
@@ -105,48 +134,16 @@ interface ProcessingViewProps {
   linkedinUrl?: string
   parseResult?: string
   extractedData?: Partial<ExtractedData>
+  resumeFile?: {
+    name: string
+    size?: number
+  }
 }
 
-export default function ProcessingView({
-  linkedinUrl = 'https://linkedin.com/in/example',
-  parseResult = '',
-  extractedData,
-}: ProcessingViewProps) {
+export default function ProcessingView({linkedinUrl, parseResult = '', extractedData, resumeFile}: ProcessingViewProps) {
   const [showSkeleton, setShowSkeleton] = useState(true)
   const [showAnalysis, setShowAnalysis] = useState(false)
   const t = useTranslations('HomePage')
-
-  // 模拟数据，实际使用时会被 extractedData 替换
-  const mockData: ExtractedData = {
-    name: 'Alex Chen',
-    title: 'Senior UX Designer',
-    email: 'alex.chen.ux@gmail.com',
-    phone: '(415) 555-0123',
-    location: 'San Francisco, CA 94105',
-    linkedin: 'linkedin.com/in/alexchenux',
-    sponsorship: 'Never Needed',
-    education: {
-      university: 'Carnegie Mellon University',
-      degreeType: 'Master of Science',
-      major: 'Human-Computer Interaction',
-    },
-    skills: [
-      'UX design',
-      'accessibility consulting',
-      'digital accessibility',
-      'Figma',
-      'WCAG 2.1',
-      'ARIA',
-      'WCAG 2.2',
-      'Storybook',
-      'Jira',
-      'Confluence',
-      'AirTable',
-    ],
-  }
-
-  // 合并提取的数据和模拟数据
-  const displayData = {...mockData, ...extractedData}
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -158,38 +155,40 @@ export default function ProcessingView({
 
   return (
     <div className="h-screen onboarding-bg flex gap-6 justify-between p-10">
-      <div>
-        <div className="flex justify-center items-center gap-2">
+      <div className="w-[150px]">
+        <div className="flex flex-1 justify-center items-center gap-2">
           <Image src={Logo} alt={t('appName')} width={24} height={24} />
-          <span className="font-bold text-[20px]">{t('appName')}</span>
+          <span className="font-bold text-[20px] text-nowrap">{t('appName')}</span>
         </div>
       </div>
 
-      <div className="transition-all hide-scrollbar flex flex-col gap-8 duration-500 ease-in-out max-h-screen overflow-y-auto ">
-        <div className="space-y-4 text-base text-[rgba(0,0,0,0.8)]">
+      <div className="transition-all hide-scrollbar flex flex-col gap-8 duration-500 ease-in-out max-h-screen overflow-y-auto mt-36">
+        <div className="space-y-6 text-base text-[rgba(0,0,0,0.8)] text-[20px]">
           <h1 className="font-bold">Welcome</h1>
-          <p className="font-normal text-[20px]">{`I'm Tally, your career wingman. Let's land your dream job together.`}</p>
-          <p className="font-bold">Processing your resume...</p>
+          <p className="font-normal">I'm Tally, your career wingman. Let's land your dream job together. </p>
+          <p className="font-bold">Start by sharing your LinkedIn or résumé.</p>
         </div>
 
         <div className="flex justify-end">
           <div className="bg-white flex gap-2 px-4 py-2 rounded-[8px] justify-center items-center">
-            <Link size={16} />
-            <span>{linkedinUrl}</span>
+            {resumeFile ? (
+              <>
+                <File size={16} />
+                <span>{resumeFile.name}</span>
+              </>
+            ) : (
+              <>
+                <Link size={16} />
+                <span>{linkedinUrl}</span>
+              </>
+            )}
           </div>
         </div>
 
         <p className="text-base font-medium">
-          {`I'm analyzing your resume and extracting personal background information, education background information, and skills for further analysis.`}
+          I will extract your resume's personal background information, education background information, and skills based on the LinkedIn
+          link for further analysis.
         </p>
-
-        {/* 显示解析结果 */}
-        {parseResult && (
-          <div className="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto">
-            <h3 className="text-sm font-semibold mb-2 text-gray-700">Analysis Progress:</h3>
-            <div className="text-sm text-gray-600 whitespace-pre-wrap">{parseResult}</div>
-          </div>
-        )}
 
         <div className="space-y-3">
           <div className="flex items-center space-x-[7px]">
@@ -212,13 +211,13 @@ export default function ProcessingView({
                 description="Extracting personal information from resume"
                 detail="Personal Details"
                 extra={[
-                  {label: 'Name', value: displayData.name},
-                  {label: 'Title', value: displayData.title},
-                  {label: 'Email', value: displayData.email},
-                  {label: 'Phone', value: displayData.phone},
-                  {label: 'Location', value: displayData.location},
-                  {label: 'LinkedIn', value: displayData.linkedin},
-                  {label: 'Sponsorship', value: displayData.sponsorship},
+                  {label: 'Name', value: extractedData?.name || 'N/A'},
+                  {label: 'Title', value: extractedData?.title || 'N/A'},
+                  {label: 'Email', value: extractedData?.email || 'N/A'},
+                  {label: 'Phone', value: extractedData?.phone || 'N/A'},
+                  {label: 'Location', value: extractedData?.location || 'N/A'},
+                  {label: 'LinkedIn', value: extractedData?.linkedin || 'N/A'},
+                  {label: 'Sponsorship', value: extractedData?.sponsorship || 'N/A'},
                 ]}
                 extraType="personal"
               />
@@ -226,18 +225,22 @@ export default function ProcessingView({
                 title="Your Education background information"
                 description="Extracting education details from resume"
                 detail="Education Section"
-                extra={{
-                  university: displayData.education.university,
-                  degreeType: displayData.education.degreeType,
-                  major: displayData.education.major,
-                }}
+                extra={
+                  extractedData?.education?.degrees?.[0]
+                    ? {
+                        university: extractedData.education.degrees[0].university,
+                        degreeType: extractedData.education.degrees[0].degree,
+                        major: extractedData.education.degrees[0].degree,
+                      }
+                    : undefined
+                }
                 extraType="education"
               />
               <AnalysisBlock
-                title={`Your skills list (${displayData.skills.length})`}
+                title={`Your skills list (${extractedData?.skills?.raw_skills?.length || 0})`}
                 description="Extracting technical and soft skills"
                 detail="Skills Section"
-                extra={displayData.skills}
+                extra={extractedData?.skills?.raw_skills || []}
                 extraType="skills"
               />
             </div>

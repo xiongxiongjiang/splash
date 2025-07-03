@@ -117,7 +117,22 @@ export default function WelcomePage() {
         throw new Error('用户未登录')
       }
 
-      // 直接使用parseResume方法解析文件
+      // 本地开发环境使用mock数据
+      if (process.env.NODE_ENV === 'development') {
+        // 模拟加载时间
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        // 加载mock数据
+        const mockData = await import('./mock.json')
+        const response = mockData.default
+
+        if (response.success && response.profile) {
+          setParseResult(JSON.stringify(response.profile, null, 2))
+          return true
+        }
+      }
+
+      // 生产环境使用真实API
       const response = await apiClient.parseResume(file)
 
       if (response.success && response.profile) {
@@ -172,6 +187,45 @@ export default function WelcomePage() {
     },
   }
 
+  const handleDesktopUploadClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (handleUploadClick()) {
+      // 只有在用户已登录时才打开文件对话框
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = '.pdf,.doc,.docx'
+      input.onchange = event => {
+        const file = (event.target as HTMLInputElement).files?.[0]
+        if (file) {
+          const uploadFile = {
+            uid: Date.now().toString(),
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            originFileObj: file,
+          } as UploadFile
+
+          if (beforeUpload(uploadFile)) {
+            uploadCustomRequest({
+              file,
+              action: '',
+              method: 'POST',
+              onProgress: () => {},
+              onSuccess: response => {
+                setFileList([{...uploadFile, status: 'done', response}])
+              },
+              onError: error => {
+                setFileList([{...uploadFile, status: 'error', error}])
+              },
+            })
+            setFileList([{...uploadFile, status: 'uploading'}])
+          }
+        }
+      }
+      input.click()
+    }
+  }
+
   // 渲染文件列表的函数
   const renderFileList = () => {
     if (fileList.length === 0) return null
@@ -183,32 +237,8 @@ export default function WelcomePage() {
       return (
         <div key={file.uid} className="flex w-full items-center py-2 relative group rounded px-2">
           <div className="flex w-full items-center justify-center">
-            {/* 上传中显示 loading */}
-            {/* {isUploading ? (
-              <span className="w-5 h-5 flex items-center justify-center mr-2">
-                <Image src={IconLoading} alt="loading" className="animate-spin" />
-              </span>
-            ) : (
-              <Image src={IconTick} alt="icon_check" className="w-5 h-5 mr-2" />
-            )} */}
             <Image src={IconTick} alt="icon_check" className="w-5 h-5 mr-2" />
             <span className="text-center truncate">{file.name}</span>
-            {/* 上传成功时显示移除按钮 */}
-            {/* {isDone && (
-              <button
-                type="button"
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
-                onClick={() => {
-                  const newFileList = fileList.filter(f => f.uid !== file.uid)
-                  setFileList(newFileList)
-                  // 清除错误信息
-                  setUploadError('')
-                }}
-                title="移除"
-              >
-                <Image src={IconClose} alt="icon_close" className="w-4 h-4" />
-              </button>
-            )} */}
             <button
               type="button"
               className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
@@ -241,48 +271,7 @@ export default function WelcomePage() {
 
           <div className="mobile:hidden tablet:w-[400px] web:w-[400px] tablet:flex justify-center py-6 rounded-2xl bg-[rgba(235,235,235,0.5)] relative mt-6">
             <Upload {...uploadProps} style={{opacity: fileList.length === 0 ? 1 : 0}} openFileDialogOnClick={false}>
-              <Button
-                variant="outline"
-                className="bg-transparent"
-                onClick={e => {
-                  e.preventDefault()
-                  if (handleUploadClick()) {
-                    // 只有在用户已登录时才打开文件对话框
-                    const input = document.createElement('input')
-                    input.type = 'file'
-                    input.accept = '.pdf,.doc,.docx'
-                    input.onchange = event => {
-                      const file = (event.target as HTMLInputElement).files?.[0]
-                      if (file) {
-                        const uploadFile = {
-                          uid: Date.now().toString(),
-                          name: file.name,
-                          size: file.size,
-                          type: file.type,
-                          originFileObj: file,
-                        } as UploadFile
-
-                        if (beforeUpload(uploadFile)) {
-                          uploadCustomRequest({
-                            file,
-                            action: '',
-                            method: 'POST',
-                            onProgress: () => {},
-                            onSuccess: response => {
-                              setFileList([{...uploadFile, status: 'done', response}])
-                            },
-                            onError: error => {
-                              setFileList([{...uploadFile, status: 'error', error}])
-                            },
-                          })
-                          setFileList([{...uploadFile, status: 'uploading'}])
-                        }
-                      }
-                    }
-                    input.click()
-                  }
-                }}
-              >
+              <Button variant="outline" className="bg-transparent" onClick={e => handleDesktopUploadClick(e)}>
                 <UploadIcon />
                 Upload resume
               </Button>
@@ -366,7 +355,16 @@ export default function WelcomePage() {
   }
   // 如果正在处理，显示ProcessingView
   if (isProcessing) {
-    return <ProcessingView linkedinUrl={activeKey === 'linkedin' ? linkedinUrl : undefined} parseResult={parseResult} />
+    return (
+      <ProcessingView 
+        linkedinUrl={activeKey === 'linkedin' ? linkedinUrl : undefined} 
+        parseResult={parseResult}
+        resumeFile={activeKey === 'resume' && fileList.length > 0 ? {
+          name: fileList[0].name,
+          size: fileList[0].size
+        } : undefined}
+      />
+    )
   }
 
   return (

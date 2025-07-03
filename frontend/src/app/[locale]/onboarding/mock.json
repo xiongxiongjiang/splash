@@ -1,0 +1,201 @@
+{
+    "success": true,
+    "profile": {
+        "name": "Alex Chen",
+        "email": "alex.chen.ux@gmail.com",
+        "phone": "(415) 555-0123",
+        "location": "San Francisco, CA",
+        "open_to_relocate": false,
+        "professional_summary": "Results-driven Senior UX Designer with 6+ years of experience leading user-centered design initiatives for B2B and B2C digital products. Proven track record of improving user satisfaction by 35% and reducing task completion time by 40% through strategic UX research, information architecture, and interaction design. Expert in design systems, usability testing, and cross-functional collaboration with product managers and engineering teams.",
+        "career_level": null,
+        "years_experience": 4,
+        "primary_domain": null,
+        "seniority_keywords": null,
+        "experience": {
+            "jobs": [
+                {
+                    "title": "Senior UX Designer",
+                    "years": "March 2021 - Present",
+                    "company": "TechFlow Solutions",
+                    "location": "San Francisco, CA",
+                    "description": "Lead UX design for B2B SaaS platform serving 50,000+ enterprise users across finance and healthcare sectors. Manage end-to-end design process from research to implementation, collaborating with product management, engineering, and customer success teams."
+                },
+                {
+                    "title": "UX Designer",
+                    "years": "June 2019 - February 2021",
+                    "company": "DataVibe Analytics",
+                    "location": "Palo Alto, CA",
+                    "description": "Designed user experiences for data visualization platform and mobile applications. Specialized in complex dashboard interfaces and data storytelling for business intelligence tools used by Fortune 500 companies."
+                },
+                {
+                    "title": "Product Designer",
+                    "years": "January 2018 - May 2019",
+                    "company": "InnovateLab (Startup)",
+                    "location": "Berkeley, CA",
+                    "description": "First design hire at early-stage fintech startup. Established design processes, conducted user research, and designed MVP for consumer financial management application from concept to launch."
+                },
+                {
+                    "title": "Junior UX Designer",
+                    "years": "September 2017 - December 2017",
+                    "company": "DigitalCraft Agency",
+                    "location": "San Francisco, CA",
+                    "description": "Supported senior designers on client projects for e-commerce, healthcare, and education sectors. Focused on wireframing, prototyping, and user testing for web and mobile applications."
+                }
+            ]
+        },
+        "education": {
+            "degrees": [
+                {
+                    "gpa": "3.8/4.0 (Major GPA: 3.9/4.0)",
+                    "years": "August 2015 - May 2017",
+                    "degree": "Master of Science in Human-Computer Interaction",
+                    "courses": "User Research Methods, Interaction Design, Information Architecture, Prototyping, Design Thinking, Accessibility Design, Mobile UX",
+                    "location": "Pittsburgh, PA",
+                    "university": "Carnegie Mellon University"
+                }
+            ]
+        },
+        "skills": {
+            "raw_skills": [
+                "UX Research & Strategy",
+                "User Interviews & Surveys",
+                "Usability Testing",
+                "Persona Development",
+                "Journey Mapping",
+                "Competitive Analysis",
+                "Design & Prototyping",
+                "Wireframing & Mockups",
+                "Interactive Prototyping",
+                "Design Systems",
+                "Information Architecture",
+                "Accessibility (WCAG 2.1)",
+                "Figma",
+                "Sketch",
+                "Adobe XD",
+                "Principle",
+                "Framer",
+                "InVision",
+                "Miro",
+                "FigJam",
+                "Whimsical",
+                "UserTesting",
+                "Maze",
+                "Hotjar",
+                "HTML/CSS",
+                "React",
+                "A/B Testing & Optimization",
+                "Google Analytics",
+                "Mixpanel",
+                "Heatmap Analysis",
+                "Conversion Rate Optimization",
+                "Data-Driven Design Decisions"
+            ]
+        },
+        "languages": {
+            "spoken": []
+        },
+        "career_trajectory": null,
+        "domain_expertise": null,
+        "leadership_experience": null,
+        "achievement_highlights": null,
+        "source_documents": {
+            "original_resume": "senior_ux_designer_resume_alex_chen.pdf"
+        },
+        "processing_quality": 0.85,
+        "last_resume_update": null,
+        "processing_history": null,
+        "enhancement_status": "basic",
+        "confidence_score": null,
+        "data_sources": {
+            "sources": [
+                "resume_upload"
+            ]
+        },
+        "keywords": null,
+        "completeness_metadata": null,
+        "misc_data": null,
+        "notes": null,
+        "id": 21,
+        "user_id": 2,
+        "created_at": "2025-07-03T17:05:51.956045Z",
+        "updated_at": "2025-07-03T17:05:51.956059Z"
+    },
+    "resume": {
+        "name": "Alex Chen",
+        "email": "alex.chen.ux@gmail.com",
+        "phone": "(415) 555-0123",
+        "location": null,
+        "professional_summary": "Results-driven Senior UX Designer with 6+ years of experience leading user-centered design initiatives for B2B and B2C digital products. Proven track record of improving user satisfaction by 35% and reducing task completion time by 40% through strategic UX research, information architecture, and interaction design. Expert in design systems, usability testing, and cross-functional collaboration with product managers and engineering teams.",
+        "career_level": null,
+        "years_experience": 4,
+        "primary_domain": null,
+        "seniority_keywords": null,
+        "experience": null,
+        "education": {
+            "degrees": [
+                {
+                    "gpa": "3.8/4.0 (Major GPA: 3.9/4.0)",
+                    "years": "August 2015 - May 2017",
+                    "degree": "Master of Science in Human-Computer Interaction",
+                    "courses": "User Research Methods, Interaction Design, Information Architecture, Prototyping, Design Thinking, Accessibility Design, Mobile UX",
+                    "location": "Pittsburgh, PA",
+                    "university": "Carnegie Mellon University"
+                }
+            ]
+        },
+        "skills": {
+            "raw_skills": [
+                "UX Research & Strategy",
+                "User Interviews & Surveys",
+                "Usability Testing",
+                "Persona Development",
+                "Journey Mapping",
+                "Competitive Analysis",
+                "Design & Prototyping",
+                "Wireframing & Mockups",
+                "Interactive Prototyping",
+                "Design Systems",
+                "Information Architecture",
+                "Accessibility (WCAG 2.1)",
+                "Figma",
+                "Sketch",
+                "Adobe XD",
+                "Principle",
+                "Framer",
+                "InVision",
+                "Miro",
+                "FigJam",
+                "Whimsical",
+                "UserTesting",
+                "Maze",
+                "Hotjar",
+                "HTML/CSS",
+                "React",
+                "A/B Testing & Optimization",
+                "Google Analytics",
+                "Mixpanel",
+                "Heatmap Analysis",
+                "Conversion Rate Optimization",
+                "Data-Driven Design Decisions"
+            ]
+        },
+        "languages": null,
+        "career_trajectory": null,
+        "domain_expertise": null,
+        "leadership_experience": null,
+        "achievement_highlights": null,
+        "source_documents": null,
+        "misc_data": null,
+        "file_path": null,
+        "file_type": "generated",
+        "version": 1,
+        "is_active": true,
+        "customization_notes": null,
+        "id": 15,
+        "profile_id": 21,
+        "job_posting_id": null,
+        "created_at": "2025-07-03T17:05:53.001423Z",
+        "updated_at": "2025-07-03T17:05:53.001443Z"
+    },
+    "message": "Resume parsed and saved successfully"
+}
