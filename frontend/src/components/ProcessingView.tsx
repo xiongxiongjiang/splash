@@ -1,6 +1,6 @@
 'use client'
 
-import {useState, useEffect, use} from 'react'
+import {useState, useEffect, useRef} from 'react'
 
 import {Skeleton} from 'antd'
 import {ChevronDown, File, Link} from 'lucide-react'
@@ -8,6 +8,8 @@ import Image from 'next/image'
 import {useTranslations} from 'next-intl'
 
 import type {ExtractedData, PersonalExtra, EducationExtra, ParseResumeResponse} from '@/types/resume'
+import {ParsedResume} from '@/lib/types'
+import {supabase} from '@/lib/supabase'
 import Logo from '@/assets/logos/tally_logo.svg'
 
 interface AnalysisBlockProps {
@@ -74,26 +76,151 @@ const ResumeCardSkeleton = () => {
   )
 }
 
-interface ProcessingViewProps {
-  linkedinUrl?: string
-  parseResult?: ParseResumeResponse
-  resumeFile?: {
-    name: string
-    size?: number
-  }
+interface ProgressEvent {
+  step: string
+  progress: number
+  message: string
+  timestamp: string
 }
 
-export default function ProcessingView({linkedinUrl, parseResult, resumeFile}: ProcessingViewProps) {
+interface ProcessingViewProps {
+  linkedinUrl?: string
+  resumeFile?: File
+  onComplete?: (result: ParsedResume) => void
+  onError?: (error: string) => void
+}
+
+export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onError}: ProcessingViewProps) {
   const [showSkeleton, setShowSkeleton] = useState(true)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [progress, setProgress] = useState<ProgressEvent | null>(null)
+  const [parseResult, setParseResult] = useState<ParsedResume | null>(null)
+  const isProcessing = useRef(false)
   const t = useTranslations('HomePage')
 
+  // 使用ref存储回调函数，避免useEffect重复执行
+  const onCompleteRef = useRef(onComplete)
+  const onErrorRef = useRef(onError)
+
+  // 更新ref
+  onCompleteRef.current = onComplete
+  onErrorRef.current = onError
+
   useEffect(() => {
-    console.log('parseResult:', parseResult)
-  }, [parseResult])
+    if (isProcessing.current || !resumeFile) {
+      return
+    }
+    isProcessing.current = true
+    parseResumeStream(resumeFile)
+      .then(result => {
+        if (result.success && result.data) {
+          setParseResult(result.data)
+          onCompleteRef.current?.(result.data)
+        } else {
+          onErrorRef.current?.(result.error || 'Failed to parse resume')
+        }
+        isProcessing.current = false
+      })
+      .catch(error => {
+        console.error('Parse error:', error)
+        onErrorRef.current?.(error.message || 'Unknown error')
+        isProcessing.current = false
+      })
+  }, [resumeFile])
+
+  // 解析简历的流式处理函数
+  const parseResumeStream = async (file: File): Promise<{success: boolean; data?: ParsedResume; error?: string}> => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Get the auth token
+      const {
+        data: {session},
+      } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('No authentication session')
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/parse-resume-stream`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('No response body')
+      }
+
+      const decoder = new TextDecoder()
+      let result: {success: boolean; data?: ParsedResume; error?: string} = {
+        success: false,
+        error: 'No data received',
+      }
+
+      while (true) {
+        const {done, value} = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData = JSON.parse(line.slice(6))
+
+              if (eventData.event === 'progress') {
+                setProgress(eventData.data)
+              } else if (eventData.event === 'complete') {
+                const data = eventData.data
+                if (data.success && data.profile) {
+                  result = {
+                    success: true,
+                    data: {
+                      name: data.profile.name,
+                      email: data.profile.email,
+                      phone: data.profile.phone || '',
+                      location: data.profile.location || '',
+                      professional_summary: data.profile.professional_summary || 'Professional',
+                      years_experience: data.profile.years_experience || 0,
+                      skills: data.profile.skills || {raw_skills: []},
+                      education: data.profile.education || {degrees: []},
+                    },
+                  }
+                }
+              } else if (eventData.event === 'error') {
+                result = {
+                  success: false,
+                  error: eventData.data.error || 'Failed to parse resume',
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e)
+            }
+          }
+        }
+      }
+
+      return result
+    } catch (error) {
+      console.error('Resume parsing error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  }
 
   // 从parseResult中提取profile数据
-  const profileData = parseResult?.profile
+  const profileData = parseResult
 
   useEffect(() => {
     const timer = setTimeout(() => {

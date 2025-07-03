@@ -289,30 +289,30 @@ export default function WelcomePage() {
         </div>
       ),
     },
-    {
-      key: 'linkedin',
-      label: 'LinkedIn Import',
-      children: (
-        <div className="flex flex-col items-center">
-          <div className="h-[128px] w-[128px] flex justify-center items-center">
-            <Image src={IconLink} alt="icon_files" width={128} height={128} />
-          </div>
-          <div className="flex justify-center tablet:w-[400px] web:w-[400px] py-4 mx-4 rounded-2xl bg-[rgba(235,235,235,0.5)]">
-            <Input
-              placeholder="https://linkedin.com/in/"
-              className="!text-semibold !text-base border-0
-                          focus:outline-none shadow-none text-center
-                          focus-visible:!ring-0 focus-visible:!ring-transparent
-                          rounded-none bg-transparent transition-colors
-                        text-[rgba(0,0,0,0.8)] placeholder:text-[rgba(0,0,0,0.3)]"
-              value={linkedinUrl}
-              onChange={e => setLinkedinUrl(e.target.value)}
-            />
-          </div>
-          {linkedinError && <div className="w-full text-center text-base text-[#FF6767] mt-2">{linkedinError}</div>}
-        </div>
-      ),
-    },
+    // {
+    //   key: 'linkedin',
+    //   label: 'LinkedIn Import',
+    //   children: (
+    //     <div className="flex flex-col items-center">
+    //       <div className="h-[128px] w-[128px] flex justify-center items-center">
+    //         <Image src={IconLink} alt="icon_files" width={128} height={128} />
+    //       </div>
+    //       <div className="flex justify-center tablet:w-[400px] web:w-[400px] py-4 mx-4 rounded-2xl bg-[rgba(235,235,235,0.5)]">
+    //         <Input
+    //           placeholder="https://linkedin.com/in/"
+    //           className="!text-semibold !text-base border-0
+    //                       focus:outline-none shadow-none text-center
+    //                       focus-visible:!ring-0 focus-visible:!ring-transparent
+    //                       rounded-none bg-transparent transition-colors
+    //                     text-[rgba(0,0,0,0.8)] placeholder:text-[rgba(0,0,0,0.3)]"
+    //           value={linkedinUrl}
+    //           onChange={e => setLinkedinUrl(e.target.value)}
+    //         />
+    //       </div>
+    //       {linkedinError && <div className="w-full text-center text-base text-[#FF6767] mt-2">{linkedinError}</div>}
+    //     </div>
+    //   ),
+    // },
   ]
 
   const handleTabChange = (key: string) => {
@@ -320,26 +320,19 @@ export default function WelcomePage() {
   }
 
   // 处理Continue按钮点击
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (activeKey === 'resume') {
-      // 简历模式：现在才真正上传和解析文件
-      console.log('Current fileList:', fileList)
-
+      // 简历模式：验证文件
       if (fileList.length === 0) {
         setUploadError('No file uploaded')
         return
       }
 
-      const selectedFile = fileList[0] // 获取第一个文件
-      console.log('Selected file:', selectedFile)
-
-      // 检查文件对象
+      const selectedFile = fileList[0]
       const fileToUpload = selectedFile.originFileObj || selectedFile
-      console.log('File to upload:', fileToUpload)
 
       if (fileToUpload && fileToUpload instanceof File) {
         setIsProcessing(true)
-        await uploadAndParseFile(fileToUpload)
       } else {
         console.error('No valid file found:', {selectedFile, fileToUpload})
         setUploadError('No valid file found')
@@ -350,25 +343,37 @@ export default function WelcomePage() {
         setLinkedinError('The link format is incorrect')
         return
       }
-      // TODO: 处理LinkedIn导入逻辑
-      console.log('Processing LinkedIn URL:', linkedinUrl)
       setIsProcessing(true)
     }
   }
+
   // 如果正在处理，显示ProcessingView
   if (isProcessing) {
+    const getFileToProcess = (): File | undefined => {
+      if (activeKey === 'resume' && fileList.length > 0) {
+        const selectedFile = fileList[0]
+        const file = selectedFile.originFileObj || selectedFile
+        // 确保返回的是File对象
+        return file instanceof File ? file : undefined
+      }
+      return undefined
+    }
+
     return (
       <ProcessingView
         linkedinUrl={activeKey === 'linkedin' ? linkedinUrl : undefined}
-        parseResult={parseResult}
-        resumeFile={
-          activeKey === 'resume' && fileList.length > 0
-            ? {
-                name: fileList[0].name,
-                size: fileList[0].size,
-              }
-            : undefined
-        }
+        resumeFile={getFileToProcess()}
+        onComplete={result => {
+          // 将ParsedResume转换为ParseResumeResponse格式
+          const convertedResult = {
+            profile: result,
+            success: true,
+          }
+          setParseResult(convertedResult)
+        }}
+        onError={(error: string) => {
+          console.error('Processing error:', error)
+        }}
       />
     )
   }
