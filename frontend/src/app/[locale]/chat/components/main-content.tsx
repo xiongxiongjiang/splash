@@ -1,12 +1,12 @@
-import React from 'react';
+import React from 'react'
 
 // import { Check } from 'lucide-react';
 
-import ModernChat from '@/components/ModernChat';
+import ModernChat from '@/components/ModernChat'
 // import { Button } from '@/components/ui/button';
-const MainContent: React.FC = (props) => {
+const MainContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = props => {
   return (
-    <div {...props} className="flex-1 flex flex-col my-9 ml-9">
+    <div {...props} className="flex-1 flex flex-col ml-9 my-9 transition-[padding-left] duration-200 ease-linear">
       {/* Chat Messages */}
       {/* <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-custom">
         <div className="p-4">
@@ -100,7 +100,7 @@ const MainContent: React.FC = (props) => {
         <ModernChat />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default MainContent;
+export default MainContent
