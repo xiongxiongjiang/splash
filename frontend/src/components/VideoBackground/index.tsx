@@ -38,29 +38,32 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
 
             const hls = new Hls({
               enableWorker: false,
-              lowLatencyMode: false, // 关闭低延迟模式以提高稳定性
-              backBufferLength: 90, // 增加后缓冲长度
-              maxBufferLength: 30, // 设置最大缓冲长度
-              maxMaxBufferLength: 600, // 设置最大缓冲长度上限
-              maxBufferSize: 60 * 1000 * 1000, // 60MB缓冲大小
-              maxBufferHole: 0.5, // 缓冲洞的最大长度
-              highBufferWatchdogPeriod: 2, // 高缓冲监控周期
-              nudgeOffset: 0.1, // 微调偏移
-              nudgeMaxRetry: 3, // 最大微调重试次数
-              maxFragLookUpTolerance: 0.25, // 片段查找容差
-              liveSyncDurationCount: 3, // 直播同步持续时间计数
-              liveMaxLatencyDurationCount: Infinity, // 直播最大延迟持续时间计数
-              liveDurationInfinity: false, // 直播持续时间无限
-              liveBackBufferLength: Infinity, // 直播后缓冲长度
-              maxLiveSyncPlaybackRate: 1, // 最大直播同步播放速率
-              manifestLoadingTimeOut: 10000, // 清单加载超时
-              manifestLoadingMaxRetry: 1, // 清单加载最大重试次数
-              manifestLoadingRetryDelay: 1000, // 清单加载重试延迟
-              fragLoadingTimeOut: 20000, // 片段加载超时
-              fragLoadingMaxRetry: 6, // 片段加载最大重试次数
-              fragLoadingRetryDelay: 1000, // 片段加载重试延迟
-              startFragPrefetch: true, // 启动片段预取
-              testBandwidth: true, // 测试带宽
+              lowLatencyMode: false,
+              // 优化缓冲配置以解决停滞问题
+              backBufferLength: 30, // 减少后缓冲长度
+              maxBufferLength: 60, // 增加最大缓冲长度
+              maxMaxBufferLength: 300, // 减少最大缓冲长度上限
+              maxBufferSize: 100 * 1000 * 1000, // 100MB缓冲大小
+              maxBufferHole: 0.1, // 减少缓冲洞容忍度
+              // 优化片段加载
+              fragLoadingTimeOut: 30000,
+              fragLoadingMaxRetry: 3,
+              fragLoadingRetryDelay: 500,
+              // 优化清单加载
+              manifestLoadingTimeOut: 15000,
+              manifestLoadingMaxRetry: 2,
+              manifestLoadingRetryDelay: 500,
+              // 启用预取和带宽测试
+              startFragPrefetch: true,
+              testBandwidth: false, // 关闭带宽测试以减少复杂性
+              // 优化播放控制
+              nudgeOffset: 0.05,
+              nudgeMaxRetry: 5,
+              maxFragLookUpTolerance: 0.1,
+              // 禁用一些可能导致问题的功能
+              debug: false,
+              capLevelOnFPSDrop: false,
+              capLevelToPlayerSize: false,
             })
 
             hlsRef.current = hls
@@ -106,18 +109,42 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
                     break
                 }
               } else {
-                // 非致命错误，记录但不停止播放
-                console.warn('Non-fatal HLS error:', data)
+                // 处理非致命错误
+                if (data.type === Hls.ErrorTypes.OTHER_ERROR && data.details === 'bufferStalledError') {
+                  console.warn('Buffer stalled, attempting to recover...')
+                  // 尝试跳过停滞点
+                  if (video.currentTime > 0) {
+                    video.currentTime += 0.1
+                  }
+                  video.play().catch(console.error)
+                } else {
+                  console.warn('Non-fatal HLS error:', data)
+                }
               }
             })
 
-            // 监听缓冲事件
+            // 监听缓冲和播放事件
             hls.on(Hls.Events.BUFFER_APPENDED, () => {
               console.log('Buffer appended')
             })
 
             hls.on(Hls.Events.BUFFER_EOS, () => {
               console.log('Buffer end of stream')
+            })
+
+            // 监听播放停滞事件
+            hls.on(Hls.Events.ERROR, (event: any, data: any) => {
+              if (data.details === 'bufferStalledError') {
+                console.warn('Buffer stalled detected, seeking forward...')
+                if (video.currentTime < video.duration - 1) {
+                  video.currentTime += 0.1
+                }
+              }
+            })
+
+            // 监听片段加载事件
+            hls.on(Hls.Events.FRAG_LOADED, () => {
+              console.log('Fragment loaded successfully')
             })
 
             return () => {
@@ -149,10 +176,17 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
     }
 
     const handleStalled = () => {
-      console.warn('Video playback stalled')
-      // 尝试重新开始播放
+      console.warn('Video playback stalled, attempting recovery...')
+      // 更积极的恢复策略
       if (video.readyState >= 2) {
+        // 尝试跳过停滞点
+        if (video.currentTime < video.duration - 1) {
+          video.currentTime += 0.1
+        }
         video.play().catch(console.error)
+      } else if (hlsRef.current) {
+        // 如果视频数据不足，重新加载
+        hlsRef.current.startLoad()
       }
     }
 
