@@ -9,57 +9,9 @@
   --breakpoint-web: 1024px;                    
 }
 @font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Ultralight.otf') format('opentype');
-  font-weight: 100;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Thin.otf') format('opentype');
-  font-weight: 200;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Light.otf') format('opentype');
-  font-weight: 300;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Regular.otf') format('opentype');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Medium.otf') format('opentype');
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Semibold.otf') format('opentype');
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Bold.otf') format('opentype');
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Heavy.otf') format('opentype');
-  font-weight: 800;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'SF Pro Rounded';
-  src: url('/fonts/SF-Pro-Rounded-Black.otf') format('opentype');
-  font-weight: 900;
+  font-family: 'SF Pro';
+  src: url('/fonts/SF-Pro.ttf') format('truetype');
+  font-weight: 100 900;
   font-display: swap;
 }
 
@@ -166,7 +118,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'SF Pro Rounded', 'SF UI Rounded', 'Arial Rounded MT Bold', Arial, Helvetica, sans-serif;
+  font-family: 'SF Pro', 'SF UI Rounded', 'Arial Rounded MT Bold', Arial, Helvetica, sans-serif;
 }
 /* 
 ---break--- */

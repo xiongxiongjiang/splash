@@ -25,8 +25,6 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
           video.src = '/bg-video/gradient-background.m3u8'
           video.load()
         } else {
-          console.log('Using HLS.js')
-
           // 动态导入HLS.js
           const Hls = (await import('hls.js')).default
 
@@ -72,7 +70,7 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
             hls.attachMedia(video)
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-              console.log('HLS manifest parsed successfully')
+              // console.log('HLS manifest parsed successfully')
               setIsLoading(false)
               video.play().catch(console.error)
             })
@@ -125,11 +123,11 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
 
             // 监听缓冲和播放事件
             hls.on(Hls.Events.BUFFER_APPENDED, () => {
-              console.log('Buffer appended')
+              // console.log('Buffer appended')
             })
 
             hls.on(Hls.Events.BUFFER_EOS, () => {
-              console.log('Buffer end of stream')
+              // console.log('Buffer end of stream')
             })
 
             // 监听播放停滞事件
@@ -144,7 +142,7 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
 
             // 监听片段加载事件
             hls.on(Hls.Events.FRAG_LOADED, () => {
-              console.log('Fragment loaded successfully')
+              // console.log('Fragment loaded successfully')
             })
 
             return () => {
@@ -165,7 +163,7 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
     }
 
     const handleCanPlay = () => {
-      console.log('Video can play')
+      // console.log('Video can play')
       setIsLoading(false)
       video.play().catch(console.error)
     }
@@ -191,11 +189,11 @@ export default function VideoBackground({className = ''}: VideoBackgroundProps) 
     }
 
     const handleWaiting = () => {
-      console.log('Video is waiting for data')
+      // console.log('Video is waiting for data')
     }
 
     const handlePlaying = () => {
-      console.log('Video is playing')
+      // console.log('Video is playing')
       retryCountRef.current = 0 // 重置重试计数
     }
 

@@ -121,9 +121,9 @@ export default function TallyAILanding() {
                         alt="copilot"
                         // width={200} // 你可以用固定宽度或 max-w
                         height={0} // 这里给 0，让 height 用自动撑开
-                        objectFit="cover"
-                        // style={{ height: '100%', objectFit: 'cover' }}
+                        style={{ objectFit: 'cover' }}
                         className="block z-10 scale-220"
+                        priority
                       />
                     </span>
                     <span ref={chromaTextRef} className="chroma-text ml-2.5 tablet:ml-4">

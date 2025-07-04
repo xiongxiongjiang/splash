@@ -41,14 +41,16 @@ export default function WelcomePage() {
   useEffect(() => {
     const checkAuthAndProfile = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
+        const {
+          data: {session},
+        } = await supabase.auth.getSession()
+
         // If not authenticated, redirect to login
         if (!session) {
           router.push(`/${locale}/login`)
           return
         }
-        
+
         // Update store if needed
         if (session.user && !userInfo) {
           updateUserInfo(session.user)
@@ -58,15 +60,15 @@ export default function WelcomePage() {
             expires_at: session.expires_at as number,
           })
         }
-        
+
         // Check if user has profile/resumes
         try {
           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me/resumes`, {
             headers: {
-              'Authorization': `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${session.access_token}`,
             },
           })
-          
+
           if (response.ok) {
             const data = await response.json()
             if (data.resumes && data.resumes.length > 0) {
@@ -78,7 +80,7 @@ export default function WelcomePage() {
         } catch (error) {
           console.error('Error checking profile:', error)
         }
-        
+
         setIsCheckingAuth(false)
       } catch (error) {
         console.error('Auth check failed:', error)
@@ -88,7 +90,6 @@ export default function WelcomePage() {
 
     checkAuthAndProfile()
   }, [router, locale, userInfo, updateUserInfo, updateToken])
-
 
   // 处理上传按钮点击
   const handleUploadClick = () => {
@@ -306,7 +307,8 @@ export default function WelcomePage() {
         resumeFile={getFileToProcess()}
         onComplete={() => {
           // Navigate to dashboard after successful parsing, skip transition
-          router.push(`/${locale}/dashboard?from=processing`)
+          // router.push(`/${locale}/dashboard?from=processing`)
+          router.push(`/${locale}/chat`)
         }}
         onError={(error: string) => {
           console.error('Processing error:', error)
