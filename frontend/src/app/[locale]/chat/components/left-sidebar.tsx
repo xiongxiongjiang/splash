@@ -1,40 +1,50 @@
-import React from 'react';
+import React from 'react'
 // import { useState, useEffect } from 'react';
 
-import { Plus, Settings, Bell } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
+import {Plus, Settings, Bell} from 'lucide-react'
+import {useTranslations} from 'next-intl'
+import Image from 'next/image'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
+import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar'
+import {Button} from '@/components/ui/button'
+import {Sidebar, SidebarContent, useSidebar} from '@/components/ui/sidebar'
 
-import useUserStore from '@/store/user';
+import useUserStore from '@/store/user'
+import {useSidebarMode} from '../page'
 
-// 侧边栏切换按钮组件
-const SidebarToggleButton = () => {
-  const { state, toggleSidebar } = useSidebar();
+// 侧边栏模式切换按钮组件
+const SidebarModeToggleButton = () => {
+  const {mode, setMode} = useSidebarMode()
+
+  const handleModeToggle = () => {
+    const newMode = mode === 'floating' ? 'fixed' : 'floating'
+    setMode(newMode)
+  }
+
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={toggleSidebar}
-      title={state === 'expanded' ? '收起侧边栏' : '展开侧边栏'}
+      onClick={handleModeToggle}
+      title={mode === 'floating' ? '切换到固定模式' : '切换到悬浮模式'}
+      className={`transition-colors duration-200 ${mode === 'fixed' ? 'bg-blue-100 hover:bg-blue-200' : 'hover:bg-gray-100'}`}
     >
       <Image
         src="/side-bar.svg"
-        alt="切换侧边栏"
+        alt="切换侧边栏模式"
         width={20}
         height={20}
-        className="text-gray-600"
+        className={mode === 'fixed' ? 'text-blue-600' : 'text-gray-600'}
       />
     </Button>
-  );
-};
+  )
+}
 
-const LeftSidebar: React.FC = (props) => {
-  const t = useTranslations('HomePage');
-  const { userInfo } = useUserStore();
+const LeftSidebar: React.FC<{
+  collapsible?: 'offcanvas' | 'icon' | 'none';
+}> = ({ collapsible, ...props }) => {
+  const t = useTranslations('HomePage')
+  const {userInfo} = useUserStore()
   const jobs = [
     {
       id: 1,
@@ -72,10 +82,10 @@ const LeftSidebar: React.FC = (props) => {
       color: 'bg-black',
       initials: 'atc',
     },
-  ];
+  ]
 
   return (
-    <Sidebar {...props}>
+    <Sidebar {...props} collapsible={collapsible}>
       <SidebarContent>
         {/* 侧边栏容器，折叠时透明背景 */}
         <div className={`h-screen flex flex-col bg-[#EBEBEBE5]`}>
@@ -90,17 +100,16 @@ const LeftSidebar: React.FC = (props) => {
                   <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                 </div>
               </div>
-              <span className="font-semibold text-lg">{t('appName')}</span>
+              <div className="flex flex-col">
+                <span className="font-semibold text-lg">{t('appName')}</span>
+              </div>
             </div>
-            <SidebarToggleButton />
+            <SidebarModeToggleButton />
           </div>
 
           {/* New Job 按钮 */}
           <div className={`overflow-hidden  opacity-100 max-h-24 px-5`}>
-            <Button
-              variant="outline"
-              className="w-full p-4 bg-[#FFFFFF66] justify-center rounded-[12px] gap-2 text-gray-600"
-            >
+            <Button variant="outline" className="w-full p-4 bg-[#FFFFFF66] justify-center rounded-[12px] gap-2 text-gray-600">
               <Plus className="w-4 h-4" />
               {t('addNewJob')}
             </Button>
@@ -115,16 +124,14 @@ const LeftSidebar: React.FC = (props) => {
               </div>
 
               <div className="space-y-4 overflow-y-auto scrollbar-custom pr-2">
-                {jobs.map((job) => (
+                {jobs.map(job => (
                   <div
                     key={job.id}
                     className={`flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer transition-colors ${
                       job.active ? 'bg-white shadow-sm' : 'bg-[#FFFFFF33] hover:bg-gray-50'
                     }`}
                   >
-                    <div
-                      className={`w-10 h-10 ${job.color} rounded-full flex items-center justify-center text-white text-sm font-medium`}
-                    >
+                    <div className={`w-10 h-10 ${job.color} rounded-full flex items-center justify-center text-white text-sm font-medium`}>
                       {job.initials}
                     </div>
                     <div className="flex-1 flex flex-col gap-1 min-w-0">
@@ -143,9 +150,7 @@ const LeftSidebar: React.FC = (props) => {
                   <AvatarImage src="/placeholder.svg?height=32&width=32" />
                   <AvatarFallback>AC</AvatarFallback>
                 </Avatar>
-                <span className="font-medium text-gray-900">
-                  {userInfo?.user_metadata.first_name || userInfo?.user_metadata.full_name}
-                </span>
+                <span className="font-medium text-gray-900">{userInfo?.user_metadata.first_name || userInfo?.user_metadata.full_name}</span>
                 <div className="ml-auto flex gap-2">
                   <Bell className="w-4 h-4 text-gray-400" />
                   <Settings className="w-4 h-4 text-gray-400" />
@@ -156,7 +161,7 @@ const LeftSidebar: React.FC = (props) => {
         </div>
       </SidebarContent>
     </Sidebar>
-  );
-};
+  )
+}
 
-export default LeftSidebar;
+export default LeftSidebar
