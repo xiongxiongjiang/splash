@@ -174,7 +174,6 @@ function Sidebar({
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetContent
           side={side}
-          size="content"
           className={cn(
             "p-0 data-[state=open]:border-r-0 data-[state=closed]:border-r-0",
             className

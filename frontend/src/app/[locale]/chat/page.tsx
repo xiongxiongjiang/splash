@@ -1,23 +1,13 @@
 'use client'
 
-import {useEffect, useState, createContext, useContext, useMemo} from 'react'
+import {useEffect, useMemo} from 'react'
 
 import {SidebarProvider, useSidebar} from '@/components/ui/sidebar'
+import {SidebarModeProvider, useSidebarMode} from '@/contexts/sidebar-mode-context'
 
 import LeftSidebar from './components/left-sidebar'
 import MainContent from './components/main-content'
 import RightSidebar from './components/right-sidebar'
-
-// 侧边栏模式类型
-type SidebarMode = 'floating' | 'fixed'
-
-// 侧边栏模式上下文
-const SidebarModeContext = createContext<{
-  mode: SidebarMode
-  setMode: (mode: SidebarMode) => void
-}>({mode: 'floating', setMode: () => {}})
-
-export const useSidebarMode = () => useContext(SidebarModeContext)
 
 // 悬浮模式边缘触发组件
 const FloatingModeTrigger = () => {
@@ -114,10 +104,8 @@ const MainContentWrapper = () => {
 }
 
 export default function TallyAI() {
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>('floating')
-
   return (
-    <SidebarModeContext.Provider value={{mode: sidebarMode, setMode: setSidebarMode}}>
+    <SidebarModeProvider>
       <div className="flex h-screen bg-[linear-gradient(242.72deg,_#EF58581A_15.14%,_#5BF78C1A_52.08%,_#449EF91A_94.36%)]">
         <SidebarProvider
           style={
@@ -128,10 +116,10 @@ export default function TallyAI() {
         >
           <FloatingModeTrigger />
           <FixedModeController />
-          <LeftSidebar collapsible={sidebarMode === 'floating' ? 'offcanvas' : 'none'} />
+          <LeftSidebar />
           <MainContentWrapper />
         </SidebarProvider>
       </div>
-    </SidebarModeContext.Provider>
+    </SidebarModeProvider>
   )
 }

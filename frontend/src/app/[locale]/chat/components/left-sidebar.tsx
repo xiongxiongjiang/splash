@@ -10,7 +10,7 @@ import {Button} from '@/components/ui/button'
 import {Sidebar, SidebarContent, useSidebar} from '@/components/ui/sidebar'
 
 import useUserStore from '@/store/user'
-import {useSidebarMode} from '../page'
+import {useSidebarMode} from '@/contexts/sidebar-mode-context'
 
 // 侧边栏模式切换按钮组件
 const SidebarModeToggleButton = () => {
@@ -40,9 +40,9 @@ const SidebarModeToggleButton = () => {
   )
 }
 
-const LeftSidebar: React.FC<{
-  collapsible?: 'offcanvas' | 'icon' | 'none';
-}> = ({ collapsible, ...props }) => {
+const LeftSidebar: React.FC = (props) => {
+  const {mode} = useSidebarMode()
+  const collapsible = mode === 'floating' ? 'offcanvas' : 'none'
   const t = useTranslations('HomePage')
   const {userInfo} = useUserStore()
   const jobs = [
@@ -108,8 +108,11 @@ const LeftSidebar: React.FC<{
           </div>
 
           {/* New Job 按钮 */}
-          <div className={`overflow-hidden  opacity-100 max-h-24 px-5`}>
-            <Button variant="outline" className="w-full p-4 bg-[#FFFFFF66] justify-center rounded-[12px] gap-2 text-gray-600">
+          <div className={`overflow-hidden opacity-100 max-h-24 px-5`}>
+            <Button
+              variant="outline"
+              className="w-full p-4 bg-[#FFFFFF66] justify-center rounded-[12px] gap-2 text-gray-600 relative before:absolute before:inset-0 before:rounded-[12px] before:p-[1px] before:bg-gradient-to-b before:from-[rgba(255,255,255,0.5)] before:to-[rgba(255,255,255,0)] before:-z-10 border-0"
+            >
               <Plus className="w-4 h-4" />
               {t('addNewJob')}
             </Button>
