@@ -7,12 +7,11 @@ import {useRouter} from 'next/navigation'
 import {useTranslations} from 'next-intl'
 
 import Logo from '@/assets/logos/tally_logo.svg'
-// import { useSurveyStore } from '@/store/survey';
 
 const Header = ({showBackButton = false, fixed = false}: {showBackButton?: boolean; fixed?: boolean}) => {
   const t = useTranslations('HomePage')
   const router = useRouter()
-  // const { reset } = useSurveyStore();
+  
   // ESC key handler
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -26,11 +25,12 @@ const Header = ({showBackButton = false, fixed = false}: {showBackButton?: boole
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [])
+  
   // Handle exit functionality
   const handleExit = () => {
-    // reset();
     router.back()
   }
+  
   return (
     <header
       className={`mx-auto h-[136px] px-[1.3vh] tablet:px-[3vh] flex items-center z-10 opacity-40 bg-transparent ${

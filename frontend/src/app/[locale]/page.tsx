@@ -9,8 +9,6 @@ import {useRouter} from 'next/navigation'
 
 import Header from '@/components/Header'
 import InfiniteLogoScroller from '@/components/InfiniteLogoScroller'
-import VideoBackground from '@/components/VideoBackground'
-
 import BgBubble from '@/assets/images/bg_copilot.png'
 import {supabase} from '@/lib/supabase'
 import {useSurveyStore} from '@/store/survey'
@@ -36,7 +34,17 @@ export default function TallyAILanding() {
   const textRef = useRef<HTMLHeadingElement>(null)
   const router = useRouter()
   const hasAnimated = useRef(false) // 防止动画重复执行
-  const [hasClickedSignUp, setHasClickedSignUp] = useState(false)
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push('/en/dashboard');
+      }
+    };
+    checkAuth();
+  }, [router]);
   const {isCompleted} = useSurveyStore()
   const chromaTextRef = useRef<HTMLSpanElement>(null)
   const [locale, setLocale] = useState('en')
@@ -90,8 +98,6 @@ export default function TallyAILanding() {
   }, [])
 
   const toSurvey = () => {
-    // 设置点击状态为 true
-    setHasClickedSignUp(true)
     setTimeout(() => {
       router.push(`/${locale}/survey`)
     }, 300)

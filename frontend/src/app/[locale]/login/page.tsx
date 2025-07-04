@@ -1,11 +1,24 @@
 'use client'
 
-import {useParams} from 'next/navigation'
+import {useEffect} from 'react'
+import {useParams, useRouter} from 'next/navigation'
 import {supabase} from '@/lib/supabase'
 
 export default function LoginPage() {
   const params = useParams()
+  const router = useRouter()
   const locale = params.locale as string
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push(`/${locale}/dashboard`);
+      }
+    };
+    checkAuth();
+  }, [router, locale]);
   const signInWithLinkedIn = async () => {
     const {error} = await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',

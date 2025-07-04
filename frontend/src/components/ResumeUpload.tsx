@@ -87,17 +87,18 @@ export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {
                 setProgress(eventData.data);
               } else if (eventData.event === 'complete') {
                 const data = eventData.data;
-                if (data.success && data.resume) {
+                if (data.success && data.profile) {
                   result = {
                     success: true,
                     data: {
-                      name: data.resume.name,
-                      email: data.resume.email,
-                      phone: data.resume.phone,
-                      professional_summary: data.resume.professional_summary || 'Professional',
-                      years_experience: data.resume.years_experience || 0,
-                      skills: data.resume.skills || { raw_skills: [] },
-                      education: data.resume.education || { degrees: [] }
+                      name: data.profile.name,
+                      email: data.profile.email,
+                      phone: data.profile.phone || '',
+                      location: data.profile.location || '',
+                      professional_summary: data.profile.professional_summary || 'Professional',
+                      years_experience: data.profile.years_experience || 0,
+                      skills: data.profile.skills || { raw_skills: [] },
+                      education: data.profile.education || { degrees: [] }
                     }
                   };
                 }
