@@ -3,12 +3,34 @@ import React from 'react';
 
 import { Plus, Settings, Bell } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Sidebar, SidebarContent } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
 
 import useUserStore from '@/store/user';
+
+// 侧边栏切换按钮组件
+const SidebarToggleButton = () => {
+  const { state, toggleSidebar } = useSidebar();
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleSidebar}
+      title={state === 'expanded' ? '收起侧边栏' : '展开侧边栏'}
+    >
+      <Image
+        src="/side-bar.svg"
+        alt="切换侧边栏"
+        width={20}
+        height={20}
+        className="text-gray-600"
+      />
+    </Button>
+  );
+};
 
 const LeftSidebar: React.FC = (props) => {
   const t = useTranslations('HomePage');
@@ -58,16 +80,19 @@ const LeftSidebar: React.FC = (props) => {
         {/* 侧边栏容器，折叠时透明背景 */}
         <div className={`h-screen flex flex-col bg-[#EBEBEBE5]`}>
           {/* Header */}
-          <div className={`flex items-center gap-2 mb-4 p-5`}>
-            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-              <div className="grid grid-cols-2 gap-0.5">
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+          <div className={`flex items-center justify-between mb-4 p-5`}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                </div>
               </div>
+              <span className="font-semibold text-lg">{t('appName')}</span>
             </div>
-            <span className="font-semibold text-lg">{t('appName')}</span>
+            <SidebarToggleButton />
           </div>
 
           {/* New Job 按钮 */}
