@@ -37,6 +37,7 @@ export default function DashboardPage() {
   });
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isClearingProfile, setIsClearingProfile] = useState(false);
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -126,6 +127,7 @@ export default function DashboardPage() {
     }
 
     setState((prev) => ({ ...prev, isLoading: true }));
+    setIsClearingProfile(true); // Hide dashboard immediately
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -143,13 +145,16 @@ export default function DashboardPage() {
         throw new Error('Failed to clear profile');
       }
       
+      // Set redirecting state first to prevent dashboard render
+      setIsRedirecting(true);
+      
       // Reset to onboarding state
       setState((prev) => ({
         ...prev,
         resumes: [],
         isLoading: false,
         showOnboarding: true,
-        showTransition: false, // Ensure we don't show transition
+        showTransition: true, // Show transition during redirect
       }));
       
       // Immediately redirect to onboarding
@@ -164,8 +169,8 @@ export default function DashboardPage() {
     }
   };
 
-  // Show transition until data is loaded
-  if (state.showTransition || isRedirecting) {
+  // Show transition until data is loaded (skip if from processing)
+  if (!fromProcessing && (state.showTransition || isRedirecting || isClearingProfile)) {
     return (
       <TallyTransition 
         className="min-h-screen bg-gray-50"
@@ -200,7 +205,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (state.isLoading) {
+  if (state.isLoading && !fromProcessing) {
     return (
       <TallyTransition 
         className="min-h-screen bg-gray-50"
