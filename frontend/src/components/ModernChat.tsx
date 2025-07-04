@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Select } from 'antd';
-import { Bot, User, Send, Loader2 } from 'lucide-react';
+import { Bot, User, Loader2 } from 'lucide-react';
 import MarkdownIt from 'markdown-it';
 
 import ChatInput from './ChatInput';
@@ -165,15 +165,12 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
         stream: false,
       });
 
-      console.log('Chat completion response:', data);
-
       // Extract the assistant's response with null checks
       if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
         throw new Error('Invalid response format from backend');
       }
 
       const assistantMessage = data.choices[0].message.content;
-      console.log('Assistant message:', assistantMessage);
 
       if (!assistantMessage) {
         throw new Error('Empty response content from backend');
@@ -202,12 +199,7 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
         workflowMetadata
       };
       
-      console.log('Adding bot message to state:', botMessage);
-      setMessages(prev => {
-        const newMessages = [...prev, botMessage];
-        console.log('New messages state:', newMessages);
-        return newMessages;
-      });
+      setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: ChatMessage = {
@@ -395,11 +387,8 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
   const renderMessage = (message: ChatMessage) => {
     const isUser = message.role === 'user';
     
-    console.log('Rendering message:', message.id, message.role, message.messageType, message.content.substring(0, 50));
-    
     // Render structured messages as cards (but not 'text' type)
     if (!isUser && message.messageType && message.messageType !== 'text') {
-      console.log('Rendering as card:', message.messageType);
       return (
         <div key={message.id} className="p-4">
           <div className="max-w-2xl">

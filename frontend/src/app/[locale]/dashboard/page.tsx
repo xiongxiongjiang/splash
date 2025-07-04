@@ -1,15 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import ModernChat from '@/components/ModernChat';
-import ResumeUpload from '@/components/ResumeUpload';
-
+import TallyTransition from '@/components/TallyTransition';
 import { syncUserWithBackend, getUserResumes, apiClient, User, Resume } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
-import { ParsedResume } from '@/lib/types';
 
 interface DashboardState {
   supabaseUser: Record<string, any> | null;
@@ -19,12 +16,15 @@ interface DashboardState {
   error: string | null;
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
   showOnboarding: boolean;
+  showTransition: boolean;
 }
 
 export default function DashboardPage() {
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
+  const searchParams = useSearchParams();
+  const fromProcessing = searchParams.get('from') === 'processing';
   const [state, setState] = useState<DashboardState>({
     supabaseUser: null,
     backendUser: null,
@@ -33,7 +33,10 @@ export default function DashboardPage() {
     error: null,
     syncStatus: 'idle',
     showOnboarding: false,
+    showTransition: !fromProcessing, // Skip transition if coming from processing
   });
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -68,8 +71,6 @@ export default function DashboardPage() {
             backendUser,
             syncStatus: 'success',
           }));
-          
-          console.log('✅ Backend sync successful');
         } catch (syncError: any) {
           console.error('❌ Backend sync failed:', syncError);
           setState((prev) => ({
@@ -85,25 +86,28 @@ export default function DashboardPage() {
           setState((prev) => ({
             ...prev,
             resumes: resumesData.resumes,
-            isLoading: false,
             showOnboarding: resumesData.resumes.length === 0,
+            isLoading: fromProcessing ? false : prev.isLoading, // If from processing, immediately set to false
           }));
+          setDataLoaded(true);
         } catch (resumeError: any) {
           setState((prev) => ({
             ...prev,
             resumes: [],
-            isLoading: false,
             showOnboarding: true,
+            isLoading: fromProcessing ? false : prev.isLoading, // If from processing, immediately set to false
           }));
+          setDataLoaded(true);
         }
       } catch (error) {
         console.error('Dashboard initialization error:', error);
         setState((prev) => ({
           ...prev,
           error: 'Failed to load dashboard data',
-          isLoading: false,
           syncStatus: 'error',
+          isLoading: fromProcessing ? false : prev.isLoading, // If from processing, immediately set to false
         }));
+        setDataLoaded(true);
       }
     };
 
@@ -114,10 +118,6 @@ export default function DashboardPage() {
     await supabase.auth.signOut();
     apiClient.clearToken();
     router.push(`/${locale}/login`);
-  };
-
-  const handleCreateResume = () => {
-    // TODO: Navigate to resume creation page
   };
 
   const handleClearProfile = async () => {
@@ -149,9 +149,11 @@ export default function DashboardPage() {
         resumes: [],
         isLoading: false,
         showOnboarding: true,
+        showTransition: false, // Ensure we don't show transition
       }));
       
-      console.log('✅ Profile cleared successfully');
+      // Immediately redirect to onboarding
+      router.replace(`/${locale}/onboarding`);
     } catch (error) {
       console.error('Error clearing profile:', error);
       setState((prev) => ({
@@ -162,61 +164,48 @@ export default function DashboardPage() {
     }
   };
 
-  const handleResumeUploadSuccess = async (parsedResume: ParsedResume) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // Refetch resumes from backend to get the newly created one
-      try {
-        const resumesData = await getUserResumes(session.access_token);
-        setState((prev) => ({
-          ...prev,
-          resumes: resumesData.resumes,
-          showOnboarding: false,
-        }));
-      } catch (resumeError) {
-        // If fetching fails, add to local state temporarily
-        const newResume: Resume = {
-          id: Date.now(), // Temporary ID
-          name: parsedResume.name,
-          email: parsedResume.email,
-          phone: parsedResume.phone,
-          professional_summary: parsedResume.professional_summary,
-          years_experience: parsedResume.years_experience,
-          skills: parsedResume.skills,
-          education: parsedResume.education,
-          user_id: state.backendUser?.id,
-          created_at: new Date().toISOString(),
-        };
-
-        setState((prev) => ({
-          ...prev,
-          resumes: [newResume],
-          showOnboarding: false,
-        }));
-      }
-
-      console.log('✅ Resume uploaded successfully');
-    } catch (error) {
-      console.error('Error handling resume upload:', error);
-    }
-  };
-
-  // Show onboarding flow if no resumes and not loading
-  if (state.showOnboarding && !state.isLoading) {
-    return <ResumeUpload onSuccess={handleResumeUploadSuccess} />;
+  // Show transition until data is loaded
+  if (state.showTransition || isRedirecting) {
+    return (
+      <TallyTransition 
+        className="min-h-screen bg-gray-50"
+        duration={600}
+        onComplete={() => {
+          // Wait until data is loaded
+          if (!dataLoaded) {
+            // Check again in a bit
+            setTimeout(() => {
+              if (dataLoaded) {
+                if (state.showOnboarding) {
+                  setIsRedirecting(true);
+                  router.push(`/${locale}/onboarding`);
+                } else {
+                  setState(prev => ({ ...prev, showTransition: false, isLoading: false }))
+                }
+              }
+            }, 100);
+            return;
+          }
+          
+          if (state.showOnboarding) {
+            // If user needs onboarding, redirect
+            setIsRedirecting(true);
+            router.push(`/${locale}/onboarding`);
+          } else {
+            // Otherwise show dashboard
+            setState(prev => ({ ...prev, showTransition: false, isLoading: false }))
+          }
+        }}
+      />
+    );
   }
 
   if (state.isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
-          {state.syncStatus === 'syncing' && <p className="text-sm text-blue-600 mt-2">Syncing with backend...</p>}
-        </div>
-      </div>
+      <TallyTransition 
+        className="min-h-screen bg-gray-50"
+        duration={0}
+      />
     );
   }
 
@@ -284,24 +273,14 @@ export default function DashboardPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">Your Resumes</h2>
-              <div className="flex gap-2">
-                {state.resumes.length > 0 && (
-                  <button
-                    onClick={handleClearProfile}
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                  >
-                    Clear Profile
-                  </button>
-                )}
-                {state.resumes.length === 0 && (
-                  <button
-                    onClick={handleCreateResume}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    + Create Resume
-                  </button>
-                )}
-              </div>
+              {state.resumes.length > 0 && (
+                <button
+                  onClick={handleClearProfile}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  Clear Profile
+                </button>
+              )}
             </div>
           </div>
 
@@ -310,13 +289,7 @@ export default function DashboardPage() {
               <div className="text-center py-12">
                 <div className="text-gray-400 text-6xl mb-4">📄</div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No resumes yet</h3>
-                <p className="text-gray-500 mb-6">Create your first resume to get started with your job search.</p>
-                <button
-                  onClick={handleCreateResume}
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Create Your First Resume
-                </button>
+                <p className="text-gray-500">Your resumes will appear here once uploaded through the onboarding process.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

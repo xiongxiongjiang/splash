@@ -1,22 +1,20 @@
 'use client'
 
 import {useState, useEffect} from 'react'
+import {useRouter, useParams} from 'next/navigation'
 
-import {Tabs, ConfigProvider, Upload, message, Button as AntButton} from 'antd'
+import {Tabs, ConfigProvider, Upload} from 'antd'
 import {Upload as UploadIcon} from 'lucide-react'
 import Image from 'next/image'
 
 import Header from '@/components/Header'
 import AuthForm from '@/components/AuthForm'
 import {Button} from '@/components/ui/button'
-import {Input} from '@/components/ui/input'
-import {apiClient} from '@/lib/api'
+
 import ProcessingView from '@/components/ProcessingView'
-import type {ParseResumeResponse, ProfileData} from '@/types/resume'
+
 import IconClose from '@/assets/images/icon_close.svg'
 import IconFiles from '@/assets/images/icon_files.png'
-import IconLink from '@/assets/images/icon_link.png'
-import IconLoading from '@/assets/images/icon_loading_dark.svg'
 import IconTick from '@/assets/images/icon_tick.svg'
 import useBreakpoint from '@/hooks/useBreakpoint'
 import useUserStore from '@/store/user'
@@ -27,26 +25,32 @@ import type {UploadFile} from 'antd/es/upload/interface'
 import type {UploadRequestOption} from 'rc-upload/lib/interface'
 
 export default function WelcomePage() {
-  const [linkedinUrl, setLinkedinUrl] = useState('')
+  const router = useRouter()
+  const params = useParams()
+  const locale = params.locale as string
   const [activeKey, setActiveKey] = useState('resume')
   const deviceType = useBreakpoint() // 获取设备类型
   const [uploadError, setUploadError] = useState('')
-  const [linkedinError, setLinkedinError] = useState('')
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [parseResult, setParseResult] = useState<ParseResumeResponse | undefined>()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const {userInfo, updateUserInfo, updateToken} = useUserStore()
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
-  // 检查用户session并更新状态
+  // Check auth and profile status
   useEffect(() => {
-    const checkUserSession = async () => {
+    const checkAuthAndProfile = async () => {
       try {
-        const {
-          data: {session},
-        } = await supabase.auth.getSession()
-        if (session && session.user && !userInfo) {
-          // 如果有session但store中没有用户信息，更新store
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        // If not authenticated, redirect to login
+        if (!session) {
+          router.push(`/${locale}/login`)
+          return
+        }
+        
+        // Update store if needed
+        if (session.user && !userInfo) {
           updateUserInfo(session.user)
           updateToken({
             access_token: session.access_token,
@@ -54,26 +58,37 @@ export default function WelcomePage() {
             expires_at: session.expires_at as number,
           })
         }
+        
+        // Check if user has profile/resumes
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me/resumes`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.resumes && data.resumes.length > 0) {
+              // User has profile, redirect to dashboard
+              router.push(`/${locale}/dashboard`)
+              return
+            }
+          }
+        } catch (error) {
+          console.error('Error checking profile:', error)
+        }
+        
+        setIsCheckingAuth(false)
       } catch (error) {
-        console.error('检查用户session失败:', error)
+        console.error('Auth check failed:', error)
+        router.push(`/${locale}/login`)
       }
     }
 
-    checkUserSession()
-  }, [userInfo, updateUserInfo, updateToken])
+    checkAuthAndProfile()
+  }, [router, locale, userInfo, updateUserInfo, updateToken])
 
-  // 检查是否可以继续
-  const canContinue = () => {
-    if (activeKey === 'resume') {
-      // 简历模式下，需要有成功上传的文件
-      return fileList.some(file => file.status === 'done')
-    } else if (activeKey === 'linkedin') {
-      // LinkedIn模式下，需要有有效的LinkedIn URL
-      // return linkedinUrl.trim() !== '' && linkedinUrl.includes('linkedin.com/in/');
-      return true
-    }
-    return false
-  }
 
   // 处理上传按钮点击
   const handleUploadClick = () => {
@@ -106,53 +121,6 @@ export default function WelcomePage() {
   }
 
   // 上传和解析文件的函数
-  const uploadAndParseFile = async (file: File) => {
-    try {
-      // 设置认证token
-      const {
-        data: {session},
-      } = await supabase.auth.getSession()
-      if (session?.access_token) {
-        apiClient.setToken(session.access_token)
-      } else {
-        throw new Error('用户未登录')
-      }
-
-      // 本地开发环境使用mock数据
-      // if (process.env.NODE_ENV === 'development') {
-      //   // 模拟加载时间
-      //   await new Promise(resolve => setTimeout(resolve, 2000))
-
-      //   // 加载mock数据
-      //   const mockData = await import('./mock.json')
-      //   const response = mockData.default as ParseResumeResponse
-      //   console.log('Mock data loaded:', response)
-
-      //   if (response.success && response.profile) {
-      //     setParseResult(response)
-      //     return true
-      //   }
-      // }
-
-      // 生产环境使用真实API
-      const response = await apiClient.parseResume(file)
-
-      if (response.success && response.profile) {
-        // 解析成功，保存结果
-        setParseResult(response)
-        return true
-      } else {
-        // 解析失败
-        const errorMessage = response.error || response.message || 'Parse failed'
-        setUploadError(errorMessage)
-        return false
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed'
-      setUploadError(errorMessage)
-      return false
-    }
-  }
 
   const uploadCustomRequest = async (options: UploadRequestOption) => {
     const {file, onSuccess} = options
@@ -233,9 +201,6 @@ export default function WelcomePage() {
     if (fileList.length === 0) return null
 
     return fileList.map(file => {
-      const isUploading = file.status === 'uploading'
-      const isDone = file.status === 'done'
-
       return (
         <div key={file.uid} className="flex w-full items-center py-2 relative group rounded px-2">
           <div className="flex w-full items-center justify-center">
@@ -260,13 +225,17 @@ export default function WelcomePage() {
     })
   }
 
+  const canContinue = () => {
+    return fileList.some(file => file.status === 'done')
+  }
+
   const items: TabsProps['items'] = [
     {
       key: 'resume',
       label: 'Résumé File',
       children: (
         <div className="flex flex-col items-center">
-          <div className="h-[128px]  flex flex-col justify-center items-center">
+          <div className="h-[128px] flex flex-col justify-center items-center">
             <Image src={IconFiles} alt="icon_files" width={128} height={128} />
             <p className="text-xs text-[rgba(0,0,0,0.5)]">.doc, .docx or .pdf, up to 20 MB.</p>
           </div>
@@ -283,36 +252,9 @@ export default function WelcomePage() {
             )}
           </div>
           {uploadError && <div className="w-full text-center text-base text-[#FF6767] mt-2">{uploadError}</div>}
-          {/* {(fileList.length !== 0 && deviceType === 'mobile') && (
-              <div className="w-full absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center">{renderFileList()}</div>
-          )} */}
         </div>
       ),
     },
-    // {
-    //   key: 'linkedin',
-    //   label: 'LinkedIn Import',
-    //   children: (
-    //     <div className="flex flex-col items-center">
-    //       <div className="h-[128px] w-[128px] flex justify-center items-center">
-    //         <Image src={IconLink} alt="icon_files" width={128} height={128} />
-    //       </div>
-    //       <div className="flex justify-center tablet:w-[400px] web:w-[400px] py-4 mx-4 rounded-2xl bg-[rgba(235,235,235,0.5)]">
-    //         <Input
-    //           placeholder="https://linkedin.com/in/"
-    //           className="!text-semibold !text-base border-0
-    //                       focus:outline-none shadow-none text-center
-    //                       focus-visible:!ring-0 focus-visible:!ring-transparent
-    //                       rounded-none bg-transparent transition-colors
-    //                     text-[rgba(0,0,0,0.8)] placeholder:text-[rgba(0,0,0,0.3)]"
-    //           value={linkedinUrl}
-    //           onChange={e => setLinkedinUrl(e.target.value)}
-    //         />
-    //       </div>
-    //       {linkedinError && <div className="w-full text-center text-base text-[#FF6767] mt-2">{linkedinError}</div>}
-    //     </div>
-    //   ),
-    // },
   ]
 
   const handleTabChange = (key: string) => {
@@ -321,36 +263,36 @@ export default function WelcomePage() {
 
   // 处理Continue按钮点击
   const handleContinue = () => {
-    if (activeKey === 'resume') {
-      // 简历模式：验证文件
-      if (fileList.length === 0) {
-        setUploadError('No file uploaded')
-        return
-      }
-
-      const selectedFile = fileList[0]
-      const fileToUpload = selectedFile.originFileObj || selectedFile
-
-      if (fileToUpload && fileToUpload instanceof File) {
-        setIsProcessing(true)
-      } else {
-        console.error('No valid file found:', {selectedFile, fileToUpload})
-        setUploadError('No valid file found')
-      }
-    } else if (activeKey === 'linkedin') {
-      // LinkedIn模式：验证URL格式
-      if (!linkedinUrl.trim() || !linkedinUrl.includes('linkedin.com/in/')) {
-        setLinkedinError('The link format is incorrect')
-        return
-      }
-      setIsProcessing(true)
+    // 验证文件
+    if (fileList.length === 0) {
+      setUploadError('No file uploaded')
+      return
     }
+
+    const selectedFile = fileList[0]
+    const fileToUpload = selectedFile.originFileObj || selectedFile
+
+    if (fileToUpload && fileToUpload instanceof File) {
+      setIsProcessing(true)
+    } else {
+      console.error('No valid file found:', {selectedFile, fileToUpload})
+      setUploadError('No valid file found')
+    }
+  }
+
+  // Show loading state while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   // 如果正在处理，显示ProcessingView
   if (isProcessing) {
     const getFileToProcess = (): File | undefined => {
-      if (activeKey === 'resume' && fileList.length > 0) {
+      if (fileList.length > 0) {
         const selectedFile = fileList[0]
         const file = selectedFile.originFileObj || selectedFile
         // 确保返回的是File对象
@@ -361,18 +303,15 @@ export default function WelcomePage() {
 
     return (
       <ProcessingView
-        linkedinUrl={activeKey === 'linkedin' ? linkedinUrl : undefined}
         resumeFile={getFileToProcess()}
-        onComplete={result => {
-          // 将ParsedResume转换为ParseResumeResponse格式
-          const convertedResult = {
-            profile: result,
-            success: true,
-          }
-          setParseResult(convertedResult)
+        onComplete={() => {
+          // Navigate to dashboard after successful parsing, skip transition
+          router.push(`/${locale}/dashboard?from=processing`)
         }}
         onError={(error: string) => {
           console.error('Processing error:', error)
+          setIsProcessing(false)
+          setUploadError(error)
         }}
       />
     )
@@ -420,7 +359,7 @@ export default function WelcomePage() {
             <div className="flex-1 px-6 tablet:px-3 tablet:flex-none text-[18px] tablet:text-[20px] text-[rgba(0,0,0,0.8)] flex flex-col gap-6">
               <p className="font-bold">Welcome</p>
               <p className="text-base">{`I'm Tally, your career wingman. Let's land your dream job together.`} </p>
-              <p className="font-bold">Start by sharing your LinkedIn or résumé.</p>
+              <p className="font-bold">Start by sharing your résumé.</p>
             </div>
 
             {/* 中间 */}
@@ -452,7 +391,6 @@ export default function WelcomePage() {
 
               <div className="flex tablet:mt-8 w-full justify-center mb-10 tablet:mb-0" style={{gap: activeKey === 'resume' ? 0 : '1rem'}}>
                 {((fileList.length !== 0 && (deviceType !== 'mobile' || activeKey !== 'resume')) ||
-                  activeKey === 'linkedin' ||
                   (deviceType !== 'mobile' && activeKey === 'resume')) && (
                   <Button
                     className="w-[270px] tablet:w-[180px] rounded-[12px] text-base font-semibold py-[25px] disabled:bg-[rgba(0,0,0,0.2)] disabled:text-white]"
