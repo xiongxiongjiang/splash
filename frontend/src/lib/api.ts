@@ -164,6 +164,13 @@ class ApiClient {
   }
 
   /**
+   * Get personalized welcome message
+   */
+  async getWelcomeMessage(): Promise<{ title: string; content: string; success: boolean; fallback?: boolean }> {
+    return this.request('/welcome-message')
+  }
+
+  /**
    * Delete resume by ID
    */
   async deleteResume(id: number): Promise<{
@@ -274,7 +281,7 @@ class ApiClient {
   }): Promise<ChatCompletionResponse> {
     console.log('Making chat completion request:', {
       messages,
-      model: options?.model || 'gemini/gemini-1.5-flash',
+      model: options?.model || 'gemini/gemini-2.0-flash',
       temperature: options?.temperature || 0.7,
       max_tokens: options?.max_tokens || 1000,
       stream: options?.stream || false,
@@ -284,7 +291,7 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({
         messages,
-        model: options?.model || 'gemini/gemini-1.5-flash',
+        model: options?.model || 'gemini/gemini-2.0-flash',
         temperature: options?.temperature || 0.7,
         max_tokens: options?.max_tokens || 1000,
         stream: options?.stream || false,
@@ -293,6 +300,52 @@ class ApiClient {
     
     console.log('Chat completion response received:', result);
     return result;
+  }
+
+  /**
+   * Create streaming chat completion
+   */
+  async createChatCompletionStream(messages: Array<{
+    role: 'user' | 'assistant' | 'system'
+    content: string
+  }>, options?: {
+    model?: string
+    temperature?: number
+    max_tokens?: number
+  }): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+    const url = `${this.baseUrl}/chat/completions`;
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add auth header if token is available
+    if (this.token) {
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        messages,
+        model: options?.model || 'gemini/gemini-2.0-flash',
+        temperature: options?.temperature || 0.7,
+        max_tokens: options?.max_tokens || 1000,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Chat completion failed with status ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error('No response body received');
+    }
+
+    return response.body.getReader();
   }
 
   /**

@@ -3,6 +3,7 @@ Simplified chat.py using direct function imports
 """
 import os
 import logging
+import asyncio
 from typing import List, Dict, Any, Optional, AsyncGenerator
 import json
 from pydantic import BaseModel, Field
@@ -41,7 +42,7 @@ class ChatMessage(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     messages: List[ChatMessage] = Field(..., description="List of chat messages")
-    model: str = Field(default="gemini/gemini-1.5-flash", description="Model to use")
+    model: str = Field(default="gemini/gemini-2.0-flash", description="Model to use")
     temperature: Optional[float] = Field(default=0.7, ge=0, le=2, description="Sampling temperature")
     max_tokens: Optional[int] = Field(default=1000, ge=1, description="Maximum tokens to generate")
     stream: Optional[bool] = Field(default=False, description="Whether to stream the response")
@@ -180,8 +181,26 @@ Beyond these individual tools, I can also guide you through comprehensive workfl
     # Continue with normal direct response
     messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
     
+    # Add system message to give context about user access
+    if current_user:
+        system_message = {
+            "role": "system", 
+            "content": f"""You are Tally, an AI career assistant. You are currently helping user {current_user.email} (ID: {current_user.id}).
+
+IMPORTANT: You already have access to this user's profile and resume data through your available functions. You DO NOT need to ask for their user ID or permission to access their information - you can directly call functions like get_user_profile() and get_user_resumes() to help them.
+
+When they ask about their profile, experience, or skills, immediately call the appropriate functions to get their actual data and provide helpful insights based on their real information.
+
+Be helpful, direct, and use their actual profile data to give personalized advice."""
+        }
+        messages.insert(0, system_message)
+    
+    # Log the request details
+    logger.info(f"Chat request - Model: {request.model}, User: {current_user.email if current_user else 'None'}")
+    
     # Get tools from simple config - no complex registry!
     tools = get_openai_tools()
+    logger.info(f"Available tools for AI: {[tool['function']['name'] for tool in tools]}")
     
     try:
         response = await acompletion(
@@ -455,34 +474,61 @@ async def create_chat_completion_stream(
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not configured")
     
-    # For now, streaming doesn't use workflows
-    # Convert messages to liteLLM format
-    messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
+    # For streaming with function calls, we need to fall back to non-streaming 
+    # because Gemini 2.0 Flash doesn't properly support function calling in streaming mode
+    logger.info("Streaming with function calls - falling back to non-streaming for proper function execution")
     
-    # Prepare function tools from registry
-    tools = get_openai_tools()
-    
+    # Convert to non-streaming and simulate streaming response
     try:
-        # Make the streaming completion request
-        response = await acompletion(
-            model=request.model,
-            messages=messages,
-            temperature=request.temperature,
-            max_tokens=request.max_tokens,
-            tools=tools,
-            tool_choice="auto",
-            stream=True
-        )
+        response = await create_chat_completion(request, session, current_user)
         
-        async for chunk in response:
+        # Simulate streaming by breaking the response into chunks
+        content = response["choices"][0]["message"]["content"] or ""
+        
+        # Send chunks word by word for streaming effect
+        words = content.split()
+        chunk_size = 3  # Send 3 words at a time
+        
+        import time
+        for i in range(0, len(words), chunk_size):
+            chunk_words = words[i:i+chunk_size]
+            chunk_content = " ".join(chunk_words)
+            
+            # Add space if not the last chunk
+            if i + chunk_size < len(words):
+                chunk_content += " "
+            
             yield {
-                "id": chunk.id,
+                "id": response["id"],
                 "object": "chat.completion.chunk",
-                "created": chunk.created,
-                "model": chunk.model,
-                "choices": [choice.model_dump() for choice in chunk.choices]
+                "created": response["created"],
+                "model": response["model"],
+                "choices": [{
+                    "index": 0,
+                    "delta": {
+                        "content": chunk_content,
+                        "role": "assistant" if i == 0 else None
+                    },
+                    "finish_reason": None
+                }]
             }
             
+            # Small delay for streaming effect
+            await asyncio.sleep(0.05)
+        
+        # Final chunk with finish_reason
+        yield {
+            "id": response["id"],
+            "object": "chat.completion.chunk", 
+            "created": response["created"],
+            "model": response["model"],
+            "choices": [{
+                "index": 0,
+                "delta": {},
+                "finish_reason": "stop"
+            }]
+        }
+        
     except Exception as e:
         logger.error(f"Error in streaming chat completion: {str(e)}")
         yield {

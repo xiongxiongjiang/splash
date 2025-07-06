@@ -64,7 +64,7 @@ def parse_resume_with_llm(state: GraphState) -> GraphState:
 
     try:
         # Try different model names
-        model_name = state.get("model_name", "gemini/gemini-1.5-flash")
+        model_name = state.get("model_name", "gemini/gemini-2.0-flash")
         
         # Set API key if available
         import os
@@ -161,7 +161,7 @@ def create_resume_parser_dag():
 
 async def parse_resume_pdf(
     pdf_bytes: bytes, 
-    model_name: str = "gemini/gemini-1.5-flash"
+    model_name: str = "gemini/gemini-2.0-flash"
 ) -> Dict:
     """
     Main function: Parse resume and return JSON or failure

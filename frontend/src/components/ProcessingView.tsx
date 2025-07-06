@@ -26,15 +26,32 @@ interface ProcessingViewProps {
   onError?: (error: string) => void
 }
 
+// Define the 8 static phases
+const PROCESSING_PHASES = [
+  { id: 'phase_1', name: 'Document Validation' },
+  { id: 'phase_2', name: 'Contact Info Extraction' },
+  { id: 'phase_3', name: 'Experience Analysis' },
+  { id: 'phase_4', name: 'Skills & Expertise' },
+  { id: 'phase_5', name: 'Education & Certifications' },
+  { id: 'phase_6', name: 'Leadership & Achievements' },
+  { id: 'phase_7', name: 'Profile Synthesis' },
+  { id: 'phase_8', name: 'Final Compilation' }
+]
+
 export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onError}: ProcessingViewProps) {
   const [showSkeleton, setShowSkeleton] = useState(true)
   const [fakeProgress, setFakeProgress] = useState(0)
-  const [currentFactIndex, setCurrentFactIndex] = useState(0)
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
   const [showTransitionScreen, setShowTransitionScreen] = useState(false)
+  const [allThinkingContent, setAllThinkingContent] = useState<{[key: string]: string}>({})
+  const [displayedThinking, setDisplayedThinking] = useState<string[]>([])
+  const [currentDisplayPhase, setCurrentDisplayPhase] = useState(0)
+  const [llmCompleted, setLlmCompleted] = useState(false)
   const isProcessing = useRef(false)
   const startTime = useRef<number | null>(null)
   const parseResult = useRef<{success: boolean; data?: ParsedResume; error?: string} | null>(null)
+  const thinkingContentRef = useRef<{[key: string]: string}>({})
+  const progressStarted = useRef(false)
   const t = useTranslations('HomePage')
 
   // Fun job search facts
@@ -56,38 +73,63 @@ export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onE
   // 更新ref
   onCompleteRef.current = onComplete
   onErrorRef.current = onError
+  
+  // Calculate overall progress based on displayed phases
+  const calculateOverallProgress = () => {
+    return Math.round((currentDisplayPhase / PROCESSING_PHASES.length) * 100)
+  }
 
-  // Fake progress timer (6 steps, 3s each = 18s total)
+  // Track start time and reset progress
   useEffect(() => {
     if (!resumeFile) return
-
     startTime.current = Date.now()
-    
-    // 6 steps: ~17%, 33%, 50%, 67%, 83%, 100%
-    const timer1 = setTimeout(() => setFakeProgress(1), 3000)   // 17%
-    const timer2 = setTimeout(() => setFakeProgress(2), 6000)   // 33%
-    const timer3 = setTimeout(() => setFakeProgress(3), 9000)   // 50%
-    const timer4 = setTimeout(() => setFakeProgress(4), 12000)  // 67%
-    const timer5 = setTimeout(() => setFakeProgress(5), 15000)  // 83%
-    // Step 6: 100% only when backend completes (minimum 18s)
-    
-    return () => {
-      clearTimeout(timer1)
-      clearTimeout(timer2)
-      clearTimeout(timer3)
-      clearTimeout(timer4)
-      clearTimeout(timer5)
-    }
+    progressStarted.current = false
+    setCurrentDisplayPhase(0)
+    setDisplayedThinking([])
+    setAllThinkingContent({})
+    setLlmCompleted(false)
   }, [resumeFile])
-
-  // Cycle through job search facts every 7 seconds with smooth animations
+  
+  // Start fake progress ONLY after LLM completes
   useEffect(() => {
-    const factInterval = setInterval(() => {
-      setCurrentFactIndex(prev => (prev + 1) % jobSearchFacts.length)
-    }, 7000)
-
-    return () => clearInterval(factInterval)
-  }, [jobSearchFacts.length])
+    if (!llmCompleted || progressStarted.current) return
+    
+    progressStarted.current = true
+    console.log('LLM completed, starting fake progression')
+    
+    // Start immediately with first phase
+    setCurrentDisplayPhase(1)
+    const firstPhaseId = PROCESSING_PHASES[0].id
+    const firstPhaseContent = allThinkingContent[firstPhaseId]
+    if (firstPhaseContent) {
+      const firstPhaseName = PROCESSING_PHASES[0].name
+      setDisplayedThinking([`${firstPhaseName}: ${firstPhaseContent}`])
+    }
+    
+    // Then progress through remaining phases every 3 seconds
+    let phaseIndex = 1
+    const timer = setInterval(() => {
+      if (phaseIndex < PROCESSING_PHASES.length - 1) { // Leave last phase for completion
+        const newPhase = phaseIndex + 1
+        console.log('Progressing to phase', newPhase)
+        setCurrentDisplayPhase(newPhase)
+        
+        // Add the thinking content for this phase
+        const currentPhaseId = PROCESSING_PHASES[phaseIndex].id
+        const currentPhaseContent = allThinkingContent[currentPhaseId]
+        if (currentPhaseContent) {
+          const currentPhaseName = PROCESSING_PHASES[phaseIndex].name
+          setDisplayedThinking(prev => [...prev, `${currentPhaseName}: ${currentPhaseContent}`])
+        }
+        
+        phaseIndex++
+      } else {
+        clearInterval(timer)
+      }
+    }, 3000)
+    
+    return () => clearInterval(timer)
+  }, [llmCompleted, allThinkingContent])
 
   useEffect(() => {
     if (isProcessing.current || !resumeFile) {
@@ -99,7 +141,10 @@ export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onE
         parseResult.current = result
         const handleCompletion = () => {
           if (result.success && result.data) {
-            setFakeProgress(6) // Complete the final step
+            // Mark final phase as complete
+            setCurrentDisplayPhase(PROCESSING_PHASES.length)
+            setFakeProgress(PROCESSING_PHASES.length)
+            
             // Show success animation briefly, then transition screen
             setTimeout(() => {
               setShowSuccessAnimation(true)
@@ -175,7 +220,27 @@ export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onE
             try {
               const eventData = JSON.parse(line.slice(6))
 
-              if (eventData.event === 'complete') {
+              if (eventData.event === 'progress') {
+                // Handle progress events from the backend
+                const { step, progress, message } = eventData.data
+                
+                // Store thinking content by phase
+                if (message) {
+                  thinkingContentRef.current[step] = message
+                  setAllThinkingContent(prev => ({
+                    ...prev,
+                    [step]: message
+                  }))
+                }
+                
+                // Handle PDF extraction progress too
+                if (step === 'pdf_extraction') {
+                  setDisplayedThinking(prev => [...prev.filter(t => !t.startsWith('PDF:')), `PDF: ${message}`])
+                }
+              } else if (eventData.event === 'complete') {
+                console.log('LLM processing completed')
+                setLlmCompleted(true)
+                
                 const data = eventData.data
                 if (data.success && data.profile) {
                   result = {
@@ -240,84 +305,100 @@ export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onE
 
   return (
     <div className="h-screen onboarding-bg flex gap-6 justify-between p-10">
-      <div className="w-[150px]">
-        <div className="flex flex-1 justify-center items-center gap-2">
+      {/* Logo in top left */}
+      <div className="absolute top-10 left-10">
+        <div className="flex items-center gap-2">
           <Image src={Logo} alt={t('appName')} width={24} height={24} />
           <span className="font-bold text-[20px] text-nowrap">{t('appName')}</span>
         </div>
       </div>
+    
 
-      <div className="transition-all hide-scrollbar flex flex-col gap-8 duration-500 ease-in-out max-h-screen overflow-y-auto mt-36">
-        <div className="space-y-6 text-base text-[rgba(0,0,0,0.8)] text-[20px]">
-          <h1 className="font-bold">Welcome</h1>
-          <p className="font-normal">I&apos;m Tally, your career wingman. Let&apos;s land your dream job together. </p>
-          <p className="font-bold">Start by sharing your résumé.</p>
-        </div>
-
-        <div className="flex justify-end">
-          <div className="bg-white flex gap-2 px-4 py-2 rounded-[8px] justify-center items-center">
-            {resumeFile ? (
-              <>
-                <File size={16} />
-                <span>{resumeFile.name}</span>
-              </>
-            ) : (
-              <>
-                <Link size={16} />
-                <span>{linkedinUrl}</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <p className="text-base font-medium">
-          I will extract your resume&apos;s personal background information, education background information, and skills based on the LinkedIn
-          link for further analysis.
-        </p>
-
-        <div className="space-y-3">
-          <div className="flex items-center space-x-[7px]">
-            <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
-              fakeProgress >= 6 
-                ? 'bg-green-500' 
-                : resumeFile
-                ? 'bg-yellow-400 animate-pulse' 
-                : 'bg-[rgba(0,0,0,0.2)]'
-            }`} />
-            <h2 className={`text-lg font-medium ${
-              fakeProgress >= 6 ? 'chroma-animate-once' : ''
-            }`}>Processing your resume</h2>
+      {/* Main content centered */}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="max-w-2xl">
+          <div className="space-y-6 text-base text-[rgba(0,0,0,0.8)] text-[20px] mb-8">
+            <h1 className="font-bold">Welcome</h1>
+            <p className="font-normal">I&apos;m Tally, your career wingman. Let&apos;s land your dream job together. </p>
+            <p className="font-bold">Start by sharing your résumé.</p>
           </div>
 
-          <div className="ml-5 p-4 bg-[rgba(0,0,0,0.06)] rounded-[8px]">
-            <div 
-              key={currentFactIndex}
-              className="flex flex-col gap-2 animate-[fadeInUp_0.6s_ease-out]"
-            >
-              <div className="text-sm font-medium text-[rgba(0,0,0,0.8)]">
-                {jobSearchFacts[currentFactIndex].q}
-              </div>
-              <div className="text-sm text-[rgba(0,0,0,0.6)]">
-                {jobSearchFacts[currentFactIndex].a}
-              </div>
+          <div className="flex justify-end mb-6">
+            <div className="bg-white flex gap-2 px-4 py-2 rounded-[8px] justify-center items-center">
+              {resumeFile ? (
+                <>
+                  <File size={16} />
+                  <span>{resumeFile.name}</span>
+                </>
+              ) : (
+                <>
+                  <Link size={16} />
+                  <span>{linkedinUrl}</span>
+                </>
+              )}
             </div>
           </div>
-          
-          <style jsx>{`
-            @keyframes fadeInUp {
-              0% {
-                opacity: 0;
-                transform: translateY(10px);
+
+          <p className="text-base font-medium mb-6">
+            I will extract your resume&apos;s personal background information, education background information, and skills based on the LinkedIn
+            link for further analysis.
+          </p>
+
+          <div className="space-y-3">
+            <div className="flex items-center space-x-[7px]">
+              <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
+                currentDisplayPhase >= PROCESSING_PHASES.length 
+                  ? 'bg-green-500' 
+                  : resumeFile
+                  ? 'bg-yellow-400 animate-pulse' 
+                  : 'bg-[rgba(0,0,0,0.2)]'
+              }`} />
+              <h2 className={`text-lg font-medium ${
+                currentDisplayPhase >= PROCESSING_PHASES.length ? 'chroma-animate-once' : ''
+              }`}>Processing your resume</h2>
+            </div>
+
+            <div className="ml-5 p-4 bg-[rgba(0,0,0,0.06)] rounded-[8px] max-h-[300px] overflow-y-auto">
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-[rgba(0,0,0,0.8)] mb-2">
+                  AI Thinking Process:
+                </div>
+                {displayedThinking.length === 0 ? (
+                  <div className="text-sm text-[rgba(0,0,0,0.6)] animate-pulse">
+                    Initializing resume analysis...
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {displayedThinking.slice(-5).map((content, index) => (
+                      <div
+                        key={index}
+                        className="text-sm text-[rgba(0,0,0,0.6)] animate-[fadeInUp_0.6s_ease-out]"
+                      >
+                        {content}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <style jsx>{`
+              @keyframes fadeInUp {
+                0% {
+                  opacity: 0;
+                  transform: translateY(10px);
+                }
+                100% {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
               }
-              100% {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-          `}</style>
+            `}</style>
+          </div>
         </div>
       </div>
 
+      {/* Right sidebar with progress circle */}
       <div>
         {showSkeleton ? (
           <ResumeCardSkeleton />
@@ -327,7 +408,7 @@ export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onE
               <div className="w-[70px] h-[70px] flex items-center justify-center">
                 <Progress
                   type="circle"
-                  percent={Math.max(0, (fakeProgress / 6) * 100)}
+                  percent={calculateOverallProgress()}
                   size={70}
                   strokeWidth={8}
                   strokeColor="#22c55e"
@@ -358,66 +439,27 @@ export default function ProcessingView({linkedinUrl, resumeFile, onComplete, onE
               </div>
             </div>
             <div className="px-4 text-sm font-medium text-[rgba(0,0,0,0.8)]">
-              <div className="flex py-3 items-center justify-between">
-                <span className={fakeProgress >= 6 ? 'chroma-animate-once' : ''}>Document Analysis</span>
-                <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  fakeProgress >= 1 
-                    ? 'bg-green-500' 
-                    : fakeProgress === 0 && resumeFile
-                    ? 'bg-yellow-400 animate-pulse' 
-                    : 'bg-gray-300'
-                }`} />
-              </div>
-              <div className="flex py-3 items-center justify-between">
-                <span className={fakeProgress >= 6 ? 'chroma-animate-once' : ''}>Personal Information Extraction</span>
-                <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  fakeProgress >= 2 
-                    ? 'bg-green-500' 
-                    : fakeProgress === 1 && resumeFile
-                    ? 'bg-yellow-400 animate-pulse' 
-                    : 'bg-gray-300'
-                }`} />
-              </div>
-              <div className="flex py-3 items-center justify-between">
-                <span className={fakeProgress >= 6 ? 'chroma-animate-once' : ''}>Work Experience Analysis</span>
-                <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  fakeProgress >= 3 
-                    ? 'bg-green-500' 
-                    : fakeProgress === 2 && resumeFile
-                    ? 'bg-yellow-400 animate-pulse' 
-                    : 'bg-gray-300'
-                }`} />
-              </div>
-              <div className="flex py-3 items-center justify-between">
-                <span className={fakeProgress >= 6 ? 'chroma-animate-once' : ''}>Skills Assessment</span>
-                <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  fakeProgress >= 4 
-                    ? 'bg-green-500' 
-                    : fakeProgress === 3 && resumeFile
-                    ? 'bg-yellow-400 animate-pulse' 
-                    : 'bg-gray-300'
-                }`} />
-              </div>
-              <div className="flex py-3 items-center justify-between">
-                <span className={fakeProgress >= 6 ? 'chroma-animate-once' : ''}>Education Verification</span>
-                <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  fakeProgress >= 5 
-                    ? 'bg-green-500' 
-                    : fakeProgress === 4 && resumeFile
-                    ? 'bg-yellow-400 animate-pulse' 
-                    : 'bg-gray-300'
-                }`} />
-              </div>
-              <div className="flex py-3 items-center justify-between">
-                <span className={fakeProgress >= 6 ? 'chroma-animate-once' : ''}>Profile Optimization</span>
-                <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  fakeProgress >= 6 
-                    ? 'bg-green-500' 
-                    : fakeProgress === 5 && resumeFile
-                    ? 'bg-yellow-400 animate-pulse' 
-                    : 'bg-gray-300'
-                }`} />
-              </div>
+              {/* Show simple progress summary */}
+              {PROCESSING_PHASES.map((phase, index) => {
+                const isComplete = index < currentDisplayPhase
+                const isCurrent = index === currentDisplayPhase
+                
+                // Only show first 6 phases in this compact view
+                if (index >= 6) return null
+                
+                return (
+                  <div key={phase.id} className="flex py-3 items-center justify-between">
+                    <span className={isComplete ? 'chroma-animate-once' : ''}>
+                      {phase.name}
+                    </span>
+                    <div className={`w-4 h-4 rounded-full transition-all duration-300 ${
+                      isComplete ? 'bg-green-500' : 
+                      isCurrent ? 'bg-yellow-400 animate-pulse' : 
+                      'bg-gray-300'
+                    }`} />
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}

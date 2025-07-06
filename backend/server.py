@@ -322,6 +322,103 @@ async def get_user_profile(
         }
 
 
+@app.get("/welcome-message", response_model=dict, operation_id="get_welcome_message")
+async def get_welcome_message(
+    current_user: User = Depends(get_current_user),
+    session: SupabaseSession = Depends(get_session)
+):
+    """Generate personalized welcome message based on user's profile. Requires authentication."""
+    logger.info("GET /welcome-message for user: %s", current_user.email)
+    
+    try:
+        # Get user's profile
+        profile = await get_profile_by_user_id(session, current_user.id)
+        
+        if not profile:
+            return {
+                "title": "Hello there! I am your AI career coach",
+                "content": "Let's get started on crushing your career goals! Upload your resume first so I can understand your background and help you dominate the job market.",
+                "success": True
+            }
+        
+        # Create prompt for generating motivational message
+        skills_list = profile.get('skills', {}).get('raw_skills', []) if profile.get('skills') else []
+        profile_summary = f"""
+        Name: {profile.get('name', 'Professional')}
+        Years of Experience: {profile.get('years_experience', 0) or 0} years
+        Career Level: {profile.get('career_level') or 'Not specified'}
+        Primary Domain/Field: {profile.get('primary_domain') or 'Not specified'}
+        Top Skills: {', '.join(skills_list[:8]) if skills_list else 'Not specified'}
+        Professional Summary: {profile.get('professional_summary') or 'Not provided'}
+        Location: {profile.get('location') or 'Not specified'}
+        Open to Relocate: {profile.get('open_to_relocate', 'Not specified')}
+        """
+        
+        prompt = f"""You are a motivational career coach with the intense, no-nonsense speaking style of David Goggins. 
+        
+        Generate a high-energy, PERSONALIZED motivational message for this specific person. Make it feel like you know them personally by referencing their actual background.
+        
+        Profile Data:
+        {profile_summary}
+        
+        Instructions:
+        - Use David Goggins' signature intensity and motivational style 
+        - MUST reference SPECIFIC details from their profile:
+          * Call them by their EXACT name
+          * Reference their EXACT years of experience and what field/domain they're in
+          * Mention SPECIFIC skills they have by name (if available)
+          * Reference their professional summary or specific job experiences
+          * Acknowledge their current career level and challenge them to go HIGHER
+        - Format the message with:
+          * Short punchy sentences
+          * Strategic line breaks for emphasis
+          * ALL CAPS for key motivational words
+          * Use "!" for intensity
+        - Focus on their potential to DOMINATE their specific field
+        - Challenge them based on where they currently are vs where they could be
+        - Keep it professional but intense - no profanity
+        - 2-3 short paragraphs, 140-200 words total
+        - End with a powerful call to action about CRUSHING their career goals
+        
+        Generate ONLY the motivational content with proper formatting, no title or extra text."""
+        
+        # Use the chat completion to generate the message
+        from litellm import completion
+        import os
+        
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            os.environ["GEMINI_API_KEY"] = api_key
+        
+        response = completion(
+            model="gemini/gemini-2.0-flash",
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            temperature=0.8,
+            max_tokens=200,
+            api_key=api_key if api_key else None
+        )
+        
+        generated_content = response.choices[0].message.content.strip()
+        
+        return {
+            "title": "Hello there! I am your AI career coach",
+            "content": generated_content,
+            "success": True
+        }
+        
+    except Exception as e:
+        logger.error("Error generating welcome message: %s", e)
+        return {
+            "title": "Hello there! I am your AI career coach",
+            "content": "Listen up! You've got what it takes to dominate your career, but you need to put in the WORK. No excuses, no shortcuts. I'm here to help you identify your strengths, crush your weaknesses, and build the career you deserve. Every successful person has a plan and executes it relentlessly. Let's create yours and make it happen!",
+            "success": True,
+            "fallback": True
+        }
+
+
 @app.delete("/resumes/{resume_id}", operation_id="delete_resume")
 async def delete_resume_endpoint(
     resume_id: int,
@@ -728,11 +825,11 @@ async def list_chat_models():
         "object": "list",
         "data": [
             {
-                "id": "gemini/gemini-1.5-flash",
+                "id": "gemini/gemini-2.0-flash",
                 "object": "model",
                 "created": 1640995200,
                 "owned_by": "google",
-                "root": "gemini/gemini-1.5-flash",
+                "root": "gemini/gemini-2.0-flash",
                 "parent": None,
                 "permission": []
             }

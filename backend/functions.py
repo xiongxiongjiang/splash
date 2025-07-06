@@ -13,8 +13,9 @@ async def get_database_statistics(session, user_id=None, **kwargs) -> Dict[str, 
     return {"stats": stats}
 
 
-async def get_user_profile(session, user_id: int, **kwargs) -> Dict[str, Any]:
+async def get_user_profile(session, **kwargs) -> Dict[str, Any]:
     """Get the current authenticated user's profile information"""
+    user_id = kwargs.get('user_id')
     if not user_id:
         return {"error": "User authentication required"}
         
@@ -25,8 +26,9 @@ async def get_user_profile(session, user_id: int, **kwargs) -> Dict[str, Any]:
     return {"profile": ProfileRead.model_validate(profile).model_dump(mode='json')}
 
 
-async def get_user_resumes(session, user_id: int, **kwargs) -> Dict[str, Any]:
+async def get_user_resumes(session, **kwargs) -> Dict[str, Any]:
     """Get all resumes belonging to the current authenticated user"""
+    user_id = kwargs.get('user_id')
     if not user_id:
         return {"error": "User authentication required"}
         
@@ -36,8 +38,9 @@ async def get_user_resumes(session, user_id: int, **kwargs) -> Dict[str, Any]:
     return {"resumes": resume_data, "count": len(resume_data)}
 
 
-async def identify_profile_gaps(session, user_id: int, **kwargs) -> Dict[str, Any]:
+async def identify_profile_gaps(session, **kwargs) -> Dict[str, Any]:
     """Identify gaps in the user's profile for general career improvement"""
+    user_id = kwargs.get('user_id')
     if not user_id:
         return {"error": "User authentication required"}
     

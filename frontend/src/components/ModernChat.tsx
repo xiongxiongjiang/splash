@@ -1,13 +1,29 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Select } from 'antd';
-import { Bot, User, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import MarkdownIt from 'markdown-it';
 
 import ChatInput from './ChatInput';
-import { apiClient, Resume } from '@/lib/api';
+import { apiClient, Resume, Profile, getUserProfile } from '@/lib/api';
 import { useSupabase } from '@/hooks/useSupabase';
+
+// Tally Logo Component
+const TallyLogo = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <path d="M5.59961 12.7998C6.5288 12.7998 7.40435 13.0281 8.17578 13.4287L6.21094 16.4033C5.61105 17.3114 6.68857 18.3889 7.59668 17.7891L10.5713 15.8232C10.9722 16.5949 11.2001 17.4709 11.2002 18.4004C11.2001 21.493 8.69228 23.9999 5.59961 24C2.50707 23.9998 0.00012704 21.493 0 18.4004C0.000175935 15.3079 2.5071 12.8 5.59961 12.7998ZM18.4004 12.7998C21.493 12.7999 24.0008 15.3078 24.001 18.4004C24.0008 21.493 21.4931 23.9999 18.4004 24C15.3077 23.9999 12.8009 21.493 12.8008 18.4004C12.8008 17.4713 13.0282 16.5956 13.4287 15.8242L16.4033 17.7891C17.3114 18.3889 18.3889 17.3114 17.7891 16.4033L15.8232 13.4287C16.5948 13.0279 17.4709 12.7998 18.4004 12.7998ZM5.59961 0C8.69225 8.79713e-05 11.2 2.50797 11.2002 5.60059C11.2002 6.52975 10.9719 7.40545 10.5713 8.17676L7.59668 6.21191C6.68865 5.61236 5.61129 6.68963 6.21094 7.59766L8.17578 10.5713C7.40427 10.9719 6.52893 11.2002 5.59961 11.2002C2.50705 11.2 0.000102303 8.69317 0 5.60059C0.000175935 2.50806 2.5071 0.000235763 5.59961 0ZM18.4004 0C21.493 8.79713e-05 24.0008 2.50797 24.001 5.60059C24.0008 8.69324 21.4931 11.2001 18.4004 11.2002C17.4708 11.2002 16.5948 10.9721 15.8232 10.5713L17.7891 7.59766C18.3887 6.68963 17.3114 5.61236 16.4033 6.21191L13.4287 8.17676C13.0283 7.40549 12.8008 6.52967 12.8008 5.60059C12.801 2.50798 15.3078 0.000103845 18.4004 0Z" fill="currentColor"/>
+  </svg>
+);
+
+// User Avatar Component - matches the style from right sidebar
+const UserAvatar = ({ profile, size = 32 }: { profile?: Profile | null; size?: number }) => (
+  <div 
+    className="bg-blue-600 rounded-full flex items-center justify-center text-white font-medium" 
+    style={{ width: size, height: size, fontSize: size < 40 ? '12px' : '16px' }}
+  >
+    {profile?.name?.charAt(0) || 'U'}
+  </div>
+);
 
 interface ChatMessage {
   id: string;
@@ -18,6 +34,7 @@ interface ChatMessage {
   messageType?: 'text' | 'welcome' | 'analysis' | 'action' | 'workflow';
   structured?: {
     title?: string;
+    motivationalContent?: string;
     items?: string[];
     actions?: Array<{ label: string; action: string }>;
   };
@@ -30,13 +47,6 @@ interface ChatMessage {
     workflow_complete?: boolean;
     identified_gaps?: any[];
   };
-}
-
-interface ChatModel {
-  id: string;
-  object: string;
-  created: number;
-  owned_by: string;
 }
 
 const md = new MarkdownIt({
@@ -52,9 +62,9 @@ interface ModernChatProps {
 export default function ModernChat({ resumes = [] }: ModernChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('gemini/gemini-1.5-flash');
-  const [availableModels, setAvailableModels] = useState<ChatModel[]>([]);
-  const [temperature, setTemperature] = useState<number>(0.7);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const selectedModel = 'gemini/gemini-2.0-flash';
+  const temperature = 0.7;
   const { user, session } = useSupabase();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -67,26 +77,6 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
     scrollToBottom();
   }, [messages]);
 
-  // Load available models on component mount
-  useEffect(() => {
-    const loadModels = async () => {
-      try {
-        const response = await apiClient.getChatModels();
-        setAvailableModels(response.data);
-      } catch (error) {
-        console.error('Error loading chat models:', error);
-        setAvailableModels([{
-          id: 'gemini/gemini-1.5-flash',
-          object: 'model',
-          created: Date.now(),
-          owned_by: 'google'
-        }]);
-      }
-    };
-
-    loadModels();
-  }, []);
-
   // Set API token when session is available
   useEffect(() => {
     if (session?.access_token) {
@@ -94,35 +84,109 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
     }
   }, [session]);
 
-  // Add welcome message when user has data and chat is empty
+  // Load user profile data
   useEffect(() => {
-    if (resumes.length > 0 && messages.length === 0 && user) {
-      const greetingMessage: ChatMessage = {
-        id: 'greeting',
-        content: `Hello there! 👋 I'm your AI assistant for resume and job application tasks.`,
-        role: 'assistant',
-        timestamp: new Date(),
-        messageType: 'welcome',
-        structured: {
-          title: "What I can help you with:",
-          items: [
-            "Analyze job requirements and match them to your skills",
-            "Customize your resume for specific roles", 
-            "Write compelling cover letters",
-            "Craft personalized outreach messages",
-            "Answer questions about your profile and experience"
-          ],
-          actions: [
-            { label: "Tell me about my profile", action: "profile" },
-            { label: "Identify skill gaps", action: "gaps" },
-            { label: "what tools do you have", action: "tools" }
-          ]
+    const loadProfile = async () => {
+      if (session?.access_token) {
+        try {
+          const profileData = await getUserProfile(session.access_token);
+          setProfile(profileData.profile);
+        } catch (error) {
+          console.error('Failed to load profile:', error);
+        }
+      }
+    };
+    
+    loadProfile();
+  }, [session]);
+
+  // Add welcome messages when user has data and chat is empty
+  useEffect(() => {
+    if (resumes.length > 0 && messages.length === 0 && user && session?.access_token) {
+      const loadWelcomeMessage = async () => {
+        try {
+          const welcomeData = await apiClient.getWelcomeMessage();
+          
+          // First card: Motivational message
+          const motivationalMessage: ChatMessage = {
+            id: 'motivational',
+            content: welcomeData.title,
+            role: 'assistant',
+            timestamp: new Date(),
+            messageType: 'welcome',
+            structured: {
+              motivationalContent: welcomeData.content,
+            }
+          };
+
+          // Second card: What I can help with
+          const servicesMessage: ChatMessage = {
+            id: 'services',
+            content: "What I can help you with:",
+            role: 'assistant',
+            timestamp: new Date(),
+            messageType: 'welcome',
+            structured: {
+              items: [
+                "Analyze job requirements and match them to your skills",
+                "Customize your resume for specific roles", 
+                "Write compelling cover letters",
+                "Craft personalized outreach messages",
+                "Answer questions about your profile and experience"
+              ],
+              actions: [
+                { label: "Tell me about my profile", action: "profile" },
+                { label: "Identify skill gaps", action: "gaps" },
+                { label: "what tools do you have", action: "tools" }
+              ]
+            }
+          };
+          
+          setMessages([motivationalMessage, servicesMessage]);
+        } catch (error) {
+          console.error('Failed to load welcome message:', error);
+          
+          // Fallback messages
+          const motivationalMessage: ChatMessage = {
+            id: 'motivational',
+            content: `Hello there! I am your AI career coach`,
+            role: 'assistant',
+            timestamp: new Date(),
+            messageType: 'welcome',
+            structured: {
+              motivationalContent: "Listen up! You've got what it takes to dominate your career, but you need to put in the WORK. No excuses, no shortcuts. Let's identify your strengths, crush your weaknesses, and build the career you deserve!",
+            }
+          };
+
+          const servicesMessage: ChatMessage = {
+            id: 'services',
+            content: "What I can help you with:",
+            role: 'assistant',
+            timestamp: new Date(),
+            messageType: 'welcome',
+            structured: {
+              items: [
+                "Analyze job requirements and match them to your skills",
+                "Customize your resume for specific roles", 
+                "Write compelling cover letters",
+                "Craft personalized outreach messages",
+                "Answer questions about your profile and experience"
+              ],
+              actions: [
+                { label: "Tell me about my profile", action: "profile" },
+                { label: "Identify skill gaps", action: "gaps" },
+                { label: "what tools do you have", action: "tools" }
+              ]
+            }
+          };
+          
+          setMessages([motivationalMessage, servicesMessage]);
         }
       };
       
-      setMessages([greetingMessage]);
+      loadWelcomeMessage();
     }
-  }, [resumes, messages.length, user]);
+  }, [resumes, messages.length, user, session]);
 
   // Handle action button clicks
   const handleActionClick = (action: string) => {
@@ -136,9 +200,8 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
   };
 
   const sendMessage = async (messageText: string, attachments?: any[]) => {
-    if (!messageText.trim()) return;
+    if (!messageText.trim() || isTyping) return; // Prevent multiple concurrent calls
 
-    // Add user message immediately
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: messageText,
@@ -147,114 +210,180 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
       attachments,
     };
     
+    // Add user message and set typing state
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
     try {
-      // Prepare messages for backend API (backend will automatically access user context via MCP functions)
+      // Prepare messages for backend API (use current messages state + new user message)
       const chatMessages = [...messages, userMessage].map((msg) => ({
         role: msg.role as 'user' | 'assistant' | 'system',
         content: msg.content,
       }));
 
-      // Send to backend chat completions endpoint
-      const data = await apiClient.createChatCompletion(chatMessages, {
+      // Use the streaming chat completion method
+      const reader = await apiClient.createChatCompletionStream(chatMessages, {
         model: selectedModel,
         temperature: temperature,
         max_tokens: 1000,
-        stream: false,
       });
 
-      // Extract the assistant's response with null checks
-      if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
-        throw new Error('Invalid response format from backend');
-      }
-
-      const assistantMessage = data.choices[0].message.content;
-
-      if (!assistantMessage) {
-        throw new Error('Empty response content from backend');
-      }
-
-      // Check for workflow metadata
-      const workflowMetadata = data.workflow_metadata;
+      let accumulatedContent = '';
+      let workflowMetadata: any = null;
       let messageType: ChatMessage['messageType'] = 'text';
-      
-      if (workflowMetadata?.action === 'gap_resolution_prompt') {
-        messageType = 'workflow';
-      } else if (workflowMetadata?.action === 'final_gap_acknowledgment' ||
-                workflowMetadata?.action === 'analysis_complete' ||
-                workflowMetadata?.action === 'next_steps_prompt' ||
-                workflowMetadata?.action === 'workflow_escaped') {
-        messageType = 'analysis';
+      let botMessageId = '';
+      let hasCreatedBotMessage = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = new TextDecoder().decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              continue;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              
+              if (parsed.workflow_metadata) {
+                workflowMetadata = parsed.workflow_metadata;
+                
+                if (workflowMetadata?.action === 'gap_resolution_prompt') {
+                  messageType = 'workflow';
+                } else if (workflowMetadata?.action === 'final_gap_acknowledgment' ||
+                          workflowMetadata?.action === 'analysis_complete' ||
+                          workflowMetadata?.action === 'next_steps_prompt' ||
+                          workflowMetadata?.action === 'workflow_escaped') {
+                  messageType = 'analysis';
+                }
+              }
+
+              if (parsed.choices && parsed.choices[0]?.delta?.content) {
+                const deltaContent = parsed.choices[0].delta.content;
+                accumulatedContent += deltaContent;
+
+                // Create bot message on first content chunk ONLY if we haven't created it yet
+                if (!hasCreatedBotMessage && accumulatedContent.trim()) {
+                  // Remove typing indicator before creating the bot message
+                  setIsTyping(false);
+                  
+                  botMessageId = Date.now().toString() + '-bot';
+                  const initialBotMessage: ChatMessage = {
+                    id: botMessageId,
+                    content: accumulatedContent,
+                    role: 'assistant',
+                    timestamp: new Date(),
+                    messageType,
+                    workflowMetadata
+                  };
+                  
+                  setMessages(prev => [...prev, initialBotMessage]);
+                  hasCreatedBotMessage = true;
+                } else if (hasCreatedBotMessage) {
+                  // Update existing bot message
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === botMessageId 
+                      ? { 
+                          ...msg, 
+                          content: accumulatedContent,
+                          messageType,
+                          workflowMetadata
+                        }
+                      : msg
+                  ));
+                }
+              }
+            } catch (e) {
+              // Ignore parsing errors for incomplete chunks
+            }
+          }
+        }
       }
 
-      // Add assistant message
-      const botMessage: ChatMessage = {
-        id: data.id || Date.now().toString(),
-        content: assistantMessage,
-        role: 'assistant',
-        timestamp: new Date(),
-        messageType,
-        workflowMetadata
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      const errorMessage: ChatMessage = {
+      
+      // Add error message
+      setMessages(prev => [...prev, {
         id: Date.now().toString(),
         content: 'Sorry, I encountered an error. Please try again.',
         role: 'assistant',
         timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     } finally {
+      // Only set typing to false if we haven't already done so during streaming
       setIsTyping(false);
     }
   };
 
   // Card components for structured messages
-  const WelcomeCard = ({ message }: { message: ChatMessage }) => (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-      <div className="flex items-start gap-3 mb-3">
-        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-          <Bot size={16} className="text-white" />
+  const WelcomeCard = ({ message }: { message: ChatMessage }) => {
+    // Motivational card styling
+    if (message.structured?.motivationalContent && !message.structured?.items) {
+      return (
+        <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 border border-orange-200 mb-4">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <TallyLogo size={16} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="text-orange-900 font-bold text-lg">{message.content}</p>
+            </div>
+          </div>
+          
+          <div className="bg-white/60 border border-orange-300 rounded-lg p-4">
+            <p className="text-gray-800 font-medium leading-relaxed text-base">
+              {message.structured.motivationalContent}
+            </p>
+          </div>
         </div>
-        <div className="flex-1">
-          <p className="text-blue-900 font-medium">{message.content}</p>
+      );
+    }
+
+    // Services card styling
+    return (
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <TallyLogo size={16} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-blue-900 font-medium">{message.content}</p>
+          </div>
         </div>
+        
+        {message.structured?.items && (
+          <ul className="list-disc list-inside space-y-2 mb-4 ml-1 text-gray-700">
+            {message.structured.items.map((item, index) => (
+              <li key={index} className="text-sm leading-relaxed marker:text-blue-500">
+                {item}
+              </li>
+            ))}
+          </ul>
+        )}
+        
+        {message.structured?.actions && (
+          <div className="flex gap-2 flex-wrap">
+            {message.structured.actions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => handleActionClick(action.action)}
+                className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-colors"
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-      
-      {message.structured?.title && (
-        <h4 className="font-semibold text-gray-900 mb-3">{message.structured.title}</h4>
-      )}
-      
-      {message.structured?.items && (
-        <ul className="list-disc list-inside space-y-2 mb-4 ml-1 text-gray-700">
-          {message.structured.items.map((item, index) => (
-            <li key={index} className="text-sm leading-relaxed marker:text-blue-500">
-              {item}
-            </li>
-          ))}
-        </ul>
-      )}
-      
-      {message.structured?.actions && (
-        <div className="flex gap-2 flex-wrap">
-          {message.structured.actions.map((action, index) => (
-            <button
-              key={index}
-              onClick={() => handleActionClick(action.action)}
-              className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-colors"
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
   const AnalysisCard = ({ message }: { message: ChatMessage }) => {
     const { workflowMetadata } = message;
@@ -327,7 +456,7 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
             {isComplete ? (
               <span className="text-white text-sm">✓</span>
             ) : (
-              <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+              <TallyLogo size={16} className="text-white" />
             )}
           </div>
           <div className="flex-1">
@@ -410,12 +539,14 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
         className={`flex gap-3 p-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
       >
         {/* Avatar */}
-        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          isUser 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-gray-200 text-gray-600'
-        }`}>
-          {isUser ? <User size={16} /> : <Bot size={16} />}
+        <div className="flex-shrink-0">
+          {isUser ? (
+            <UserAvatar profile={profile} size={32} />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center">
+              <TallyLogo size={16} />
+            </div>
+          )}
         </div>
 
         {/* Message Content */}
@@ -458,41 +589,10 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {/* Header with model controls */}
+      {/* Header */}
       <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-semibold text-gray-800">Tally AI Assistant</h2>
-          
-          <div className="flex items-center gap-2 text-sm">
-            <label className="text-gray-600">Model:</label>
-            <Select
-              value={selectedModel}
-              onChange={setSelectedModel}
-              style={{ width: 200 }}
-              size="small"
-            >
-              {availableModels.map((model) => (
-                <Select.Option key={model.id} value={model.id}>
-                  {model.id} ({model.owned_by})
-                </Select.Option>
-              ))}
-            </Select>
-          </div>
-          
-          <div className="flex items-center gap-2 text-sm">
-            <label className="text-gray-600">Temperature:</label>
-            <Select
-              value={temperature}
-              onChange={setTemperature}
-              style={{ width: 100 }}
-              size="small"
-            >
-              <Select.Option value={0.1}>0.1</Select.Option>
-              <Select.Option value={0.3}>0.3</Select.Option>
-              <Select.Option value={0.7}>0.7</Select.Option>
-              <Select.Option value={1.0}>1.0</Select.Option>
-            </Select>
-          </div>
         </div>
 
         {user && (
@@ -507,7 +607,7 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
-              <Bot size={48} className="mx-auto mb-4 text-gray-300" />
+              <TallyLogo size={48} className="mx-auto mb-4 text-gray-300" />
               <p className="text-lg font-medium">Start a conversation</p>
               <p className="text-sm">Ask me about resumes or anything else!</p>
             </div>
@@ -520,7 +620,7 @@ export default function ModernChat({ resumes = [] }: ModernChatProps) {
             {isTyping && (
               <div className="flex gap-3 p-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center">
-                  <Bot size={16} />
+                  <TallyLogo size={16} />
                 </div>
                 <div className="flex-1">
                   <div className="inline-block p-3 rounded-lg bg-gray-100">

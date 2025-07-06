@@ -63,7 +63,7 @@ class ChatRouter:
             
             # Call LiteLLM for routing decision
             response = await acompletion(
-                model="gemini/gemini-1.5-flash",
+                model="gemini/gemini-2.0-flash",
                 messages=messages,
                 temperature=0.1,  # Low temperature for consistent routing
                 max_tokens=50     # Short response for route classification
